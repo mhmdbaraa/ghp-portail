@@ -28,7 +28,15 @@ export const PERMISSIONS = {
   TASK_CREATE: 'task:create',
   TASK_EDIT: 'task:edit',
   TASK_DELETE: 'task:delete',
-  USER_MANAGE: 'user:manage'
+  USER_VIEW: 'user:view',
+  USER_ADD: 'user:add',
+  USER_CHANGE: 'user:change',
+  USER_DELETE: 'user:delete',
+  USER_MANAGE: 'user:manage',
+  PERMISSION_VIEW: 'permission:view',
+  PERMISSION_CHANGE: 'permission:change',
+  ROLE_VIEW: 'role:view',
+  ROLE_CHANGE: 'role:change'
 };
 
 // Clés pour le localStorage (alignées avec GHPPORTAIL)

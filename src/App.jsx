@@ -15,6 +15,14 @@ import {
 
 // Module imports
 import { Projects, Tasks, Tableur, Calendar, Dashboard } from './modules/projects';
+import { 
+  UserDashboard, 
+  UserList, 
+  UserForm, 
+  UserProfile, 
+  PermissionManagement, 
+  RoleManagement 
+} from './modules/users';
 
 function App() {
   return (
@@ -71,6 +79,67 @@ function App() {
                 <Layout>
                   <Calendar />
                 </Layout>
+              </ProtectedRoute>
+            } />
+            
+            {/* User Management Routes */}
+            <Route path="/users/dashboard" element={
+              <ProtectedRoute requiredPermission={PERMISSIONS.USER_VIEW}>
+                <UserDashboard />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/users/list" element={
+              <ProtectedRoute requiredPermission={PERMISSIONS.USER_VIEW}>
+                <UserList />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/users/create" element={
+              <ProtectedRoute requiredPermission={PERMISSIONS.USER_ADD}>
+                <UserForm />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/users/edit/:id" element={
+              <ProtectedRoute requiredPermission={PERMISSIONS.USER_CHANGE}>
+                <UserForm />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/users/profile/:id" element={
+              <ProtectedRoute requiredPermission={PERMISSIONS.USER_VIEW}>
+                <UserProfile />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/users/permissions" element={
+              <ProtectedRoute requiredPermission={PERMISSIONS.USER_CHANGE}>
+                <PermissionManagement />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/users/roles" element={
+              <ProtectedRoute requiredPermission={PERMISSIONS.USER_CHANGE}>
+                <RoleManagement />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/users/groups" element={
+              <ProtectedRoute requiredPermission={PERMISSIONS.USER_VIEW}>
+                <UserList />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/users/access-keys" element={
+              <ProtectedRoute requiredPermission={PERMISSIONS.USER_CHANGE}>
+                <PermissionManagement />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/users/settings" element={
+              <ProtectedRoute requiredPermission={PERMISSIONS.USER_VIEW}>
+                <UserDashboard />
               </ProtectedRoute>
             } />
             

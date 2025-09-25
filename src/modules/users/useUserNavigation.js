@@ -7,10 +7,14 @@ import {
   Security,
 } from '@mui/icons-material';
 
-export const useUserNavigation = () => {
+export const useUserNavigation = (skipNavigation = false) => {
   const { setModule } = useNavigation();
 
   useEffect(() => {
+    if (skipNavigation) {
+      return;
+    }
+
     const userNavigationItems = [
       {
         path: '/users/dashboard',
@@ -40,5 +44,5 @@ export const useUserNavigation = () => {
     return () => {
       setModule('dashboard', []);
     };
-  }, [setModule]);
+  }, [setModule, skipNavigation]);
 };

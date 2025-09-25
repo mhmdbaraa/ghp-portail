@@ -37,7 +37,7 @@ class UserService {
   }
 
   // Get user by ID
-  async getUserById(id) {
+  async getUser(id) {
     try {
       const response = await djangoApiService.get(`${this.baseURL}/${id}/`);
       return {
@@ -52,6 +52,11 @@ class UserService {
         message: 'Failed to retrieve user'
       };
     }
+  }
+
+  // Get user by ID (alias)
+  async getUserById(id) {
+    return this.getUser(id);
   }
 
   // Create new user

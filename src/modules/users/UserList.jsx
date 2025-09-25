@@ -72,6 +72,9 @@ const UserList = () => {
   const [userToDelete, setUserToDelete] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [addUserModalOpen, setAddUserModalOpen] = useState(false);
+  const [editUserModalOpen, setEditUserModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [modalKey, setModalKey] = useState(0);
 
   useEffect(() => {
     loadUsers();
@@ -120,9 +123,15 @@ const UserList = () => {
     setSelectedUser(null);
   };
 
-  const handleEdit = () => {
-    navigate(`/users/edit/${selectedUser.id}`);
+  const handleEditUser = (user) => {
+    setEditingUser(user);
+    setEditUserModalOpen(true);
+    setModalKey(prev => prev + 1); // Force re-render
     handleMenuClose();
+  };
+
+  const handleEdit = () => {
+    handleEditUser(selectedUser);
   };
 
   const handleView = () => {
@@ -229,7 +238,10 @@ const UserList = () => {
               <Button
                 variant="contained"
                 startIcon={<PersonAdd />}
-                onClick={() => setAddUserModalOpen(true)}
+                onClick={() => {
+                  setAddUserModalOpen(true);
+                  setModalKey(prev => prev + 1); // Incrémenter la clé pour forcer la réinitialisation
+                }}
                 sx={{ borderRadius: 2 }}
               >
                 Ajouter un utilisateur
@@ -480,22 +492,84 @@ const UserList = () => {
         <Dialog 
           open={addUserModalOpen} 
           onClose={() => setAddUserModalOpen(false)}
-          maxWidth="md"
+          maxWidth="sm"
           fullWidth
+          fullScreen={{ xs: true, sm: false }}
+          sx={{
+            '& .MuiDialog-paper': {
+              margin: { xs: 0, sm: 1.5 },
+              maxHeight: { xs: '100vh', sm: '85vh' },
+              maxWidth: { xs: '100%', sm: '600px' }
+            }
+          }}
         >
-          <DialogTitle>Ajouter un nouvel utilisateur</DialogTitle>
-          <DialogContent>
+          <DialogTitle sx={{ 
+            fontSize: { xs: '1rem', sm: '1.1rem' },
+            p: { xs: 1, sm: 1.5 },
+            fontWeight: 500
+          }}>
+            Ajouter un nouvel utilisateur
+          </DialogTitle>
+          <DialogContent sx={{ p: { xs: 1, sm: 1.5 } }}>
             <UserForm 
+              key={modalKey} // Clé unique pour forcer la réinitialisation
               onSuccess={() => {
                 setAddUserModalOpen(false);
                 loadUsers();
+              }}
+              onCancel={() => setAddUserModalOpen(false)}
+              onShowSuccessMessage={(message) => {
                 setSnackbar({
                   open: true,
-                  message: 'Utilisateur créé avec succès',
+                  message: message,
                   severity: 'success'
                 });
               }}
-              onCancel={() => setAddUserModalOpen(false)}
+            />
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal d'édition */}
+        <Dialog
+          open={editUserModalOpen}
+          onClose={() => setEditUserModalOpen(false)}
+          maxWidth="md"
+          fullWidth
+          sx={{
+            '& .MuiDialog-paper': {
+              margin: { xs: 0, sm: 1.5 },
+              maxHeight: { xs: '100vh', sm: '85vh' },
+              maxWidth: { xs: '100%', sm: '600px' }
+            }
+          }}
+        >
+          <DialogTitle sx={{ 
+            fontSize: { xs: '1rem', sm: '1.1rem' },
+            p: { xs: 1, sm: 1.5 },
+            fontWeight: 500
+          }}>
+            Modifier l'utilisateur
+          </DialogTitle>
+          <DialogContent sx={{ p: { xs: 1, sm: 1.5 } }}>
+            <UserForm 
+              key={`edit-${modalKey}`} // Clé unique pour forcer la réinitialisation du modal
+              userId={editingUser?.id} // Passer l'ID de l'utilisateur à éditer
+              onSuccess={() => {
+                setEditUserModalOpen(false);
+                setEditingUser(null);
+                loadUsers();
+              }}
+              onCancel={() => {
+                setEditUserModalOpen(false);
+                setEditingUser(null);
+              }}
+              onShowSuccessMessage={(message) => {
+                setSnackbar({
+                  open: true,
+                  message: message,
+                  severity: 'success'
+                });
+              }}
             />
           </DialogContent>
         </Dialog>

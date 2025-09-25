@@ -39,7 +39,7 @@ export const PERMISSIONS = {
   ROLE_CHANGE: 'role:change'
 };
 
-// Clés pour le localStorage (alignées avec GHPPORTAIL)
+// Clés pour le localStorage (alignées avec axiosInstance)
 const STORAGE_KEYS = {
   USER: 'userData',
   ACCESS: 'accessToken',

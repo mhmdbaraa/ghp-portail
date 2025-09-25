@@ -24,14 +24,16 @@ import {
   PermissionManagement, 
   RoleManagement 
 } from './modules/users';
+import AuthDebug from './components/AuthDebug'; // Added for debugging
+import AuthTest from './components/AuthTest'; // Added for testing
 
 function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <NavigationProvider>
-          <Router future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
-          <Routes>
+        <Router future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
+          <NavigationProvider>
+            <Routes>
             {/* Routes publiques */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
@@ -141,11 +143,13 @@ function App() {
               </ProtectedRoute>
             } />
             
+            {/* Debug routes - temporaires */}
+            <Route path="/debug/auth" element={<AuthDebug />} />
+            <Route path="/test/auth" element={<AuthTest />} />
             
-            
-          </Routes>
-          </Router>
-        </NavigationProvider>
+            </Routes>
+          </NavigationProvider>
+        </Router>
       </AuthProvider>
     </ThemeProvider>
   );

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Card,
@@ -13,18 +13,17 @@ import {
   MenuItem,
   FormControlLabel,
   Switch,
-  Avatar,
-  IconButton,
   Alert,
   Snackbar,
   useTheme,
   Divider,
   Chip,
+  CircularProgress,
+  LinearProgress,
 } from '@mui/material';
 import {
   Save,
   Cancel,
-  PhotoCamera,
   Person,
   Email,
   Phone,
@@ -34,16 +33,17 @@ import {
 } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useUserNavigation } from './useUserNavigation';
-import djangoApiService from '../../shared/services/djangoApiService';
+import userService from '../../shared/services/userService';
 
-const UserForm = () => {
+const UserForm = ({ onSuccess, onCancel, onShowSuccessMessage, userId }) => {
   const theme = useTheme();
   const navigate = useNavigate();
   const { id } = useParams();
   
-  // Utiliser le hook de navigation pour définir le menu du module
-  useUserNavigation();
-  const isEdit = Boolean(id);
+  // Utiliser le hook de navigation pour définir le menu du module seulement si ce n'est pas un modal
+  const isModal = Boolean(onSuccess || onCancel);
+  useUserNavigation(isModal);
+  const isEdit = Boolean(id || userId);
 
   const [formData, setFormData] = useState({
     username: '',
@@ -64,32 +64,56 @@ const UserForm = () => {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [submitLoading, setSubmitLoading] = useState(false);
+  
+  // Références pour les champs de formulaire
+  const usernameRef = useRef(null);
+  const emailRef = useRef(null);
+  const passwordRef = useRef(null);
+  const confirmPasswordRef = useRef(null);
 
   useEffect(() => {
     if (isEdit) {
       loadUser();
+    } else if (isModal) {
+      // Réinitialiser le formulaire pour les nouveaux utilisateurs en modal
+      setFormData({
+        username: '',
+        email: '',
+        first_name: '',
+        last_name: '',
+        role: 'user',
+        status: 'active',
+        is_staff: false,
+        is_active: true,
+        department: '',
+        position: '',
+        phone: '',
+        password: '',
+        confirmPassword: '',
+      });
+      setErrors({});
+      
+      // Vider explicitement les champs pour empêcher l'autocomplétion
+      setTimeout(() => {
+        if (usernameRef.current) usernameRef.current.value = '';
+        if (emailRef.current) emailRef.current.value = '';
+        if (passwordRef.current) passwordRef.current.value = '';
+        if (confirmPasswordRef.current) confirmPasswordRef.current.value = '';
+      }, 100);
     }
-  }, [id]);
+  }, [id, isEdit, isModal]);
 
   const loadUser = async () => {
     try {
       setLoading(true);
-      // Simuler le chargement d'un utilisateur - à remplacer par l'API
-      const mockUser = {
-        id: parseInt(id),
-        username: 'ahmed.benali',
-        email: 'ahmed.benali@ghp.com',
-        first_name: 'Ahmed',
-        last_name: 'Ben Ali',
-        role: 'manager',
-        status: 'active',
-        is_staff: true,
-        is_active: true,
-        department: 'IT',
-        position: 'IT Manager',
-        phone: '+216 12 345 678',
-      };
-      setFormData(mockUser);
+      const userIdToLoad = id || userId; // Utiliser id (URL) ou userId (modal)
+      const result = await userService.getUser(userIdToLoad);
+      if (result.success) {
+        setFormData(result.data);
+      } else {
+        showSnackbar(result.message || 'Erreur lors du chargement de l\'utilisateur', 'error');
+      }
     } catch (error) {
       console.error('Error loading user:', error);
       showSnackbar('Erreur lors du chargement de l\'utilisateur', 'error');
@@ -158,7 +182,13 @@ const UserForm = () => {
       return;
     }
 
+    // Empêcher les clics multiples
+    if (submitLoading) {
+      return;
+    }
+
     try {
+      setSubmitLoading(true);
       setLoading(true);
       
       const userData = {
@@ -179,29 +209,54 @@ const UserForm = () => {
         userData.password = formData.password;
       }
 
-      // Ici, vous feriez l'appel API pour créer/modifier l'utilisateur
-      // const response = isEdit 
-      //   ? await djangoApiService.updateUser(id, userData)
-      //   : await djangoApiService.createUser(userData);
+      // Appel API pour créer/modifier l'utilisateur
+      const userIdToUpdate = id || userId; // Utiliser id (URL) ou userId (modal)
+      const result = isEdit 
+        ? await userService.updateUser(userIdToUpdate, userData)
+        : await userService.createUser(userData);
 
-      showSnackbar(
-        isEdit ? 'Utilisateur modifié avec succès' : 'Utilisateur créé avec succès',
-        'success'
-      );
-      
-      setTimeout(() => {
-        navigate('/users/list');
-      }, 1500);
+      if (result.success) {
+        // Si onSuccess est fourni (modal), fermer immédiatement
+        if (onSuccess) {
+          onSuccess(); // Fermer le modal immédiatement
+          // Afficher le message de succès via la fonction parent ou localement
+          const successMessage = isEdit ? 'Utilisateur modifié avec succès' : 'Utilisateur créé avec succès';
+          if (onShowSuccessMessage) {
+            onShowSuccessMessage(successMessage);
+          } else {
+            setTimeout(() => {
+              showSnackbar(successMessage, 'success');
+            }, 100);
+          }
+        } else {
+          // Pour les pages normales, afficher le message puis naviguer
+          showSnackbar(
+            isEdit ? 'Utilisateur modifié avec succès' : 'Utilisateur créé avec succès',
+            'success'
+          );
+          setTimeout(() => {
+            navigate('/users/list');
+          }, 1500);
+        }
+      } else {
+        showSnackbar(result.message || 'Erreur lors de la sauvegarde', 'error');
+      }
     } catch (error) {
       console.error('Error saving user:', error);
       showSnackbar('Erreur lors de la sauvegarde', 'error');
     } finally {
       setLoading(false);
+      setSubmitLoading(false);
     }
   };
 
   const handleCancel = () => {
-    navigate('/users/list');
+    // Si onCancel est fourni (modal), l'utiliser, sinon naviguer
+    if (onCancel) {
+      onCancel();
+    } else {
+      navigate('/users/list');
+    }
   };
 
   const getRoleColor = (role) => {
@@ -227,25 +282,66 @@ const UserForm = () => {
     }
   };
 
+
   return (
-    <Box sx={{ p: 3 }}>
-        {/* Header */}
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h4" fontWeight={700} color="text.primary" sx={{ mb: 1 }}>
-            {isEdit ? 'Modifier l\'utilisateur' : 'Créer un nouvel utilisateur'}
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            {isEdit 
-              ? 'Modifiez les informations de l\'utilisateur' 
-              : 'Remplissez les informations pour créer un nouveau compte utilisateur'
-            }
-          </Typography>
-        </Box>
+    <Box sx={{ p: { xs: 1, sm: 1.5 } }}>
 
-        <form onSubmit={handleSubmit}>
-          <Grid container spacing={3}>
-            {/* Avatar Section */}
-            <Grid item xs={12} md={4}>
+               <form onSubmit={handleSubmit} autoComplete="off">
+          {/* Progress bar pour le chargement */}
+          {submitLoading && (
+            <Box sx={{ mb: 2 }}>
+              <LinearProgress 
+                sx={{
+                  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                  '& .MuiLinearProgress-bar': {
+                    backgroundColor: theme.palette.primary.main,
+                  }
+                }}
+              />
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1, textAlign: 'center' }}>
+                {isEdit ? 'Modification en cours...' : 'Création en cours...'}
+              </Typography>
+            </Box>
+          )}
+          
+          <Box sx={{ position: 'relative' }}>
+            {/* Overlay pour désactiver le formulaire pendant le chargement */}
+            {submitLoading && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: theme.palette.mode === 'dark' 
+                    ? 'rgba(0, 0, 0, 0.7)' 
+                    : 'rgba(255, 255, 255, 0.7)',
+                  backdropFilter: 'blur(2px)',
+                  zIndex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: 2,
+                }}
+              >
+                <Box sx={{ textAlign: 'center' }}>
+                  <CircularProgress 
+                    size={40} 
+                    sx={{
+                      color: theme.palette.primary.main,
+                    }}
+                  />
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                    {isEdit ? 'Modification en cours...' : 'Création en cours...'}
+                  </Typography>
+                </Box>
+              </Box>
+            )}
+            
+            <Grid container spacing={{ xs: 1, sm: 2 }}>
+            {/* Form Fields - Full Width */}
+            <Grid item xs={12}>
               <Card
                 sx={{
                   background: theme.palette.mode === 'light'
@@ -256,67 +352,18 @@ const UserForm = () => {
                   borderRadius: 3,
                 }}
               >
-                <CardContent sx={{ p: 3, textAlign: 'center' }}>
-                  <Typography variant="h6" fontWeight={600} sx={{ mb: 3 }}>
-                    Photo de profil
-                  </Typography>
-                  <Box sx={{ position: 'relative', display: 'inline-block', mb: 2 }}>
-                    <Avatar
-                      sx={{
-                        width: 120,
-                        height: 120,
-                        background: `linear-gradient(135deg, ${getRoleColor(formData.role)}, ${getRoleColor(formData.role)}80)`,
-                        fontSize: '2rem',
-                        mb: 2,
-                      }}
-                    >
-                      {formData.first_name[0]}{formData.last_name[0]}
-                    </Avatar>
-                    <IconButton
-                      sx={{
-                        position: 'absolute',
-                        bottom: 0,
-                        right: 0,
-                        background: theme.palette.primary.main,
-                        color: 'white',
-                        '&:hover': {
-                          background: theme.palette.primary.dark,
-                        },
-                      }}
-                    >
-                      <PhotoCamera />
-                    </IconButton>
-                  </Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Cliquez pour changer la photo
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            {/* Form Fields */}
-            <Grid item xs={12} md={8}>
-              <Card
-                sx={{
-                  background: theme.palette.mode === 'light'
-                    ? 'linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.7))'
-                    : 'linear-gradient(135deg, rgba(30,41,59,0.9), rgba(30,41,59,0.7))',
-                  backdropFilter: 'blur(20px)',
-                  border: `1px solid ${theme.palette.divider}`,
-                  borderRadius: 3,
-                }}
-              >
-                <CardContent sx={{ p: 3 }}>
+                <CardContent sx={{ p: { xs: 1, sm: 1.5 } }}>
                   {/* Personal Information */}
-                  <Box sx={{ mb: 4 }}>
-                    <Typography variant="h6" fontWeight={600} sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Person />
+                  <Box sx={{ mb: { xs: 1.5, sm: 2 } }}>
+                    <Typography variant="subtitle2" fontWeight={500} sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 0.5, fontSize: '0.875rem' }}>
+                      <Person sx={{ fontSize: '1rem' }} />
                       Informations personnelles
                     </Typography>
-                    <Grid container spacing={3}>
+                    <Grid container spacing={{ xs: 1, sm: 1.5 }}>
                       <Grid item xs={12} sm={6}>
                         <TextField
                           fullWidth
+                          size="small"
                           label="Prénom"
                           value={formData.first_name}
                           onChange={handleChange('first_name')}
@@ -328,6 +375,7 @@ const UserForm = () => {
                       <Grid item xs={12} sm={6}>
                         <TextField
                           fullWidth
+                          size="small"
                           label="Nom"
                           value={formData.last_name}
                           onChange={handleChange('last_name')}
@@ -336,46 +384,64 @@ const UserForm = () => {
                           required
                         />
                       </Grid>
-                      <Grid item xs={12} sm={6}>
-                        <TextField
-                          fullWidth
-                          label="Nom d'utilisateur"
-                          value={formData.username}
-                          onChange={handleChange('username')}
-                          error={Boolean(errors.username)}
-                          helperText={errors.username}
-                          required
-                        />
-                      </Grid>
-                      <Grid item xs={12} sm={6}>
-                        <TextField
-                          fullWidth
-                          label="Email"
-                          type="email"
-                          value={formData.email}
-                          onChange={handleChange('email')}
-                          error={Boolean(errors.email)}
-                          helperText={errors.email}
-                          required
-                          InputProps={{
-                            startAdornment: <Email sx={{ mr: 1, color: 'text.secondary' }} />,
-                          }}
-                        />
-                      </Grid>
+                                 <Grid item xs={12} sm={6}>
+                                   <TextField
+                                     fullWidth
+                                     size="small"
+                                     label="Nom d'utilisateur"
+                                     value={formData.username}
+                                     onChange={handleChange('username')}
+                                     error={Boolean(errors.username)}
+                                     helperText={errors.username}
+                                     required
+                                     autoComplete="new-username"
+                                     inputRef={usernameRef}
+                                     inputProps={{
+                                       autoComplete: "new-username",
+                                       form: {
+                                         autoComplete: "off"
+                                       }
+                                     }}
+                                   />
+                                 </Grid>
+                                 <Grid item xs={12} sm={6}>
+                                   <TextField
+                                     fullWidth
+                                     size="small"
+                                     label="Email"
+                                     type="email"
+                                     value={formData.email}
+                                     onChange={handleChange('email')}
+                                     error={Boolean(errors.email)}
+                                     helperText={errors.email}
+                                     required
+                                     autoComplete="new-email"
+                                     inputRef={emailRef}
+                                     inputProps={{
+                                       autoComplete: "new-email",
+                                       form: {
+                                         autoComplete: "off"
+                                       }
+                                     }}
+                                     InputProps={{
+                                       startAdornment: <Email sx={{ mr: 1, color: 'text.secondary', fontSize: '1rem' }} />,
+                                     }}
+                                   />
+                                 </Grid>
                     </Grid>
                   </Box>
 
-                  <Divider sx={{ my: 3 }} />
+                  <Divider sx={{ my: { xs: 1, sm: 1.5 } }} />
 
                   {/* Professional Information */}
-                  <Box sx={{ mb: 4 }}>
-                    <Typography variant="h6" fontWeight={600} sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Work />
+                  <Box sx={{ mb: { xs: 1.5, sm: 2 } }}>
+                    <Typography variant="subtitle2" fontWeight={500} sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 0.5, fontSize: '0.875rem' }}>
+                      <Work sx={{ fontSize: '1rem' }} />
                       Informations professionnelles
                     </Typography>
-                    <Grid container spacing={3}>
+                    <Grid container spacing={{ xs: 1, sm: 1.5 }}>
                       <Grid item xs={12} sm={6}>
-                        <FormControl fullWidth>
+                        <FormControl fullWidth size="small">
                           <InputLabel>Rôle</InputLabel>
                           <Select
                             value={formData.role}
@@ -392,7 +458,7 @@ const UserForm = () => {
                         </FormControl>
                       </Grid>
                       <Grid item xs={12} sm={6}>
-                        <FormControl fullWidth>
+                        <FormControl fullWidth size="small">
                           <InputLabel>Statut</InputLabel>
                           <Select
                             value={formData.status}
@@ -408,17 +474,19 @@ const UserForm = () => {
                       <Grid item xs={12} sm={6}>
                         <TextField
                           fullWidth
+                          size="small"
                           label="Département"
                           value={formData.department}
                           onChange={handleChange('department')}
                           InputProps={{
-                            startAdornment: <Business sx={{ mr: 1, color: 'text.secondary' }} />,
+                            startAdornment: <Business sx={{ mr: 1, color: 'text.secondary', fontSize: '1rem' }} />,
                           }}
                         />
                       </Grid>
                       <Grid item xs={12} sm={6}>
                         <TextField
                           fullWidth
+                          size="small"
                           label="Poste"
                           value={formData.position}
                           onChange={handleChange('position')}
@@ -427,26 +495,27 @@ const UserForm = () => {
                       <Grid item xs={12}>
                         <TextField
                           fullWidth
+                          size="small"
                           label="Téléphone"
                           value={formData.phone}
                           onChange={handleChange('phone')}
                           InputProps={{
-                            startAdornment: <Phone sx={{ mr: 1, color: 'text.secondary' }} />,
+                            startAdornment: <Phone sx={{ mr: 1, color: 'text.secondary', fontSize: '1rem' }} />,
                           }}
                         />
                       </Grid>
                     </Grid>
                   </Box>
 
-                  <Divider sx={{ my: 3 }} />
+                  <Divider sx={{ my: { xs: 1, sm: 1.5 } }} />
 
                   {/* Permissions */}
-                  <Box sx={{ mb: 4 }}>
-                    <Typography variant="h6" fontWeight={600} sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Security />
+                  <Box sx={{ mb: { xs: 1.5, sm: 2 } }}>
+                    <Typography variant="subtitle2" fontWeight={500} sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 0.5, fontSize: '0.875rem' }}>
+                      <Security sx={{ fontSize: '1rem' }} />
                       Permissions
                     </Typography>
-                    <Grid container spacing={3}>
+                    <Grid container spacing={{ xs: 1, sm: 1.5 }}>
                       <Grid item xs={12} sm={6}>
                         <FormControlLabel
                           control={
@@ -474,66 +543,109 @@ const UserForm = () => {
 
                   {/* Password Section (only for new users) */}
                   {!isEdit && (
-                    <>
-                      <Divider sx={{ my: 3 }} />
-                      <Box sx={{ mb: 4 }}>
-                        <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>
-                          Mot de passe
-                        </Typography>
-                        <Grid container spacing={3}>
-                          <Grid item xs={12} sm={6}>
-                            <TextField
-                              fullWidth
-                              label="Mot de passe"
-                              type="password"
-                              value={formData.password}
-                              onChange={handleChange('password')}
-                              error={Boolean(errors.password)}
-                              helperText={errors.password}
-                              required
-                            />
-                          </Grid>
-                          <Grid item xs={12} sm={6}>
-                            <TextField
-                              fullWidth
-                              label="Confirmer le mot de passe"
-                              type="password"
-                              value={formData.confirmPassword}
-                              onChange={handleChange('confirmPassword')}
-                              error={Boolean(errors.confirmPassword)}
-                              helperText={errors.confirmPassword}
-                              required
-                            />
-                          </Grid>
+                  <>
+                    <Divider sx={{ my: { xs: 1, sm: 1.5 } }} />
+                    <Box sx={{ mb: { xs: 1.5, sm: 2 } }}>
+                      <Typography variant="subtitle2" fontWeight={500} sx={{ mb: 1, fontSize: '0.875rem' }}>
+                        Mot de passe
+                      </Typography>
+                      <Grid container spacing={{ xs: 1, sm: 1.5 }}>
+                                     <Grid item xs={12} sm={6}>
+                                       <TextField
+                                         fullWidth
+                                         size="small"
+                                         label="Mot de passe"
+                                         type="password"
+                                         value={formData.password}
+                                         onChange={handleChange('password')}
+                                         error={Boolean(errors.password)}
+                                         helperText={errors.password}
+                                         required
+                                         autoComplete="new-password"
+                                         inputRef={passwordRef}
+                                         inputProps={{
+                                           autoComplete: "new-password",
+                                           form: {
+                                             autoComplete: "off"
+                                           }
+                                         }}
+                                       />
+                                     </Grid>
+                                     <Grid item xs={12} sm={6}>
+                                       <TextField
+                                         fullWidth
+                                         size="small"
+                                         label="Confirmer le mot de passe"
+                                         type="password"
+                                         value={formData.confirmPassword}
+                                         onChange={handleChange('confirmPassword')}
+                                         error={Boolean(errors.confirmPassword)}
+                                         helperText={errors.confirmPassword}
+                                         required
+                                         autoComplete="new-password"
+                                         inputRef={confirmPasswordRef}
+                                         inputProps={{
+                                           autoComplete: "new-password",
+                                           form: {
+                                             autoComplete: "off"
+                                           }
+                                         }}
+                                       />
+                                     </Grid>
                         </Grid>
                       </Box>
                     </>
                   )}
 
                   {/* Action Buttons */}
-                  <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+                  <Box sx={{ 
+                    display: 'flex', 
+                    gap: { xs: 1, sm: 1.5 }, 
+                    justifyContent: { xs: 'center', sm: 'flex-end' },
+                    flexDirection: { xs: 'column', sm: 'row' },
+                    mt: { xs: 1.5, sm: 0 }
+                  }}>
                     <Button
                       variant="outlined"
+                      size="small"
                       onClick={handleCancel}
-                      sx={{ borderRadius: 2 }}
+                      disabled={submitLoading}
+                      sx={{ borderRadius: 2, px: 2 }}
                     >
-                      <Cancel sx={{ mr: 1 }} />
+                      <Cancel sx={{ mr: 0.5, fontSize: '1rem' }} />
                       Annuler
                     </Button>
                     <Button
                       type="submit"
                       variant="contained"
-                      disabled={loading}
-                      sx={{ borderRadius: 2 }}
+                      size="small"
+                      disabled={submitLoading || loading}
+                      sx={{ borderRadius: 2, minWidth: 100, px: 2 }}
                     >
-                      <Save sx={{ mr: 1 }} />
-                      {loading ? 'Sauvegarde...' : (isEdit ? 'Modifier' : 'Créer')}
+                      {submitLoading ? (
+                        <>
+                          <CircularProgress 
+                            size={14} 
+                            sx={{ 
+                              mr: 0.5,
+                              color: theme.palette.mode === 'dark' ? 'white' : 'white'
+                            }} 
+                          />
+                          {isEdit ? 'Modification...' : 'Création...'}
+                        </>
+                      ) : (
+                        <>
+                          <Save sx={{ mr: 0.5, fontSize: '1rem' }} />
+                          {isEdit ? 'Modifier' : 'Créer'}
+                        </>
+                      )}
                     </Button>
                   </Box>
                 </CardContent>
               </Card>
             </Grid>
-          </Grid>
+            </Grid>
+          </Box>
         </form>
 
         {/* Snackbar */}
@@ -541,11 +653,23 @@ const UserForm = () => {
           open={snackbar.open}
           autoHideDuration={6000}
           onClose={() => setSnackbar({ ...snackbar, open: false })}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
         >
           <Alert
             onClose={() => setSnackbar({ ...snackbar, open: false })}
             severity={snackbar.severity}
-            sx={{ width: '100%' }}
+            sx={{ 
+              width: '100%',
+              backgroundColor: theme.palette.mode === 'dark' 
+                ? theme.palette.grey[800] 
+                : theme.palette.background.paper,
+              color: theme.palette.text.primary,
+              '& .MuiAlert-icon': {
+                color: snackbar.severity === 'success' 
+                  ? theme.palette.success.main 
+                  : theme.palette.error.main
+              }
+            }}
           >
             {snackbar.message}
           </Alert>

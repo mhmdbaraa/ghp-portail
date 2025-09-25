@@ -21,7 +21,7 @@ import {
   AdminPanelSettings,
   Settings,
   ChevronRight,
-  ChevronDown,
+  ExpandLess,
   Person,
   Group,
   Shield,
@@ -177,7 +177,7 @@ const UserSidebar = ({ collapsed = false, onItemClick }) => {
                     }
                   />
                   <IconButton size="small" sx={{ color: item.color }}>
-                    {isExpanded ? <ChevronDown /> : <ChevronRight />}
+                    {isExpanded ? <ExpandLess /> : <ChevronRight />}
                   </IconButton>
                 </>
               )}

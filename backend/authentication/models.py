@@ -30,7 +30,8 @@ class User(AbstractUser):
     location = models.CharField(max_length=100, blank=True, null=True)
     department = models.CharField(max_length=100, blank=True, null=True)
     position = models.CharField(max_length=100, blank=True, null=True)
-    join_date = models.DateField(default=lambda: timezone.now().date())
+    filiale = models.CharField(max_length=50, blank=True, null=True)
+    join_date = models.DateField(default=timezone.now)
     last_login_ip = models.GenericIPAddressField(blank=True, null=True)
     
     # User preferences
@@ -116,6 +117,64 @@ class User(AbstractUser):
         }
         
         return role_permissions.get(self.role, [])
+
+
+class Permission(models.Model):
+    """
+    Custom Permission model for fine-grained access control
+    """
+    CATEGORY_CHOICES = [
+        ('users', 'Users'),
+        ('projects', 'Projects'),
+        ('tasks', 'Tasks'),
+        ('teams', 'Teams'),
+        ('reports', 'Reports'),
+        ('settings', 'Settings'),
+    ]
+    
+    name = models.CharField(max_length=255, unique=True)
+    codename = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True)
+    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, default='users')
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'custom_permissions'
+        verbose_name = 'Permission'
+        verbose_name_plural = 'Permissions'
+        ordering = ['category', 'name']
+    
+    def __str__(self):
+        return f"{self.name} ({self.codename})"
+
+
+class Role(models.Model):
+    """
+    Custom Role model for role-based access control
+    """
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True)
+    permissions = models.ManyToManyField(Permission, blank=True, related_name='roles')
+    is_active = models.BooleanField(default=True)
+    is_system = models.BooleanField(default=False)  # System roles cannot be deleted
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'custom_roles'
+        verbose_name = 'Role'
+        verbose_name_plural = 'Roles'
+        ordering = ['name']
+    
+    def __str__(self):
+        return self.name
+    
+    @property
+    def user_count(self):
+        """Get the number of users with this role"""
+        return self.users.count()
 
 
 class UserSession(models.Model):

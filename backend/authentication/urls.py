@@ -23,5 +23,23 @@ urlpatterns = [
     path('users/<int:user_id>/toggle-status/', views.toggle_user_status, name='toggle_user_status'),
     path('users/statistics/', views.user_statistics, name='user_statistics'),
     path('users/recent/', views.recent_users, name='recent_users'),
+    
+    # Permission endpoints
+    path('permissions/', views.PermissionListCreateView.as_view(), name='permission_list'),
+    path('permissions/<int:pk>/', views.PermissionDetailView.as_view(), name='permission_detail'),
+    path('permissions/<int:pk>/toggle/', views.toggle_permission_status, name='toggle_permission_status'),
+    path('permissions/category/<str:category>/', views.permissions_by_category, name='permissions_by_category'),
+    path('permissions/statistics/', views.permission_statistics, name='permission_statistics'),
+    
+    # Role endpoints
+    path('roles/', views.RoleListCreateView.as_view(), name='role_list'),
+    path('roles/<int:pk>/', views.RoleDetailView.as_view(), name='role_detail'),
+    path('roles/<int:pk>/permissions/', views.role_permissions, name='role_permissions'),
+    path('roles/<int:pk>/permissions/update/', views.update_role_permissions, name='update_role_permissions'),
+    path('roles/<int:pk>/users/', views.role_users, name='role_users'),
+    path('roles/<int:pk>/assign/', views.assign_role_to_user, name='assign_role_to_user'),
+    path('roles/<int:pk>/remove/', views.remove_role_from_user, name='remove_role_from_user'),
+    path('roles/statistics/', views.role_statistics, name='role_statistics'),
+    path('roles/<int:pk>/clone/', views.clone_role, name='clone_role'),
 ]
 

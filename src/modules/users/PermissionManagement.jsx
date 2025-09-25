@@ -29,6 +29,11 @@ import {
   Switch,
   Tabs,
   Tab,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  CircularProgress,
 } from '@mui/material';
 import {
   Add,
@@ -43,7 +48,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useUserNavigation } from './useUserNavigation';
-import djangoApiService from '../../shared/services/djangoApiService';
+import permissionService from '../../shared/services/permissionService';
 
 const PermissionManagement = () => {
   const theme = useTheme();
@@ -64,6 +69,9 @@ const PermissionManagement = () => {
   });
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [activeTab, setActiveTab] = useState(0);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletingPermission, setDeletingPermission] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     loadPermissions();
@@ -73,107 +81,13 @@ const PermissionManagement = () => {
     try {
       setLoading(true);
       
-      // Simuler des permissions - à remplacer par l'API Django
-      const mockPermissions = [
-        {
-          id: 1,
-          name: 'Can view user',
-          codename: 'view_user',
-          description: 'Peut voir les informations des utilisateurs',
-          category: 'users',
-          is_active: true,
-        },
-        {
-          id: 2,
-          name: 'Can add user',
-          codename: 'add_user',
-          description: 'Peut ajouter de nouveaux utilisateurs',
-          category: 'users',
-          is_active: true,
-        },
-        {
-          id: 3,
-          name: 'Can change user',
-          codename: 'change_user',
-          description: 'Peut modifier les informations des utilisateurs',
-          category: 'users',
-          is_active: true,
-        },
-        {
-          id: 4,
-          name: 'Can delete user',
-          codename: 'delete_user',
-          description: 'Peut supprimer des utilisateurs',
-          category: 'users',
-          is_active: true,
-        },
-        {
-          id: 5,
-          name: 'Can view project',
-          codename: 'view_project',
-          description: 'Peut voir les projets',
-          category: 'projects',
-          is_active: true,
-        },
-        {
-          id: 6,
-          name: 'Can add project',
-          codename: 'add_project',
-          description: 'Peut créer de nouveaux projets',
-          category: 'projects',
-          is_active: true,
-        },
-        {
-          id: 7,
-          name: 'Can change project',
-          codename: 'change_project',
-          description: 'Peut modifier les projets',
-          category: 'projects',
-          is_active: true,
-        },
-        {
-          id: 8,
-          name: 'Can delete project',
-          codename: 'delete_project',
-          description: 'Peut supprimer des projets',
-          category: 'projects',
-          is_active: true,
-        },
-        {
-          id: 9,
-          name: 'Can view task',
-          codename: 'view_task',
-          description: 'Peut voir les tâches',
-          category: 'tasks',
-          is_active: true,
-        },
-        {
-          id: 10,
-          name: 'Can add task',
-          codename: 'add_task',
-          description: 'Peut créer de nouvelles tâches',
-          category: 'tasks',
-          is_active: true,
-        },
-        {
-          id: 11,
-          name: 'Can change task',
-          codename: 'change_task',
-          description: 'Peut modifier les tâches',
-          category: 'tasks',
-          is_active: true,
-        },
-        {
-          id: 12,
-          name: 'Can delete task',
-          codename: 'delete_task',
-          description: 'Peut supprimer des tâches',
-          category: 'tasks',
-          is_active: true,
-        },
-      ];
-
-      setPermissions(mockPermissions);
+      const result = await permissionService.getPermissions();
+      if (result.success) {
+        setPermissions(result.data.results || result.data);
+      } else {
+        console.error('Error loading permissions:', result.error);
+        showSnackbar(result.message || 'Erreur lors du chargement des permissions', 'error');
+      }
     } catch (error) {
       console.error('Error loading permissions:', error);
       showSnackbar('Erreur lors du chargement des permissions', 'error');
@@ -210,34 +124,71 @@ const PermissionManagement = () => {
 
   const handleSavePermission = async () => {
     try {
-      // Ici, vous feriez l'appel API pour sauvegarder la permission
+      let result;
       if (editingPermission) {
-        showSnackbar('Permission modifiée avec succès', 'success');
+        result = await permissionService.updatePermission(editingPermission.id, permissionForm);
       } else {
-        showSnackbar('Permission créée avec succès', 'success');
+        result = await permissionService.createPermission(permissionForm);
       }
-      setDialogOpen(false);
-      loadPermissions();
+      
+      if (result.success) {
+        showSnackbar(
+          editingPermission ? 'Permission modifiée avec succès' : 'Permission créée avec succès', 
+          'success'
+        );
+        setDialogOpen(false);
+        setEditingPermission(null);
+        setPermissionForm({
+          name: '',
+          codename: '',
+          description: '',
+          category: '',
+        });
+        loadPermissions();
+      } else {
+        showSnackbar(result.message || 'Erreur lors de la sauvegarde', 'error');
+      }
     } catch (error) {
+      console.error('Error saving permission:', error);
       showSnackbar('Erreur lors de la sauvegarde', 'error');
     }
   };
 
-  const handleDeletePermission = async (permission) => {
+  const handleDeletePermission = (permission) => {
+    setDeletingPermission(permission);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeletePermission = async () => {
+    if (!deletingPermission) return;
+    
     try {
-      // Ici, vous feriez l'appel API pour supprimer la permission
-      showSnackbar('Permission supprimée avec succès', 'success');
-      loadPermissions();
+      setDeleting(true);
+      const result = await permissionService.deletePermission(deletingPermission.id);
+      if (result.success) {
+        showSnackbar('Permission supprimée avec succès', 'success');
+        loadPermissions();
+        setDeleteDialogOpen(false);
+        setDeletingPermission(null);
+      } else {
+        showSnackbar(result.message || 'Erreur lors de la suppression', 'error');
+      }
     } catch (error) {
       showSnackbar('Erreur lors de la suppression', 'error');
+    } finally {
+      setDeleting(false);
     }
   };
 
   const handleTogglePermission = async (permission) => {
     try {
-      // Ici, vous feriez l'appel API pour activer/désactiver la permission
-      showSnackbar(`Permission ${permission.is_active ? 'désactivée' : 'activée'}`, 'success');
-      loadPermissions();
+      const result = await permissionService.togglePermissionStatus(permission.id);
+      if (result.success) {
+        showSnackbar(`Permission ${permission.is_active ? 'désactivée' : 'activée'}`, 'success');
+        loadPermissions();
+      } else {
+        showSnackbar(result.message || 'Erreur lors de la modification', 'error');
+      }
     } catch (error) {
       showSnackbar('Erreur lors de la modification', 'error');
     }
@@ -497,14 +448,21 @@ const PermissionManagement = () => {
                 />
               </Grid>
               <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Catégorie"
-                  value={permissionForm.category}
-                  onChange={(e) => setPermissionForm({ ...permissionForm, category: e.target.value })}
-                  required
-                  helperText="Ex: users, projects, tasks, system"
-                />
+                <FormControl fullWidth required>
+                  <InputLabel>Catégorie</InputLabel>
+                  <Select
+                    value={permissionForm.category}
+                    onChange={(e) => setPermissionForm({ ...permissionForm, category: e.target.value })}
+                    label="Catégorie"
+                  >
+                    <MenuItem value="users">Utilisateurs</MenuItem>
+                    <MenuItem value="projects">Projets</MenuItem>
+                    <MenuItem value="tasks">Tâches</MenuItem>
+                    <MenuItem value="teams">Équipes</MenuItem>
+                    <MenuItem value="reports">Rapports</MenuItem>
+                    <MenuItem value="settings">Paramètres</MenuItem>
+                  </Select>
+                </FormControl>
               </Grid>
             </Grid>
           </DialogContent>
@@ -534,6 +492,50 @@ const PermissionManagement = () => {
             {snackbar.message}
           </Alert>
         </Snackbar>
+
+        {/* Confirmation Dialog for Delete */}
+        <Dialog
+          open={deleteDialogOpen}
+          onClose={() => !deleting && setDeleteDialogOpen(false)}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle sx={{ pb: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Delete color="error" />
+              <Typography variant="h6" fontWeight={600}>
+                Confirmer la suppression
+              </Typography>
+            </Box>
+          </DialogTitle>
+          <DialogContent>
+            <Typography variant="body1" color="text.secondary">
+              Êtes-vous sûr de vouloir supprimer la permission{' '}
+              <strong>"{deletingPermission?.name}"</strong> ?
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              Cette action est irréversible et peut affecter les rôles qui utilisent cette permission.
+            </Typography>
+          </DialogContent>
+          <DialogActions sx={{ p: 2, pt: 1 }}>
+            <Button 
+              onClick={() => setDeleteDialogOpen(false)} 
+              disabled={deleting}
+              sx={{ mr: 1 }}
+            >
+              Annuler
+            </Button>
+            <Button
+              onClick={confirmDeletePermission}
+              variant="contained"
+              color="error"
+              disabled={deleting}
+              startIcon={deleting ? <CircularProgress size={16} /> : <Delete />}
+            >
+              {deleting ? 'Suppression...' : 'Supprimer'}
+            </Button>
+          </DialogActions>
+        </Dialog>
     </Box>
   );
 };

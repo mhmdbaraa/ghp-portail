@@ -57,6 +57,7 @@ const UserForm = ({ onSuccess, onCancel, onShowSuccessMessage, userId }) => {
     department: '',
     position: '',
     phone: '',
+    filiale: '',
     password: '',
     confirmPassword: '',
   });
@@ -89,6 +90,7 @@ const UserForm = ({ onSuccess, onCancel, onShowSuccessMessage, userId }) => {
         department: '',
         position: '',
         phone: '',
+        filiale: '',
         password: '',
         confirmPassword: '',
       });
@@ -203,6 +205,7 @@ const UserForm = ({ onSuccess, onCancel, onShowSuccessMessage, userId }) => {
         department: formData.department,
         position: formData.position,
         phone: formData.phone,
+        filiale: formData.filiale,
       };
 
       if (!isEdit && formData.password) {
@@ -484,6 +487,28 @@ const UserForm = ({ onSuccess, onCancel, onShowSuccessMessage, userId }) => {
                         />
                       </Grid>
                       <Grid item xs={12} sm={6}>
+                        <FormControl fullWidth size="small">
+                          <InputLabel>Filiale</InputLabel>
+                          <Select
+                            value={formData.filiale}
+                            onChange={handleChange('filiale')}
+                            label="Filiale"
+                          >
+                            <MenuItem value="GH MED">GH MED</MenuItem>
+                            <MenuItem value="DEF MED">DEF MED</MenuItem>
+                            <MenuItem value="ABC MED">ABC MED</MenuItem>
+                            <MenuItem value="MED IJK">MED IJK</MenuItem>
+                            <MenuItem value="HPC">HPC</MenuItem>
+                            <MenuItem value="HP">HP</MenuItem>
+                            <MenuItem value="AT IMP">AT IMP</MenuItem>
+                            <MenuItem value="AT PROD">AT PROD</MenuItem>
+                            <MenuItem value="CEGEDIS">CEGEDIS</MenuItem>
+                            <MenuItem value="MDP">MDP</MenuItem>
+                            <MenuItem value="DG">DG</MenuItem>
+                          </Select>
+                        </FormControl>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
                         <TextField
                           fullWidth
                           size="small"
@@ -492,7 +517,7 @@ const UserForm = ({ onSuccess, onCancel, onShowSuccessMessage, userId }) => {
                           onChange={handleChange('position')}
                         />
                       </Grid>
-                      <Grid item xs={12}>
+                      <Grid item xs={12} sm={6}>
                         <TextField
                           fullWidth
                           size="small"

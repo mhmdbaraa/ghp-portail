@@ -28,6 +28,7 @@ import {
   Select,
   MenuItem,
   List,
+  CircularProgress,
   ListItem,
   ListItemText,
   ListItemSecondaryAction,
@@ -49,7 +50,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useUserNavigation } from './useUserNavigation';
-import djangoApiService from '../../shared/services/djangoApiService';
+import roleService from '../../shared/services/roleService';
 
 const RoleManagement = () => {
   const theme = useTheme();
@@ -68,6 +69,9 @@ const RoleManagement = () => {
     permissions: [],
   });
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletingRole, setDeletingRole] = useState(null);
+  const [deleting, setDeleting] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
 
   useEffect(() => {
@@ -79,51 +83,13 @@ const RoleManagement = () => {
     try {
       setLoading(true);
       
-      // Simuler des rôles - à remplacer par l'API Django
-      const mockRoles = [
-        {
-          id: 1,
-          name: 'Administrateur',
-          description: 'Accès complet au système',
-          permissions: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-          user_count: 3,
-          is_active: true,
-        },
-        {
-          id: 2,
-          name: 'Manager',
-          description: 'Gestion des projets et équipes',
-          permissions: [1, 5, 6, 7, 9, 10, 11],
-          user_count: 8,
-          is_active: true,
-        },
-        {
-          id: 3,
-          name: 'Développeur',
-          description: 'Développement et maintenance',
-          permissions: [5, 9, 10, 11],
-          user_count: 15,
-          is_active: true,
-        },
-        {
-          id: 4,
-          name: 'Designer',
-          description: 'Design et interface utilisateur',
-          permissions: [5, 9, 10],
-          user_count: 5,
-          is_active: true,
-        },
-        {
-          id: 5,
-          name: 'Testeur',
-          description: 'Tests et qualité',
-          permissions: [5, 9, 11],
-          user_count: 4,
-          is_active: true,
-        },
-      ];
-
-      setRoles(mockRoles);
+      const result = await roleService.getRoles();
+      if (result.success) {
+        setRoles(result.data.results || result.data);
+      } else {
+        console.error('Error loading roles:', result.error);
+        showSnackbar(result.message || 'Erreur lors du chargement des rôles', 'error');
+      }
     } catch (error) {
       console.error('Error loading roles:', error);
       showSnackbar('Erreur lors du chargement des rôles', 'error');
@@ -175,33 +141,72 @@ const RoleManagement = () => {
     setRoleForm({
       name: role.name,
       description: role.description,
-      permissions: role.permissions,
+      permissions: role.permissions.map(p => typeof p === 'object' ? p.id : p),
     });
     setDialogOpen(true);
   };
 
   const handleSaveRole = async () => {
     try {
-      // Ici, vous feriez l'appel API pour sauvegarder le rôle
+      // Transform permissions array to permission_ids for backend
+      const roleData = {
+        ...roleForm,
+        permission_ids: roleForm.permissions,
+        permissions: undefined // Remove permissions field
+      };
+      
+      let result;
       if (editingRole) {
-        showSnackbar('Rôle modifié avec succès', 'success');
+        result = await roleService.updateRole(editingRole.id, roleData);
       } else {
-        showSnackbar('Rôle créé avec succès', 'success');
+        result = await roleService.createRole(roleData);
       }
-      setDialogOpen(false);
-      loadRoles();
+      
+      if (result.success) {
+        showSnackbar(
+          editingRole ? 'Rôle modifié avec succès' : 'Rôle créé avec succès', 
+          'success'
+        );
+        setDialogOpen(false);
+        setEditingRole(null);
+        setRoleForm({
+          name: '',
+          description: '',
+          permissions: [],
+        });
+        loadRoles();
+      } else {
+        showSnackbar(result.message || 'Erreur lors de la sauvegarde', 'error');
+      }
     } catch (error) {
+      console.error('Error saving role:', error);
       showSnackbar('Erreur lors de la sauvegarde', 'error');
     }
   };
 
-  const handleDeleteRole = async (role) => {
+  const handleDeleteRole = (role) => {
+    setDeletingRole(role);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteRole = async () => {
+    if (!deletingRole) return;
+    
     try {
-      // Ici, vous feriez l'appel API pour supprimer le rôle
-      showSnackbar('Rôle supprimé avec succès', 'success');
-      loadRoles();
+      setDeleting(true);
+      const result = await roleService.deleteRole(deletingRole.id);
+      if (result.success) {
+        showSnackbar('Rôle supprimé avec succès', 'success');
+        loadRoles();
+        setDeleteDialogOpen(false);
+        setDeletingRole(null);
+      } else {
+        showSnackbar(result.message || 'Erreur lors de la suppression', 'error');
+      }
     } catch (error) {
       showSnackbar('Erreur lors de la suppression', 'error');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -463,6 +468,50 @@ const RoleManagement = () => {
             {snackbar.message}
           </Alert>
         </Snackbar>
+
+        {/* Confirmation Dialog for Delete */}
+        <Dialog
+          open={deleteDialogOpen}
+          onClose={() => !deleting && setDeleteDialogOpen(false)}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle sx={{ pb: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Delete color="error" />
+              <Typography variant="h6" fontWeight={600}>
+                Confirmer la suppression
+              </Typography>
+            </Box>
+          </DialogTitle>
+          <DialogContent>
+            <Typography variant="body1" color="text.secondary">
+              Êtes-vous sûr de vouloir supprimer le rôle{' '}
+              <strong>"{deletingRole?.name}"</strong> ?
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              Cette action est irréversible et peut affecter les utilisateurs qui ont ce rôle.
+            </Typography>
+          </DialogContent>
+          <DialogActions sx={{ p: 2, pt: 1 }}>
+            <Button 
+              onClick={() => setDeleteDialogOpen(false)} 
+              disabled={deleting}
+              sx={{ mr: 1 }}
+            >
+              Annuler
+            </Button>
+            <Button
+              onClick={confirmDeleteRole}
+              variant="contained"
+              color="error"
+              disabled={deleting}
+              startIcon={deleting ? <CircularProgress size={16} /> : <Delete />}
+            >
+              {deleting ? 'Suppression...' : 'Supprimer'}
+            </Button>
+          </DialogActions>
+        </Dialog>
     </Box>
   );
 };

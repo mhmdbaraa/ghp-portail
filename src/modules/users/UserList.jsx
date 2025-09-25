@@ -342,83 +342,91 @@ const UserList = () => {
           }}
         >
           <TableContainer>
-            <Table>
+            <Table size="small">
               <TableHead>
                 <TableRow>
-                  <TableCell>Utilisateur</TableCell>
-                  <TableCell>Rôle</TableCell>
-                  <TableCell>Statut</TableCell>
-                  <TableCell>Département</TableCell>
-                  <TableCell>Dernière connexion</TableCell>
-                  <TableCell align="center">Actions</TableCell>
+                  <TableCell sx={{ py: 1.5, fontWeight: 600 }}>Utilisateur</TableCell>
+                  <TableCell sx={{ py: 1.5, fontWeight: 600 }}>Rôle</TableCell>
+                  <TableCell sx={{ py: 1.5, fontWeight: 600 }}>Statut</TableCell>
+                  <TableCell sx={{ py: 1.5, fontWeight: 600 }}>Département</TableCell>
+                  <TableCell sx={{ py: 1.5, fontWeight: 600 }}>Dernière connexion</TableCell>
+                  <TableCell align="center" sx={{ py: 1.5, fontWeight: 600 }}>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {users
                   .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                   .map((user) => (
-                    <TableRow key={user.id} hover>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <TableRow key={user.id} hover sx={{ '&:hover': { backgroundColor: theme.palette.action.hover } }}>
+                      <TableCell sx={{ py: 1 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                           <Avatar
                             sx={{
+                              width: 32,
+                              height: 32,
+                              fontSize: '0.75rem',
                               background: `linear-gradient(135deg, ${getRoleColor(user.role)}, ${getRoleColor(user.role)}80)`,
                             }}
                           >
                             {user.first_name[0]}{user.last_name[0]}
                           </Avatar>
                           <Box>
-                            <Typography variant="body1" fontWeight={600} color="text.primary">
+                            <Typography variant="body2" fontWeight={600} color="text.primary" sx={{ lineHeight: 1.2 }}>
                               {user.first_name} {user.last_name}
                             </Typography>
-                            <Typography variant="body2" color="text.secondary">
+                            <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.2 }}>
                               {user.email}
                             </Typography>
                           </Box>
                         </Box>
                       </TableCell>
-                      <TableCell>
+                      <TableCell sx={{ py: 1 }}>
                         <Chip
                           label={getRoleLabel(user.role)}
                           size="small"
                           sx={{
+                            height: 20,
+                            fontSize: '0.7rem',
                             background: `${getRoleColor(user.role)}20`,
                             color: getRoleColor(user.role),
                             fontWeight: 600,
                           }}
                         />
                       </TableCell>
-                      <TableCell>
+                      <TableCell sx={{ py: 1 }}>
                         <Chip
                           label={user.status === 'active' ? 'Actif' : 'Inactif'}
                           size="small"
                           sx={{
+                            height: 20,
+                            fontSize: '0.7rem',
                             background: `${getStatusColor(user.status)}20`,
                             color: getStatusColor(user.status),
                             fontWeight: 600,
                           }}
                         />
                       </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" color="text.primary">
+                      <TableCell sx={{ py: 1 }}>
+                        <Typography variant="caption" color="text.primary" sx={{ lineHeight: 1.2, display: 'block' }}>
                           {user.department}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.2, display: 'block' }}>
                           {user.position}
                         </Typography>
                       </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" color="text.primary">
+                      <TableCell sx={{ py: 1 }}>
+                        <Typography variant="caption" color="text.primary" sx={{ lineHeight: 1.2 }}>
                           {formatDate(user.last_login)}
                         </Typography>
                       </TableCell>
-                      <TableCell align="center">
+                      <TableCell align="center" sx={{ py: 1 }}>
                         <IconButton
                           onClick={(e) => handleMenuOpen(e, user)}
                           size="small"
                           title="Actions"
+                          sx={{ p: 0.5 }}
                         >
-                          <MoreVert />
+                          <MoreVert fontSize="small" />
                         </IconButton>
                       </TableCell>
                     </TableRow>
@@ -427,13 +435,23 @@ const UserList = () => {
             </Table>
           </TableContainer>
           <TablePagination
-            rowsPerPageOptions={[5, 10, 25]}
+            rowsPerPageOptions={[5, 10, 25, 50]}
             component="div"
             count={totalUsers}
             rowsPerPage={rowsPerPage}
             page={page}
             onPageChange={handleChangePage}
             onRowsPerPageChange={handleChangeRowsPerPage}
+            sx={{
+              '& .MuiTablePagination-toolbar': {
+                minHeight: 44,
+                paddingLeft: 2,
+                paddingRight: 2,
+              },
+              '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
+                fontSize: '0.875rem',
+              },
+            }}
           />
         </Card>
 

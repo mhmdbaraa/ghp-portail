@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigation } from '../../shared/contexts/NavigationContext';
 import {
-  Dashboard,
   People,
   Shield,
   Security,
@@ -16,11 +15,6 @@ export const useUserNavigation = (skipNavigation = false) => {
     }
 
     const userNavigationItems = [
-      {
-        path: '/users/dashboard',
-        label: 'Tableau de bord',
-        icon: Dashboard
-      },
       {
         path: '/users/list',
         label: 'Utilisateurs',

@@ -90,7 +90,7 @@ function App() {
             <Route path="/users/dashboard" element={
               <ProtectedRoute requiredPermission={PERMISSIONS.USER_VIEW}>
                 <Layout>
-                  <UserDashboard />
+                  <UserList />
                 </Layout>
               </ProtectedRoute>
             } />

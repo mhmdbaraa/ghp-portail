@@ -3,7 +3,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
-from .models import User
+from .models import User, Permission, Role
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -21,7 +21,7 @@ class UserSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'username', 'email', 'first_name', 'last_name', 'full_name',
             'role', 'status', 'avatar', 'phone', 'location', 'department', 
-            'position', 'join_date', 'last_login', 'preferences', 'permissions',
+            'position', 'filiale', 'join_date', 'last_login', 'preferences', 'permissions',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'last_login', 'created_at', 'updated_at']
@@ -43,7 +43,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         fields = [
             'username', 'email', 'password', 'password_confirm',
             'first_name', 'last_name', 'phone', 'location', 
-            'department', 'position'
+            'department', 'position', 'filiale'
         ]
     
     def validate(self, attrs):
@@ -182,4 +182,79 @@ class ChangePasswordSerializer(serializers.Serializer):
         if not user.check_password(value):
             raise serializers.ValidationError("Old password is incorrect")
         
+        return value
+
+
+class PermissionSerializer(serializers.ModelSerializer):
+    """
+    Serializer for Permission model
+    """
+    class Meta:
+        model = Permission
+        fields = [
+            'id', 'name', 'codename', 'description', 'category', 
+            'is_active', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class RoleSerializer(serializers.ModelSerializer):
+    """
+    Serializer for Role model
+    """
+    permissions = PermissionSerializer(many=True, read_only=True)
+    permission_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        write_only=True,
+        required=False
+    )
+    user_count = serializers.ReadOnlyField()
+    
+    class Meta:
+        model = Role
+        fields = [
+            'id', 'name', 'description', 'permissions', 'permission_ids',
+            'is_active', 'is_system', 'user_count', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'is_system', 'created_at', 'updated_at']
+    
+    def create(self, validated_data):
+        """Create role with permissions"""
+        permission_ids = validated_data.pop('permission_ids', [])
+        role = Role.objects.create(**validated_data)
+        
+        if permission_ids:
+            permissions = Permission.objects.filter(id__in=permission_ids)
+            role.permissions.set(permissions)
+        
+        return role
+    
+    def update(self, instance, validated_data):
+        """Update role with permissions"""
+        permission_ids = validated_data.pop('permission_ids', None)
+        
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        
+        if permission_ids is not None:
+            permissions = Permission.objects.filter(id__in=permission_ids)
+            instance.permissions.set(permissions)
+        
+        return instance
+
+
+class RolePermissionSerializer(serializers.Serializer):
+    """
+    Serializer for managing role permissions
+    """
+    permissions = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=True
+    )
+    
+    def validate_permissions(self, value):
+        """Validate permission IDs"""
+        if not Permission.objects.filter(id__in=value).exists():
+            raise serializers.ValidationError("Some permissions do not exist")
         return value

@@ -6,6 +6,7 @@ export { default as taskService } from './taskService';
 export { default as dashboardService } from './dashboardService';
 export { default as axiosInstance } from './axiosInstance';
 export { default as ProjectDataTransformer } from './projectDataTransformer';
+export { default as userService } from './userService';
 
 // Re-export for backward compatibility
 export { default } from './apiService';

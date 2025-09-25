@@ -478,7 +478,7 @@ const HomeDashboard = () => {
               href="#"
               onClick={(e) => {
                 e.preventDefault();
-                handleModuleClick('Utilisateurs', '#');
+                handleModuleClick('Utilisateurs', '/users/dashboard');
               }}
               className="text-center aos aos-init aos-animate"
               data-aos="fade-up"

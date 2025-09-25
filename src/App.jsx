@@ -30,7 +30,7 @@ function App() {
     <ThemeProvider>
       <AuthProvider>
         <NavigationProvider>
-          <Router future={{ v7_relativeSplatPath: true }}>
+          <Router future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
           <Routes>
             {/* Routes publiques */}
             <Route path="/login" element={<Login />} />

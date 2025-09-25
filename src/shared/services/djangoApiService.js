@@ -6,6 +6,52 @@ class DjangoApiService {
     this.baseURL = '/api';
   }
 
+  // Generic HTTP methods
+  async get(url) {
+    try {
+      const response = await axiosInstance.get(url);
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async post(url, data) {
+    try {
+      const response = await axiosInstance.post(url, data);
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async put(url, data) {
+    try {
+      const response = await axiosInstance.put(url, data);
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async patch(url, data) {
+    try {
+      const response = await axiosInstance.patch(url, data);
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async delete(url) {
+    try {
+      const response = await axiosInstance.delete(url);
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  }
+
   // Authentication methods
   async login(credentials) {
     try {

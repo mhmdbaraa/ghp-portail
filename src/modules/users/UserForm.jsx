@@ -33,13 +33,16 @@ import {
   Security,
 } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
-import UserSidebar from './UserSidebar';
+import { useUserNavigation } from './useUserNavigation';
 import djangoApiService from '../../shared/services/djangoApiService';
 
 const UserForm = () => {
   const theme = useTheme();
   const navigate = useNavigate();
   const { id } = useParams();
+  
+  // Utiliser le hook de navigation pour définir le menu du module
+  useUserNavigation();
   const isEdit = Boolean(id);
 
   const [formData, setFormData] = useState({
@@ -225,12 +228,7 @@ const UserForm = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-      {/* Sidebar */}
-      <UserSidebar />
-
-      {/* Main Content */}
-      <Box sx={{ flexGrow: 1, p: 3 }}>
+    <Box sx={{ p: 3 }}>
         {/* Header */}
         <Box sx={{ mb: 4 }}>
           <Typography variant="h4" fontWeight={700} color="text.primary" sx={{ mb: 1 }}>
@@ -552,7 +550,6 @@ const UserForm = () => {
             {snackbar.message}
           </Alert>
         </Snackbar>
-      </Box>
     </Box>
   );
 };

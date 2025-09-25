@@ -48,17 +48,21 @@ import {
   PersonAdd,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import UserSidebar from './UserSidebar';
+import { useUserNavigation } from './useUserNavigation';
 import UserForm from './UserForm';
-import djangoApiService from '../../shared/services/djangoApiService';
+import userService from '../../shared/services/userService';
 
 const UserList = () => {
   const theme = useTheme();
   const navigate = useNavigate();
+  
+  // Utiliser le hook de navigation pour définir le menu du module
+  useUserNavigation();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [totalUsers, setTotalUsers] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [roleFilter, setRoleFilter] = useState('all');
@@ -67,6 +71,7 @@ const UserList = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [addUserModalOpen, setAddUserModalOpen] = useState(false);
 
   useEffect(() => {
     loadUsers();
@@ -76,116 +81,23 @@ const UserList = () => {
     try {
       setLoading(true);
       
-      // Simuler des données pour l'instant - à remplacer par les vraies API calls
-      const mockUsers = [
-        {
-          id: 1,
-          username: 'ahmed.benali',
-          email: 'ahmed.benali@ghp.com',
-          first_name: 'Ahmed',
-          last_name: 'Ben Ali',
-          role: 'manager',
-          status: 'active',
-          is_staff: true,
-          is_active: true,
-          date_joined: '2024-01-15T10:30:00Z',
-          last_login: '2024-01-20T14:22:00Z',
-          department: 'IT',
-          position: 'IT Manager',
-          phone: '+216 12 345 678',
-          avatar: null,
-        },
-        {
-          id: 2,
-          username: 'fatma.khelil',
-          email: 'fatma.khelil@ghp.com',
-          first_name: 'Fatma',
-          last_name: 'Khelil',
-          role: 'developer',
-          status: 'active',
-          is_staff: false,
-          is_active: true,
-          date_joined: '2024-01-14T09:15:00Z',
-          last_login: '2024-01-20T16:45:00Z',
-          department: 'Development',
-          position: 'Senior Developer',
-          phone: '+216 23 456 789',
-          avatar: null,
-        },
-        {
-          id: 3,
-          username: 'mohamed.bara',
-          email: 'mohamed.bara@ghp.com',
-          first_name: 'Mohamed',
-          last_name: 'Bara',
-          role: 'admin',
-          status: 'active',
-          is_staff: true,
-          is_active: true,
-          date_joined: '2024-01-13T08:00:00Z',
-          last_login: '2024-01-20T17:30:00Z',
-          department: 'Administration',
-          position: 'System Administrator',
-          phone: '+216 34 567 890',
-          avatar: null,
-        },
-        {
-          id: 4,
-          username: 'salma.trabelsi',
-          email: 'salma.trabelsi@ghp.com',
-          first_name: 'Salma',
-          last_name: 'Trabelsi',
-          role: 'designer',
-          status: 'inactive',
-          is_staff: false,
-          is_active: false,
-          date_joined: '2024-01-12T11:20:00Z',
-          last_login: '2024-01-18T13:15:00Z',
-          department: 'Design',
-          position: 'UI/UX Designer',
-          phone: '+216 45 678 901',
-          avatar: null,
-        },
-        {
-          id: 5,
-          username: 'youssef.mansouri',
-          email: 'youssef.mansouri@ghp.com',
-          first_name: 'Youssef',
-          last_name: 'Mansouri',
-          role: 'tester',
-          status: 'active',
-          is_staff: false,
-          is_active: true,
-          date_joined: '2024-01-11T14:45:00Z',
-          last_login: '2024-01-20T12:00:00Z',
-          department: 'Quality Assurance',
-          position: 'QA Tester',
-          phone: '+216 56 789 012',
-          avatar: null,
-        },
-      ];
+      const params = {
+        page: page + 1, // Django pagination starts from 1
+        pageSize: rowsPerPage,
+        search: searchTerm,
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+        role: roleFilter !== 'all' ? roleFilter : undefined
+      };
 
-      // Filtrer les utilisateurs
-      let filteredUsers = mockUsers;
+      const result = await userService.getUsers(params);
       
-      if (searchTerm) {
-        filteredUsers = filteredUsers.filter(user =>
-          user.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          user.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          user.username.toLowerCase().includes(searchTerm.toLowerCase())
-        );
+      if (result.success) {
+        setUsers(result.data.results || result.data);
+        setTotalUsers(result.data.count || result.data.length);
+      } else {
+        console.error('Error loading users:', result.error);
+        showSnackbar(result.message || 'Erreur lors du chargement des utilisateurs', 'error');
       }
-      
-      if (statusFilter !== 'all') {
-        filteredUsers = filteredUsers.filter(user => user.status === statusFilter);
-      }
-      
-      if (roleFilter !== 'all') {
-        filteredUsers = filteredUsers.filter(user => user.role === roleFilter);
-      }
-
-      setUsers(filteredUsers);
     } catch (error) {
       console.error('Error loading users:', error);
       showSnackbar('Erreur lors du chargement des utilisateurs', 'error');
@@ -226,10 +138,13 @@ const UserList = () => {
 
   const handleToggleStatus = async () => {
     try {
-      const newStatus = selectedUser.status === 'active' ? 'inactive' : 'active';
-      // Ici, vous feriez l'appel API pour changer le statut
-      showSnackbar(`Statut de l'utilisateur changé en ${newStatus}`, 'success');
-      loadUsers();
+      const result = await userService.toggleUserStatus(selectedUser.id);
+      if (result.success) {
+        showSnackbar('Statut de l\'utilisateur modifié avec succès', 'success');
+        loadUsers();
+      } else {
+        showSnackbar(result.message || 'Erreur lors du changement de statut', 'error');
+      }
     } catch (error) {
       showSnackbar('Erreur lors du changement de statut', 'error');
     }
@@ -238,9 +153,13 @@ const UserList = () => {
 
   const confirmDelete = async () => {
     try {
-      // Ici, vous feriez l'appel API pour supprimer l'utilisateur
-      showSnackbar('Utilisateur supprimé avec succès', 'success');
-      loadUsers();
+      const result = await userService.deleteUser(userToDelete.id);
+      if (result.success) {
+        showSnackbar('Utilisateur supprimé avec succès', 'success');
+        loadUsers();
+      } else {
+        showSnackbar(result.message || 'Erreur lors de la suppression', 'error');
+      }
     } catch (error) {
       showSnackbar('Erreur lors de la suppression', 'error');
     }
@@ -299,26 +218,23 @@ const UserList = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-      {/* Sidebar */}
-      <UserSidebar />
-
-      {/* Main Content */}
-      <Box sx={{ flexGrow: 1, p: 3 }}>
+    <Box sx={{ p: 3 }}>
         {/* Header */}
         <Box sx={{ mb: 4 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
             <Typography variant="h4" fontWeight={700} color="text.primary">
               Gestion des Utilisateurs
             </Typography>
-            <Button
-              variant="contained"
-              startIcon={<PersonAdd />}
-              onClick={() => navigate('/users/create')}
-              sx={{ borderRadius: 2 }}
-            >
-              Ajouter un utilisateur
-            </Button>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Button
+                variant="contained"
+                startIcon={<PersonAdd />}
+                onClick={() => setAddUserModalOpen(true)}
+                sx={{ borderRadius: 2 }}
+              >
+                Ajouter un utilisateur
+              </Button>
+            </Box>
           </Box>
           <Typography variant="body1" color="text.secondary">
             Gérez tous les utilisateurs de votre organisation
@@ -488,6 +404,7 @@ const UserList = () => {
                         <IconButton
                           onClick={(e) => handleMenuOpen(e, user)}
                           size="small"
+                          title="Actions"
                         >
                           <MoreVert />
                         </IconButton>
@@ -500,7 +417,7 @@ const UserList = () => {
           <TablePagination
             rowsPerPageOptions={[5, 10, 25]}
             component="div"
-            count={users.length}
+            count={totalUsers}
             rowsPerPage={rowsPerPage}
             page={page}
             onPageChange={handleChangePage}
@@ -559,6 +476,30 @@ const UserList = () => {
           </DialogActions>
         </Dialog>
 
+        {/* Add User Modal */}
+        <Dialog 
+          open={addUserModalOpen} 
+          onClose={() => setAddUserModalOpen(false)}
+          maxWidth="md"
+          fullWidth
+        >
+          <DialogTitle>Ajouter un nouvel utilisateur</DialogTitle>
+          <DialogContent>
+            <UserForm 
+              onSuccess={() => {
+                setAddUserModalOpen(false);
+                loadUsers();
+                setSnackbar({
+                  open: true,
+                  message: 'Utilisateur créé avec succès',
+                  severity: 'success'
+                });
+              }}
+              onCancel={() => setAddUserModalOpen(false)}
+            />
+          </DialogContent>
+        </Dialog>
+
         {/* Snackbar */}
         <Snackbar
           open={snackbar.open}
@@ -573,7 +514,6 @@ const UserList = () => {
             {snackbar.message}
           </Alert>
         </Snackbar>
-      </Box>
     </Box>
   );
 };

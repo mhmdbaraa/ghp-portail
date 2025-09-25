@@ -16,5 +16,12 @@ urlpatterns = [
     path('profile/', views.UserProfileView.as_view(), name='profile'),
     path('user-info/', views.user_info_view, name='user_info'),
     path('change-password/', views.change_password_view, name='change_password'),
+    
+    # User management endpoints
+    path('users/', views.UserListView.as_view(), name='user_list'),
+    path('users/<int:pk>/', views.UserDetailView.as_view(), name='user_detail'),
+    path('users/<int:user_id>/toggle-status/', views.toggle_user_status, name='toggle_user_status'),
+    path('users/statistics/', views.user_statistics, name='user_statistics'),
+    path('users/recent/', views.recent_users, name='recent_users'),
 ]
 

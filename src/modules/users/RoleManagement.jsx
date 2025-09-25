@@ -33,26 +33,30 @@ import {
   ListItemSecondaryAction,
   Switch,
   Divider,
+  Tabs,
+  Tab,
 } from '@mui/material';
 import {
   Add,
   Edit,
   Delete,
-  AdminPanelSettings,
-  People,
   Security,
+  People,
   Save,
   Cancel,
   Refresh,
   Visibility,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import UserSidebar from './UserSidebar';
+import { useUserNavigation } from './useUserNavigation';
 import djangoApiService from '../../shared/services/djangoApiService';
 
 const RoleManagement = () => {
   const theme = useTheme();
   const navigate = useNavigate();
+  
+  // Utiliser le hook de navigation pour définir le menu du module
+  useUserNavigation();
   const [roles, setRoles] = useState([]);
   const [permissions, setPermissions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -64,6 +68,7 @@ const RoleManagement = () => {
     permissions: [],
   });
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [activeTab, setActiveTab] = useState(0);
 
   useEffect(() => {
     loadRoles();
@@ -238,13 +243,12 @@ const RoleManagement = () => {
     return acc;
   }, {});
 
-  return (
-    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-      {/* Sidebar */}
-      <UserSidebar />
+  const handleTabChange = (event, newValue) => {
+    setActiveTab(newValue);
+  };
 
-      {/* Main Content */}
-      <Box sx={{ flexGrow: 1, p: 3 }}>
+  return (
+    <Box sx={{ p: 3 }}>
         {/* Header */}
         <Box sx={{ mb: 4 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
@@ -298,7 +302,7 @@ const RoleManagement = () => {
                 <CardContent sx={{ p: 3 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <AdminPanelSettings sx={{ color: getRoleColor(role.name), fontSize: 32 }} />
+                      <Security sx={{ color: getRoleColor(role.name), fontSize: 32 }} />
                       <Box>
                         <Typography variant="h6" fontWeight={700} color="text.primary">
                           {role.name}
@@ -459,7 +463,6 @@ const RoleManagement = () => {
             {snackbar.message}
           </Alert>
         </Snackbar>
-      </Box>
     </Box>
   );
 };

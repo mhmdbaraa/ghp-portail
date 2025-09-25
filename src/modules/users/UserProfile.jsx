@@ -27,18 +27,20 @@ import {
   Work,
   CalendarToday,
   Security,
-  AdminPanelSettings,
   Person,
   LocationOn,
 } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
-import UserSidebar from './UserSidebar';
+import { useUserNavigation } from './useUserNavigation';
 import djangoApiService from '../../shared/services/djangoApiService';
 
 const UserProfile = () => {
   const theme = useTheme();
   const navigate = useNavigate();
   const { id } = useParams();
+  
+  // Utiliser le hook de navigation pour définir le menu du module
+  useUserNavigation();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
@@ -140,33 +142,22 @@ const UserProfile = () => {
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-        <UserSidebar />
-        <Box sx={{ flexGrow: 1, p: 3, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Typography>Chargement...</Typography>
-        </Box>
+      <Box sx={{ p: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '50vh' }}>
+        <Typography>Chargement...</Typography>
       </Box>
     );
   }
 
   if (!user) {
     return (
-      <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-        <UserSidebar />
-        <Box sx={{ flexGrow: 1, p: 3, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Alert severity="error">Utilisateur non trouvé</Alert>
-        </Box>
+      <Box sx={{ p: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '50vh' }}>
+        <Alert severity="error">Utilisateur non trouvé</Alert>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-      {/* Sidebar */}
-      <UserSidebar />
-
-      {/* Main Content */}
-      <Box sx={{ flexGrow: 1, p: 3 }}>
+    <Box sx={{ p: 3 }}>
         {/* Header */}
         <Box sx={{ mb: 4 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
@@ -403,7 +394,6 @@ const UserProfile = () => {
             {snackbar.message}
           </Alert>
         </Snackbar>
-      </Box>
     </Box>
   );
 };

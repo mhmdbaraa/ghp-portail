@@ -23,7 +23,6 @@ import {
   People,
   PersonAdd,
   Security,
-  AdminPanelSettings,
   TrendingUp,
   TrendingDown,
   MoreVert,
@@ -31,12 +30,15 @@ import {
   FilterList,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import UserSidebar from './UserSidebar';
 import djangoApiService from '../../shared/services/djangoApiService';
+import { useUserNavigation } from './useUserNavigation';
 
 const UserDashboard = () => {
   const theme = useTheme();
   const navigate = useNavigate();
+  
+  // Utiliser le hook de navigation pour définir le menu du module
+  useUserNavigation();
   const [stats, setStats] = useState({
     totalUsers: 0,
     activeUsers: 0,
@@ -183,12 +185,7 @@ const UserDashboard = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-      {/* Sidebar */}
-      <UserSidebar />
-
-      {/* Main Content */}
-      <Box sx={{ flexGrow: 1, p: 3 }}>
+    <Box sx={{ p: 3 }}>
         {/* Header */}
         <Box sx={{ mb: 4 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
@@ -258,7 +255,7 @@ const UserDashboard = () => {
             <StatCard
               title="Administrateurs"
               value={stats.adminUsers}
-              icon={<AdminPanelSettings />}
+              icon={<Security />}
               color="#ef4444"
               trend="down"
               trendValue="5"
@@ -308,37 +305,38 @@ const UserDashboard = () => {
                           </Avatar>
                         </ListItemAvatar>
                         <ListItemText
-                          primary={
-                            <Typography variant="body1" fontWeight={600} color="text.primary">
-                              {user.name}
-                            </Typography>
-                          }
-                          secondary={
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-                              <Typography variant="body2" color="text.secondary">
-                                {user.email}
-                              </Typography>
-                              <Chip
-                                label={user.role}
-                                size="small"
-                                sx={{
-                                  background: `${getRoleColor(user.role)}20`,
-                                  color: getRoleColor(user.role),
-                                  fontWeight: 600,
-                                }}
-                              />
-                              <Chip
-                                label={user.status}
-                                size="small"
-                                sx={{
-                                  background: `${getStatusColor(user.status)}20`,
-                                  color: getStatusColor(user.status),
-                                  fontWeight: 600,
-                                }}
-                              />
-                            </Box>
-                          }
+                          primary={user.name}
+                          primaryTypographyProps={{
+                            variant: "body1",
+                            fontWeight: 600,
+                            color: "text.primary"
+                          }}
+                          secondary={user.email}
+                          secondaryTypographyProps={{
+                            variant: "body2",
+                            color: "text.secondary"
+                          }}
                         />
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5, ml: 7 }}>
+                          <Chip
+                            label={user.role}
+                            size="small"
+                            sx={{
+                              background: `${getRoleColor(user.role)}20`,
+                              color: getRoleColor(user.role),
+                              fontWeight: 600,
+                            }}
+                          />
+                          <Chip
+                            label={user.status}
+                            size="small"
+                            sx={{
+                              background: `${getStatusColor(user.status)}20`,
+                              color: getStatusColor(user.status),
+                              fontWeight: 600,
+                            }}
+                          />
+                        </Box>
                         <ListItemSecondaryAction>
                           <IconButton size="small">
                             <MoreVert />
@@ -391,7 +389,7 @@ const UserDashboard = () => {
                   <Button
                     variant="outlined"
                     fullWidth
-                    startIcon={<AdminPanelSettings />}
+                    startIcon={<Security />}
                     onClick={() => navigate('/users/roles')}
                     sx={{ borderRadius: 2, py: 1.5 }}
                   >
@@ -402,7 +400,6 @@ const UserDashboard = () => {
             </Card>
           </Grid>
         </Grid>
-      </Box>
     </Box>
   );
 };

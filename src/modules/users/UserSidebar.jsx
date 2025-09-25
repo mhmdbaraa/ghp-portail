@@ -18,7 +18,6 @@ import {
   People,
   PersonAdd,
   Security,
-  AdminPanelSettings,
   Settings,
   ChevronRight,
   ExpandLess,
@@ -114,12 +113,12 @@ const UserSidebar = ({ collapsed = false, onItemClick }) => {
     {
       id: 'roles',
       title: 'Rôles',
-      icon: <AdminPanelSettings />,
+      icon: <Security />,
       color: '#ef4444',
       items: [
         {
           title: 'Gestion des rôles',
-          icon: <AdminPanelSettings />,
+          icon: <Security />,
           path: '/users/roles',
           description: 'Créer et modifier les rôles'
         }

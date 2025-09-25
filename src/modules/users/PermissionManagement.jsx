@@ -27,6 +27,8 @@ import {
   Paper,
   Divider,
   Switch,
+  Tabs,
+  Tab,
 } from '@mui/material';
 import {
   Add,
@@ -40,12 +42,15 @@ import {
   Refresh,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import UserSidebar from './UserSidebar';
+import { useUserNavigation } from './useUserNavigation';
 import djangoApiService from '../../shared/services/djangoApiService';
 
 const PermissionManagement = () => {
   const theme = useTheme();
   const navigate = useNavigate();
+  
+  // Utiliser le hook de navigation pour définir le menu du module
+  useUserNavigation();
   const [permissions, setPermissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedPermissions, setSelectedPermissions] = useState([]);
@@ -58,6 +63,7 @@ const PermissionManagement = () => {
     category: '',
   });
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [activeTab, setActiveTab] = useState(0);
 
   useEffect(() => {
     loadPermissions();
@@ -265,13 +271,18 @@ const PermissionManagement = () => {
     return acc;
   }, {});
 
-  return (
-    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-      {/* Sidebar */}
-      <UserSidebar />
+  const categories = ['all', ...Object.keys(groupedPermissions)];
+  const currentCategory = categories[activeTab];
+  const currentPermissions = currentCategory === 'all' 
+    ? permissions 
+    : groupedPermissions[currentCategory] || [];
 
-      {/* Main Content */}
-      <Box sx={{ flexGrow: 1, p: 3 }}>
+  const handleTabChange = (event, newValue) => {
+    setActiveTab(newValue);
+  };
+
+  return (
+    <Box sx={{ p: 3 }}>
         {/* Header */}
         <Box sx={{ mb: 4 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
@@ -302,103 +313,152 @@ const PermissionManagement = () => {
           </Typography>
         </Box>
 
-        {/* Permissions by Category */}
-        {Object.entries(groupedPermissions).map(([category, categoryPermissions]) => (
-          <Card
-            key={category}
-            sx={{
-              mb: 3,
-              background: theme.palette.mode === 'light'
-                ? 'linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.7))'
-                : 'linear-gradient(135deg, rgba(30,41,59,0.9), rgba(30,41,59,0.7))',
-              backdropFilter: 'blur(20px)',
-              border: `1px solid ${theme.palette.divider}`,
-              borderRadius: 3,
-            }}
-          >
-            <CardContent sx={{ p: 3 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                <Shield sx={{ color: getCategoryColor(category), mr: 2 }} />
-                <Typography variant="h6" fontWeight={600} color="text.primary">
-                  {getCategoryLabel(category)}
-                </Typography>
-                <Chip
-                  label={categoryPermissions.length}
-                  size="small"
-                  sx={{
-                    ml: 2,
-                    background: `${getCategoryColor(category)}20`,
-                    color: getCategoryColor(category),
-                    fontWeight: 600,
-                  }}
+        {/* Permissions Tabs */}
+        <Card
+          sx={{
+            background: theme.palette.mode === 'light'
+              ? 'linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.7))'
+              : 'linear-gradient(135deg, rgba(30,41,59,0.9), rgba(30,41,59,0.7))',
+            backdropFilter: 'blur(20px)',
+            border: `1px solid ${theme.palette.divider}`,
+            borderRadius: 3,
+          }}
+        >
+          <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+            <Tabs
+              value={activeTab}
+              onChange={handleTabChange}
+              variant="scrollable"
+              scrollButtons="auto"
+              sx={{
+                px: 3,
+                '& .MuiTab-root': {
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  minHeight: 60,
+                },
+                '& .Mui-selected': {
+                  color: theme.palette.primary.main,
+                },
+              }}
+            >
+              {categories.map((category, index) => (
+                <Tab
+                  key={category}
+                  label={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Shield sx={{ color: getCategoryColor(category), fontSize: 20 }} />
+                      <Typography variant="body1" fontWeight={600}>
+                        {category === 'all' ? 'Toutes' : getCategoryLabel(category)}
+                      </Typography>
+                      <Chip
+                        label={category === 'all' ? permissions.length : groupedPermissions[category].length}
+                        size="small"
+                        sx={{
+                          background: `${getCategoryColor(category)}20`,
+                          color: getCategoryColor(category),
+                          fontWeight: 600,
+                          height: 20,
+                          fontSize: '0.75rem',
+                        }}
+                      />
+                    </Box>
+                  }
                 />
-              </Box>
+              ))}
+            </Tabs>
+          </Box>
 
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Permission</TableCell>
-                      <TableCell>Code</TableCell>
-                      <TableCell>Description</TableCell>
-                      <TableCell align="center">Statut</TableCell>
-                      <TableCell align="center">Actions</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {categoryPermissions.map((permission) => (
-                      <TableRow key={permission.id} hover>
-                        <TableCell>
-                          <Typography variant="body1" fontWeight={600} color="text.primary">
-                            {permission.name}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" color="text.secondary" fontFamily="monospace">
-                            {permission.codename}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" color="text.secondary">
-                            {permission.description}
-                          </Typography>
-                        </TableCell>
-                        <TableCell align="center">
-                          <FormControlLabel
-                            control={
-                              <Switch
-                                checked={permission.is_active}
-                                onChange={() => handleTogglePermission(permission)}
-                                size="small"
-                              />
-                            }
-                            label={permission.is_active ? 'Actif' : 'Inactif'}
-                          />
-                        </TableCell>
-                        <TableCell align="center">
-                          <IconButton
-                            size="small"
-                            onClick={() => handleEditPermission(permission)}
-                            sx={{ mr: 1 }}
-                          >
-                            <Edit />
-                          </IconButton>
-                          <IconButton
-                            size="small"
-                            onClick={() => handleDeletePermission(permission)}
-                            sx={{ color: 'error.main' }}
-                          >
-                            <Delete />
-                          </IconButton>
-                        </TableCell>
+          <CardContent sx={{ p: 0 }}>
+            {currentCategory && (
+              <Box sx={{ p: 3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                  <Shield sx={{ color: getCategoryColor(currentCategory), mr: 2 }} />
+                  <Typography variant="h6" fontWeight={600} color="text.primary">
+                    {currentCategory === 'all' ? 'Toutes les permissions' : getCategoryLabel(currentCategory)} - {currentPermissions.length} permissions
+                  </Typography>
+                </Box>
+
+                <TableContainer>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Permission</TableCell>
+                        <TableCell>Code</TableCell>
+                        <TableCell>Description</TableCell>
+                        {currentCategory === 'all' && <TableCell>Catégorie</TableCell>}
+                        <TableCell align="center">Statut</TableCell>
+                        <TableCell align="center">Actions</TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </CardContent>
-          </Card>
-        ))}
+                    </TableHead>
+                    <TableBody>
+                      {currentPermissions.map((permission) => (
+                        <TableRow key={permission.id} hover>
+                          <TableCell>
+                            <Typography variant="body1" fontWeight={600} color="text.primary">
+                              {permission.name}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2" color="text.secondary" fontFamily="monospace">
+                              {permission.codename}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2" color="text.secondary">
+                              {permission.description}
+                            </Typography>
+                          </TableCell>
+                          {currentCategory === 'all' && (
+                            <TableCell>
+                              <Chip
+                                label={getCategoryLabel(permission.category)}
+                                size="small"
+                                sx={{
+                                  background: `${getCategoryColor(permission.category)}20`,
+                                  color: getCategoryColor(permission.category),
+                                  fontWeight: 600,
+                                }}
+                              />
+                            </TableCell>
+                          )}
+                          <TableCell align="center">
+                            <FormControlLabel
+                              control={
+                                <Switch
+                                  checked={permission.is_active}
+                                  onChange={() => handleTogglePermission(permission)}
+                                  size="small"
+                                />
+                              }
+                              label={permission.is_active ? 'Actif' : 'Inactif'}
+                            />
+                          </TableCell>
+                          <TableCell align="center">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleEditPermission(permission)}
+                              sx={{ mr: 1 }}
+                            >
+                              <Edit />
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleDeletePermission(permission)}
+                              sx={{ color: 'error.main' }}
+                            >
+                              <Delete />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Box>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Create/Edit Permission Dialog */}
         <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md" fullWidth>
@@ -474,7 +534,6 @@ const PermissionManagement = () => {
             {snackbar.message}
           </Alert>
         </Snackbar>
-      </Box>
     </Box>
   );
 };

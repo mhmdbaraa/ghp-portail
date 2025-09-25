@@ -3,7 +3,7 @@ import djangoApiService from './djangoApiService';
 
 class UserService {
   constructor() {
-    this.baseURL = '/api/users';
+    this.baseURL = '/auth/users';
   }
 
   // Get all users with pagination and filters
@@ -341,6 +341,42 @@ class UserService {
         success: false,
         error: error.response?.data?.detail || error.message,
         message: 'Failed to export users'
+      };
+    }
+  }
+
+  // Get user statistics for dashboard
+  async getUserStats() {
+    try {
+      const response = await djangoApiService.get('/auth/users/statistics/');
+      return {
+        success: true,
+        data: response.data.data,
+        message: 'User statistics retrieved successfully'
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || error.message,
+        message: 'Failed to retrieve user statistics'
+      };
+    }
+  }
+
+  // Get recent users for dashboard
+  async getRecentUsers() {
+    try {
+      const response = await djangoApiService.get('/auth/users/recent/');
+      return {
+        success: true,
+        data: response.data.data,
+        message: 'Recent users retrieved successfully'
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || error.message,
+        message: 'Failed to retrieve recent users'
       };
     }
   }

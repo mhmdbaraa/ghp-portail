@@ -12,6 +12,7 @@ import {
   Login,
   Register
 } from './shared';
+import { NavigationProvider } from './shared/contexts/NavigationContext';
 
 // Module imports
 import { Projects, Tasks, Tableur, Calendar, Dashboard } from './modules/projects';
@@ -28,7 +29,8 @@ function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <Router>
+        <NavigationProvider>
+          <Router>
           <Routes>
             {/* Routes publiques */}
             <Route path="/login" element={<Login />} />
@@ -85,66 +87,65 @@ function App() {
             {/* User Management Routes */}
             <Route path="/users/dashboard" element={
               <ProtectedRoute requiredPermission={PERMISSIONS.USER_VIEW}>
-                <UserDashboard />
+                <Layout>
+                  <UserDashboard />
+                </Layout>
               </ProtectedRoute>
             } />
             
             <Route path="/users/list" element={
               <ProtectedRoute requiredPermission={PERMISSIONS.USER_VIEW}>
-                <UserList />
+                <Layout>
+                  <UserList />
+                </Layout>
               </ProtectedRoute>
             } />
             
             <Route path="/users/create" element={
               <ProtectedRoute requiredPermission={PERMISSIONS.USER_ADD}>
-                <UserForm />
+                <Layout>
+                  <UserForm />
+                </Layout>
               </ProtectedRoute>
             } />
             
             <Route path="/users/edit/:id" element={
               <ProtectedRoute requiredPermission={PERMISSIONS.USER_CHANGE}>
-                <UserForm />
+                <Layout>
+                  <UserForm />
+                </Layout>
               </ProtectedRoute>
             } />
             
             <Route path="/users/profile/:id" element={
               <ProtectedRoute requiredPermission={PERMISSIONS.USER_VIEW}>
-                <UserProfile />
+                <Layout>
+                  <UserProfile />
+                </Layout>
               </ProtectedRoute>
             } />
             
             <Route path="/users/permissions" element={
               <ProtectedRoute requiredPermission={PERMISSIONS.USER_CHANGE}>
-                <PermissionManagement />
+                <Layout>
+                  <PermissionManagement />
+                </Layout>
               </ProtectedRoute>
             } />
             
             <Route path="/users/roles" element={
               <ProtectedRoute requiredPermission={PERMISSIONS.USER_CHANGE}>
-                <RoleManagement />
+                <Layout>
+                  <RoleManagement />
+                </Layout>
               </ProtectedRoute>
             } />
             
-            <Route path="/users/groups" element={
-              <ProtectedRoute requiredPermission={PERMISSIONS.USER_VIEW}>
-                <UserList />
-              </ProtectedRoute>
-            } />
             
-            <Route path="/users/access-keys" element={
-              <ProtectedRoute requiredPermission={PERMISSIONS.USER_CHANGE}>
-                <PermissionManagement />
-              </ProtectedRoute>
-            } />
-            
-            <Route path="/users/settings" element={
-              <ProtectedRoute requiredPermission={PERMISSIONS.USER_VIEW}>
-                <UserDashboard />
-              </ProtectedRoute>
-            } />
             
           </Routes>
-        </Router>
+          </Router>
+        </NavigationProvider>
       </AuthProvider>
     </ThemeProvider>
   );

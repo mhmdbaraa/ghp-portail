@@ -40,11 +40,13 @@ import NotificationDropdown from './ui/NotificationDropdown';
 import UserProfileDropdown from './ui/UserProfileDropdown';
 
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigation } from '../contexts/NavigationContext';
 
 const Layout = ({ children }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('lg'));
   const { user } = useAuth();
+  const { currentModule, moduleNavigation } = useNavigation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true); // Collapsed par défaut
   const [sidebarHovered, setSidebarHovered] = useState(false);
@@ -57,28 +59,32 @@ const Layout = ({ children }) => {
     setMounted(true);
   }, []);
 
-  const navigationItems = [
+  // Navigation par défaut
+  const defaultNavigationItems = [
     { 
       path: '/dashboard', 
       label: 'Dashboard', 
-      icon: <Dashboard />
+      icon: Dashboard
     },
     { 
       path: '/projects', 
       label: 'Projets', 
-      icon: <Folder />
+      icon: Folder
     },
     { 
       path: '/tasks', 
       label: 'Tâches', 
-      icon: <Assignment />
+      icon: Assignment
     },
     { 
       path: '/calendar', 
       label: 'Calendrier', 
-      icon: <CalendarToday />
+      icon: CalendarToday
     },
   ];
+
+  // Utiliser la navigation du module si disponible, sinon la navigation par défaut
+  const navigationItems = moduleNavigation.length > 0 ? moduleNavigation : defaultNavigationItems;
 
   const handleSidebarToggle = () => {
     setSidebarOpen(!sidebarOpen);
@@ -196,7 +202,8 @@ const Layout = ({ children }) => {
               component={Link}
               to="/"
             >
-              GHP Portail
+{currentModule === 'users' ? 'Gestion Utilisateurs' : 
+ currentModule === 'projects' ? 'Gestion Projets' : 'GHP Portail'}
             </Typography>
           )}
         </Box>
@@ -286,12 +293,13 @@ const Layout = ({ children }) => {
                   justifyContent: 'center',
                 }}
               >
-                {item.icon}
+                {React.createElement(item.icon)}
               </ListItemIcon>
               {isEffectivelyExpanded && (
                 <ListItemText
                   primary={item.label}
                   primaryTypographyProps={{
+                    component: 'span',
                     fontWeight: isActiveRoute(item.path) ? 700 : 600,
                     fontSize: '0.9rem',
                     color: isActiveRoute(item.path) ? theme.palette.primary.main : theme.palette.text.primary,

@@ -1,0 +1,23 @@
+// Business module icons - actual PNG files from GHPPORTAIL
+export { default as Category1Svg } from "../img/icons/logistique.png";
+export { default as Category2Svg } from "../img/icons/back_office.png";
+export { default as Category3Svg } from "../img/icons/sgx.png";
+export { default as Category4Svg } from "../img/icons/finance.png";
+export { default as Category5Svg } from "../img/icons/comptabilite.png";
+export { default as Category6Svg } from "../img/icons/rh.png";
+export { default as Category7Svg } from "../img/icons/recouvrement.png";
+export { default as Category8Svg } from "../img/icons/achat.png";
+export { default as Category9Svg } from "../img/icons/vente.png";
+export { default as Category10Svg } from "../img/icons/360.png";
+export { default as Category11Svg } from "../img/icons/parc.png";
+export { default as Category12Svg } from "../img/icons/archive.png";
+export { default as Category18Svg } from "../img/icons/crm.png";
+export { default as Category19Svg } from "../img/icons/kpi.png";
+export { default as Category20Svg } from "../img/icons/partner.png";
+export { default as Category21Svg } from "../img/icons/risque.png";
+export { default as Category22Svg } from "../img/icons/tms.png";
+export { default as Category23Svg } from "../img/icons/juridique.png";
+export { default as Category24Svg } from "../img/icons/users.png";
+export { default as Category25Svg } from "../img/icons/logout.png";
+export { default as Category29Svg } from "../img/icons/contrat.png";
+export { default as Category30Svg } from "../img/icons/reclamation.png";

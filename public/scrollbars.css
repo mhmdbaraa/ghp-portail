@@ -1,0 +1,139 @@
+/* Global Custom Scrollbars */
+
+/* Force scrollbar visibility */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.4) rgba(0, 0, 0, 0.1);
+}
+
+/* Webkit scrollbars (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  margin: 2px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Dark mode */
+[data-theme="dark"] *,
+.dark * {
+  scrollbar-color: rgba(255, 255, 255, 0.4) rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-track,
+.dark ::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb,
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover,
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.6);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:active,
+.dark ::-webkit-scrollbar-thumb:active {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+/* Force scrollbar visibility for specific elements */
+.force-scrollbar,
+.MuiDataGrid-root,
+.MuiDataGrid-virtualScroller {
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(0, 0, 0, 0.4) rgba(0, 0, 0, 0.1) !important;
+}
+
+.force-scrollbar::-webkit-scrollbar,
+.MuiDataGrid-root::-webkit-scrollbar,
+.MuiDataGrid-virtualScroller::-webkit-scrollbar {
+  width: 8px !important;
+  height: 8px !important;
+}
+
+.force-scrollbar::-webkit-scrollbar-track,
+.MuiDataGrid-root::-webkit-scrollbar-track,
+.MuiDataGrid-virtualScroller::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1) !important;
+  border-radius: 4px !important;
+  margin: 2px !important;
+}
+
+.force-scrollbar::-webkit-scrollbar-thumb,
+.MuiDataGrid-root::-webkit-scrollbar-thumb,
+.MuiDataGrid-virtualScroller::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.4) !important;
+  border-radius: 4px !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+
+.force-scrollbar::-webkit-scrollbar-thumb:hover,
+.MuiDataGrid-root::-webkit-scrollbar-thumb:hover,
+.MuiDataGrid-virtualScroller::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.6) !important;
+}
+
+/* Dark mode for forced scrollbars */
+[data-theme="dark"] .force-scrollbar,
+[data-theme="dark"] .MuiDataGrid-root,
+[data-theme="dark"] .MuiDataGrid-virtualScroller,
+.dark .force-scrollbar,
+.dark .MuiDataGrid-root,
+.dark .MuiDataGrid-virtualScroller {
+  scrollbar-color: rgba(255, 255, 255, 0.4) rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="dark"] .force-scrollbar::-webkit-scrollbar-track,
+[data-theme="dark"] .MuiDataGrid-root::-webkit-scrollbar-track,
+[data-theme="dark"] .MuiDataGrid-virtualScroller::-webkit-scrollbar-track,
+.dark .force-scrollbar::-webkit-scrollbar-track,
+.dark .MuiDataGrid-root::-webkit-scrollbar-track,
+.dark .MuiDataGrid-virtualScroller::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="dark"] .force-scrollbar::-webkit-scrollbar-thumb,
+[data-theme="dark"] .MuiDataGrid-root::-webkit-scrollbar-thumb,
+[data-theme="dark"] .MuiDataGrid-virtualScroller::-webkit-scrollbar-thumb,
+.dark .force-scrollbar::-webkit-scrollbar-thumb,
+.dark .MuiDataGrid-root::-webkit-scrollbar-thumb,
+.dark .MuiDataGrid-virtualScroller::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.4) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="dark"] .force-scrollbar::-webkit-scrollbar-thumb:hover,
+[data-theme="dark"] .MuiDataGrid-root::-webkit-scrollbar-thumb:hover,
+[data-theme="dark"] .MuiDataGrid-virtualScroller::-webkit-scrollbar-thumb:hover,
+.dark .force-scrollbar::-webkit-scrollbar-thumb:hover,
+.dark .MuiDataGrid-root::-webkit-scrollbar-thumb:hover,
+.dark .MuiDataGrid-virtualScroller::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.6) !important;
+}

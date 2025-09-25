@@ -1,0 +1,409 @@
+// Import des animations avancées (doit être en premier)
+@use './animations.scss';
+
+// Variables SCSS
+$primary-color: #6366f1;
+$primary-light: #818cf8;
+$primary-dark: #4f46e5;
+$secondary-color: #ec4899;
+$secondary-light: #f472b6;
+$secondary-dark: #db2777;
+
+$success-color: #10b981;
+$warning-color: #f59e0b;
+$error-color: #ef4444;
+$info-color: #3b82f6;
+
+$background-light: #fafafa;
+$background-dark: #0f0f23;
+$surface-light: #ffffff;
+$surface-dark: #1a1a2e;
+
+$text-primary-light: #111827;
+$text-secondary-light: #6b7280;
+$text-primary-dark: #f9fafb;
+$text-secondary-dark: #d1d5db;
+
+$border-light: #e5e7eb;
+$border-dark: #374151;
+
+$shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+$shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+$shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+$shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+$border-radius-sm: 8px;
+$border-radius-md: 12px;
+$border-radius-lg: 16px;
+$border-radius-xl: 24px;
+
+$transition-fast: 0.15s ease-out;
+$transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+$transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+
+// Mixins
+@mixin glass-effect {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+@mixin glass-effect-dark {
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+@mixin gradient-text($gradient) {
+  background: $gradient;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+@mixin hover-lift {
+  transition: all $transition-normal;
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: $shadow-xl;
+  }
+}
+
+@mixin card-hover {
+  transition: all $transition-normal;
+  &:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: $shadow-lg;
+  }
+}
+
+@mixin button-hover {
+  transition: all $transition-normal;
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);
+  }
+}
+
+// Animations keyframes
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideInFromTop {
+  from {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// Classes utilitaires
+.fade-in-up {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.fade-in-left {
+  animation: fadeInLeft 0.6s ease-out;
+}
+
+.fade-in-right {
+  animation: fadeInRight 0.6s ease-out;
+}
+
+.scale-in {
+  animation: scaleIn 0.4s ease-out;
+}
+
+.slide-in-top {
+  animation: slideInFromTop 0.5s ease-out;
+}
+
+.pulse {
+  animation: pulse 2s infinite;
+}
+
+.float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.rotate {
+  animation: rotate 20s linear infinite;
+}
+
+// Styles de base
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+// Scrollbar personnalisée
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, $primary-color, $secondary-color);
+  border-radius: 4px;
+  
+  &:hover {
+    background: linear-gradient(135deg, $primary-dark, $secondary-dark);
+  }
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+// Sélection de texte
+::selection {
+  background: rgba(99, 102, 241, 0.2);
+  color: $text-primary-light;
+}
+
+// Focus visible
+:focus-visible {
+  outline: 2px solid $primary-color;
+  outline-offset: 2px;
+}
+
+// Styles pour les composants MUI
+.MuiDrawer-paper {
+  @include glass-effect;
+  border-radius: $border-radius-lg 0 0 $border-radius-lg;
+  border: none;
+  box-shadow: $shadow-xl;
+}
+
+.MuiPaper-root {
+  transition: all $transition-normal;
+  
+  &.glass-effect {
+    @include glass-effect;
+  }
+  
+  &.glass-effect-dark {
+    @include glass-effect-dark;
+  }
+}
+
+.MuiButton-root {
+  transition: all $transition-normal;
+  border-radius: $border-radius-md;
+  font-weight: 600;
+  text-transform: none;
+  
+  &.gradient-button {
+    background: linear-gradient(135deg, $primary-color, $secondary-color);
+    color: white;
+    border: none;
+    
+    &:hover {
+      background: linear-gradient(135deg, $primary-dark, $secondary-dark);
+      @include button-hover;
+    }
+  }
+  
+  &.glass-button {
+    @include glass-effect;
+    color: $text-primary-light;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    
+    &:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+    }
+  }
+}
+
+.MuiCard-root {
+  transition: all $transition-normal;
+  border-radius: $border-radius-lg;
+  border: 1px solid $border-light;
+  overflow: hidden;
+  
+  &:hover {
+    @include card-hover;
+  }
+  
+  &.glass-card {
+    @include glass-effect;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+}
+
+.MuiChip-root {
+  transition: all $transition-normal;
+  border-radius: $border-radius-md;
+  
+  &:hover {
+    transform: scale(1.05);
+  }
+}
+
+.MuiAvatar-root {
+  transition: all $transition-normal;
+  
+  &:hover {
+    transform: scale(1.1);
+  }
+}
+
+// Classes personnalisées
+.gradient-text {
+  @include gradient-text(linear-gradient(135deg, $primary-color, $secondary-color));
+}
+
+.gradient-bg {
+  background: linear-gradient(135deg, $primary-color, $secondary-color);
+}
+
+.glass-card {
+  @include glass-effect;
+  border-radius: $border-radius-lg;
+  padding: 1.5rem;
+}
+
+.hover-lift {
+  @include hover-lift;
+}
+
+.card-hover {
+  @include card-hover;
+}
+
+.button-hover {
+  @include button-hover;
+}
+
+// Responsive utilities
+@media (max-width: 768px) {
+  .glass-effect {
+    backdrop-filter: blur(10px);
+  }
+  
+  .glass-effect-dark {
+    backdrop-filter: blur(10px);
+  }
+}
+
+// Dark mode support
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: $background-dark;
+    color: $text-primary-dark;
+  }
+  
+  .glass-effect {
+    @include glass-effect-dark;
+  }
+}
+
+// Print styles
+@media print {
+  .glass-effect,
+  .glass-effect-dark {
+    background: white;
+    backdrop-filter: none;
+    box-shadow: none;
+  }
+}

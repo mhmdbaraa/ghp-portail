@@ -789,6 +789,78 @@ class DjangoApiService {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
   }
+
+  // ========== Project Notes API ==========
+  async getProjectNotes(projectId) {
+    try {
+      const response = await axiosInstance.get(`/projects/notes/`, {
+        params: { project_id: projectId }
+      });
+      return {
+        success: true,
+        data: response.data.results || response.data
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.message,
+        message: 'Failed to load project notes'
+      };
+    }
+  }
+
+  async createProjectNote(projectId, content) {
+    try {
+      const response = await axiosInstance.post(`/projects/notes/`, {
+        project: projectId,
+        content: content
+      });
+      return {
+        success: true,
+        data: response.data.data || response.data,
+        message: response.data.message || 'Note created successfully'
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.message,
+        message: 'Failed to create note'
+      };
+    }
+  }
+
+  async toggleNoteLike(noteId) {
+    try {
+      const response = await axiosInstance.post(`/projects/notes/${noteId}/toggle_like/`);
+      return {
+        success: true,
+        data: response.data.data || response.data,
+        message: response.data.message || 'Like toggled successfully'
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.message,
+        message: 'Failed to toggle like'
+      };
+    }
+  }
+
+  async deleteProjectNote(noteId) {
+    try {
+      await axiosInstance.delete(`/projects/notes/${noteId}/`);
+      return {
+        success: true,
+        message: 'Note deleted successfully'
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.message,
+        message: 'Failed to delete note'
+      };
+    }
+  }
 }
 
 // Create singleton instance

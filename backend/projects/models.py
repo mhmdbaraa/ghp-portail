@@ -392,3 +392,32 @@ class TimeEntry(models.Model):
     
     def __str__(self):
         return f"{self.user.username} - {self.hours}h on {self.task.title} ({self.date})"
+
+
+class ProjectNote(models.Model):
+    """
+    Social media-style notes/comments for projects
+    """
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='project_notes')
+    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='project_notes')
+    content = models.TextField()
+    
+    # Social features
+    likes = models.ManyToManyField(User, related_name='liked_notes', blank=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'project_notes'
+        ordering = ['-created_at']
+        verbose_name = 'Project Note'
+        verbose_name_plural = 'Project Notes'
+    
+    def __str__(self):
+        return f"{self.author.username} - {self.content[:50]}..."
+    
+    @property
+    def likes_count(self):
+        return self.likes.count()

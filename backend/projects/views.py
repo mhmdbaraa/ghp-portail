@@ -6,14 +6,15 @@ from django.db.models import Q, Count, Avg, Sum
 from django.utils import timezone
 from django.contrib.auth import get_user_model
 
-from .models import Project, ProjectComment, ProjectAttachment, Task, TaskComment, TaskAttachment, TimeEntry
+from .models import Project, ProjectComment, ProjectAttachment, Task, TaskComment, TaskAttachment, TimeEntry, ProjectNote
 
 User = get_user_model()
 from .serializers import (
     ProjectSerializer, ProjectListSerializer, ProjectCreateUpdateSerializer,
     ProjectCommentSerializer, ProjectAttachmentSerializer,
     TaskSerializer, TaskListSerializer, TaskCreateUpdateSerializer,
-    TaskCommentSerializer, TaskAttachmentSerializer, TimeEntrySerializer
+    TaskCommentSerializer, TaskAttachmentSerializer, TimeEntrySerializer,
+    ProjectNoteSerializer
 )
 from .filters import ProjectFilter, TaskFilter
 
@@ -825,3 +826,60 @@ def dashboard_data(request):
             'success': False,
             'error': str(e)
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class ProjectNoteViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for project notes (social media style comments)
+    """
+    serializer_class = ProjectNoteSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        """Filter notes by project if project_id is provided"""
+        queryset = ProjectNote.objects.all()
+        project_id = self.request.query_params.get('project_id')
+        if project_id:
+            queryset = queryset.filter(project_id=project_id)
+        return queryset
+    
+    def create(self, request, *args, **kwargs):
+        """Create a new note"""
+        serializer = self.get_serializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        return Response({
+            'success': True,
+            'data': serializer.data,
+            'message': 'Note created successfully'
+        }, status=status.HTTP_201_CREATED)
+    
+    @action(detail=True, methods=['post'])
+    def toggle_like(self, request, pk=None):
+        """Toggle like on a note"""
+        try:
+            note = self.get_object()
+            user = request.user
+            
+            if note.likes.filter(id=user.id).exists():
+                note.likes.remove(user)
+                liked = False
+                message = 'Like removed'
+            else:
+                note.likes.add(user)
+                liked = True
+                message = 'Note liked'
+            
+            return Response({
+                'success': True,
+                'data': {
+                    'liked': liked,
+                    'likes_count': note.likes_count
+                },
+                'message': message
+            })
+        except Exception as e:
+            return Response({
+                'success': False,
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

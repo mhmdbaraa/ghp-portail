@@ -21,6 +21,9 @@ urlpatterns = [
     path('dashboard/', views.dashboard_data, name='dashboard_data'),
     path('<int:project_id>/comments/', views.ProjectCommentListCreateView.as_view({'get': 'list', 'post': 'create'}), name='project_comments'),
     path('<int:project_id>/attachments/', views.ProjectAttachmentListCreateView.as_view({'get': 'list', 'post': 'create'}), name='project_attachments'),
+    path('notes/', views.ProjectNoteViewSet.as_view({'get': 'list', 'post': 'create'}), name='project_notes'),
+    path('notes/<int:pk>/', views.ProjectNoteViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}), name='project_note_detail'),
+    path('notes/<int:pk>/toggle_like/', views.ProjectNoteViewSet.as_view({'post': 'toggle_like'}), name='project_note_toggle_like'),
     
     # Router URLs (must come last)
     path('', include(router.urls)),

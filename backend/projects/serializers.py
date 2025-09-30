@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .models import Project, ProjectComment, ProjectAttachment, Task, TaskComment, TaskAttachment, TimeEntry
+from .models import Project, ProjectComment, ProjectAttachment, Task, TaskComment, TaskAttachment, TimeEntry, ProjectNote
 
 User = get_user_model()
 
@@ -340,4 +340,38 @@ class TimeEntrySerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         validated_data['user'] = self.context['request'].user
+        return super().create(validated_data)
+
+
+class ProjectNoteSerializer(serializers.ModelSerializer):
+    """
+    Serializer for project notes (social media style)
+    """
+    author_name = serializers.CharField(source='author.full_name', read_only=True)
+    author_username = serializers.CharField(source='author.username', read_only=True)
+    author_avatar = serializers.SerializerMethodField()
+    author_position = serializers.CharField(source='author.position', read_only=True)
+    likes_count = serializers.ReadOnlyField()
+    is_liked = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = ProjectNote
+        fields = [
+            'id', 'project', 'author', 'author_name', 'author_username',
+            'author_avatar', 'author_position', 'content', 'likes_count',
+            'is_liked', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'author', 'created_at', 'updated_at']
+    
+    def get_author_avatar(self, obj):
+        return obj.author.avatar.url if obj.author.avatar else None
+    
+    def get_is_liked(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return obj.likes.filter(id=request.user.id).exists()
+        return False
+    
+    def create(self, validated_data):
+        validated_data['author'] = self.context['request'].user
         return super().create(validated_data)

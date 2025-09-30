@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -22,6 +22,9 @@ import {
   alpha,
   Tooltip,
   AvatarGroup,
+  TextField,
+  Button,
+  CircularProgress,
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -37,20 +40,42 @@ import {
   AccountCircle,
   Edit,
   PlayArrow,
+  ChatBubbleOutline,
+  Send,
+  FavoriteBorder,
+  Favorite,
 } from '@mui/icons-material';
 import djangoApiService from '../../shared/services/djangoApiService';
+import { useAuth } from '../../shared/contexts/AuthContext';
 
 const ProjectDetails = ({ open, onClose, project }) => {
   const theme = useTheme();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState(0);
   const [tasks, setTasks] = useState([]);
   const [loadingTasks, setLoadingTasks] = useState(false);
+  const [notes, setNotes] = useState([]);
+  const [loadingNotes, setLoadingNotes] = useState(false);
+  const [newNote, setNewNote] = useState('');
+  const [postingNote, setPostingNote] = useState(false);
+  const notesEndRef = useRef(null);
 
   useEffect(() => {
     if (open && project) {
       loadProjectTasks();
+      loadProjectNotes();
     }
   }, [open, project]);
+
+  useEffect(() => {
+    if (activeTab === 3) {
+      scrollToBottom();
+    }
+  }, [activeTab, notes]);
+
+  const scrollToBottom = () => {
+    notesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   const loadProjectTasks = async () => {
     if (!project?.id) return;
@@ -68,6 +93,55 @@ const ProjectDetails = ({ open, onClose, project }) => {
       console.error('Error loading tasks:', error);
     } finally {
       setLoadingTasks(false);
+    }
+  };
+
+  const loadProjectNotes = async () => {
+    if (!project?.id) return;
+    
+    setLoadingNotes(true);
+    try {
+      const result = await djangoApiService.getProjectNotes(project.id);
+      if (result.success) {
+        setNotes(result.data || []);
+      }
+    } catch (error) {
+      console.error('Error loading notes:', error);
+    } finally {
+      setLoadingNotes(false);
+    }
+  };
+
+  const handlePostNote = async () => {
+    if (!newNote.trim() || !project?.id) return;
+    
+    setPostingNote(true);
+    try {
+      const result = await djangoApiService.createProjectNote(project.id, newNote);
+      if (result.success) {
+        setNotes([result.data, ...notes]);
+        setNewNote('');
+        setTimeout(scrollToBottom, 100);
+      }
+    } catch (error) {
+      console.error('Error posting note:', error);
+    } finally {
+      setPostingNote(false);
+    }
+  };
+
+  const handleToggleLike = async (noteId) => {
+    try {
+      const result = await djangoApiService.toggleNoteLike(noteId);
+      if (result.success) {
+        setNotes(notes.map(note => 
+          note.id === noteId 
+            ? { ...note, is_liked: result.data.liked, likes_count: result.data.likes_count }
+            : note
+        ));
+      }
+    } catch (error) {
+      console.error('Error toggling like:', error);
     }
   };
 
@@ -258,6 +332,7 @@ const ProjectDetails = ({ open, onClose, project }) => {
             <Tab label="Vue d'ensemble" icon={<Description />} iconPosition="start" />
             <Tab label={`Tâches (${tasks.length})`} icon={<Assignment />} iconPosition="start" />
             <Tab label="Équipe" icon={<Group />} iconPosition="start" />
+            <Tab label={`Notes (${notes.length})`} icon={<ChatBubbleOutline />} iconPosition="start" />
           </Tabs>
         </Box>
 
@@ -520,6 +595,124 @@ const ProjectDetails = ({ open, onClose, project }) => {
                   )}
                 </CardContent>
               </Card>
+            </Box>
+          )}
+
+          {/* Notes Tab - Social Media Style */}
+          {activeTab === 3 && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', height: 'calc(90vh - 400px)' }}>
+              {/* Post New Note */}
+              <Card sx={{ mb: 2 }}>
+                <CardContent>
+                  <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
+                    <Avatar sx={{ bgcolor: 'primary.main', mt: 1 }}>
+                      {user?.full_name?.charAt(0) || user?.username?.charAt(0) || 'U'}
+                    </Avatar>
+                    <Box sx={{ flex: 1 }}>
+                      <TextField
+                        fullWidth
+                        multiline
+                        rows={3}
+                        placeholder="Écrivez une note sur ce projet..."
+                        value={newNote}
+                        onChange={(e) => setNewNote(e.target.value)}
+                        variant="outlined"
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: 2,
+                          }
+                        }}
+                      />
+                      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
+                        <Button
+                          variant="contained"
+                          endIcon={postingNote ? <CircularProgress size={20} color="inherit" /> : <Send />}
+                          onClick={handlePostNote}
+                          disabled={!newNote.trim() || postingNote}
+                          sx={{ borderRadius: 20 }}
+                        >
+                          {postingNote ? 'Envoi...' : 'Publier'}
+                        </Button>
+                      </Box>
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+
+              {/* Notes Feed */}
+              <Box sx={{ flex: 1, overflow: 'auto', pr: 1 }}>
+                {loadingNotes ? (
+                  <Box sx={{ textAlign: 'center', py: 4 }}>
+                    <CircularProgress />
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                      Chargement des notes...
+                    </Typography>
+                  </Box>
+                ) : notes.length === 0 ? (
+                  <Box sx={{ textAlign: 'center', py: 6 }}>
+                    <ChatBubbleOutline sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+                    <Typography variant="h6" color="text.secondary">
+                      Aucune note pour le moment
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Soyez le premier à publier une note !
+                    </Typography>
+                  </Box>
+                ) : (
+                  <List sx={{ py: 0 }}>
+                    {notes.map((note) => (
+                      <Card key={note.id} sx={{ mb: 2, borderRadius: 2 }}>
+                        <CardContent>
+                          <Box sx={{ display: 'flex', gap: 2 }}>
+                            <Avatar sx={{ bgcolor: 'primary.main' }}>
+                              {note.author_name?.charAt(0) || note.author_username?.charAt(0) || 'U'}
+                            </Avatar>
+                            <Box sx={{ flex: 1 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                                <Box>
+                                  <Typography variant="subtitle2" fontWeight={600}>
+                                    {note.author_name || note.author_username}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {note.author_position && `${note.author_position} • `}
+                                    {new Date(note.created_at).toLocaleString('fr-FR', {
+                                      day: 'numeric',
+                                      month: 'short',
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })}
+                                  </Typography>
+                                </Box>
+                              </Box>
+                              <Typography variant="body1" sx={{ mb: 2, whiteSpace: 'pre-wrap' }}>
+                                {note.content}
+                              </Typography>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleToggleLike(note.id)}
+                                  sx={{
+                                    color: note.is_liked ? 'error.main' : 'text.secondary',
+                                    '&:hover': {
+                                      backgroundColor: note.is_liked ? alpha(theme.palette.error.main, 0.1) : 'action.hover',
+                                    }
+                                  }}
+                                >
+                                  {note.is_liked ? <Favorite fontSize="small" /> : <FavoriteBorder fontSize="small" />}
+                                </IconButton>
+                                <Typography variant="caption" color="text.secondary">
+                                  {note.likes_count || 0} {note.likes_count === 1 ? 'like' : 'likes'}
+                                </Typography>
+                              </Box>
+                            </Box>
+                          </Box>
+                        </CardContent>
+                      </Card>
+                    ))}
+                    <div ref={notesEndRef} />
+                  </List>
+                )}
+              </Box>
             </Box>
           )}
         </Box>

@@ -475,7 +475,19 @@ const Layout = ({ children }) => {
                     {user.name}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    {user.role}
+                    {(() => {
+                      switch (user.role) {
+                        case 'admin': return 'Administrateur';
+                        case 'manager': return 'Manager';
+                        case 'developer': return 'Développeur';
+                        case 'designer': return 'Designer';
+                        case 'tester': return 'Testeur';
+                        case 'user': return 'Utilisateur';
+                        case 'PROJECT_MANAGER': return 'Gestionnaire de Projet';
+                        case 'PROJECT_USER': return 'Utilisateur de Projet';
+                        default: return user.role || 'Utilisateur';
+                      }
+                    })()}
                   </Typography>
                 </Box>
               )}

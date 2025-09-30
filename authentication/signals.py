@@ -1,25 +1,18 @@
-#!/usr/bin/env python
-"""
-Simple script to create project roles and permissions
-"""
-import os
-import sys
-import django
+from django.db.models.signals import post_migrate
+from django.dispatch import receiver
+from .models import Role, Permission
 
-# Setup Django environment
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'projecttracker.settings')
 
-# Add the backend directory to Python path
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+@receiver(post_migrate)
+def create_initial_roles(sender, **kwargs):
+    """Create initial roles and permissions after migrations"""
+    if sender.name == 'authentication':
+        create_project_roles()
 
-try:
-    django.setup()
-    
-    from authentication.models import Role, Permission, User
-    
-    def create_roles():
-        print("🚀 Creating project roles and permissions...")
-        
+
+def create_project_roles():
+    """Create PROJECT_MANAGER and PROJECT_USER roles with permissions"""
+    try:
         # Create permissions
         permissions_data = [
             {'name': 'View Projects', 'codename': 'view_project', 'description': 'Can view projects', 'category': 'projects'},
@@ -40,8 +33,6 @@ try:
                 codename=perm_data['codename'],
                 defaults=perm_data
             )
-            if created:
-                print(f"✓ Created permission: {permission.name}")
             created_permissions.append(permission)
         
         # Create PROJECT_MANAGER role
@@ -52,12 +43,7 @@ try:
                 'is_system': True
             }
         )
-        if created:
-            print(f"✓ Created role: {manager_role.name}")
-        
-        # Assign all permissions to PROJECT_MANAGER
         manager_role.permissions.set(created_permissions)
-        print(f"✓ Assigned {len(created_permissions)} permissions to PROJECT_MANAGER")
         
         # Create PROJECT_USER role
         user_role, created = Role.objects.get_or_create(
@@ -67,20 +53,10 @@ try:
                 'is_system': True
             }
         )
-        if created:
-            print(f"✓ Created role: {user_role.name}")
-        
-        # Assign view-only permissions to PROJECT_USER
         view_permissions = [p for p in created_permissions if p.codename in ['view_project', 'view_task', 'view_calendar']]
         user_role.permissions.set(view_permissions)
-        print(f"✓ Assigned {len(view_permissions)} permissions to PROJECT_USER")
         
-        print("\n✅ Roles and permissions created successfully!")
-        return manager_role, user_role
-    
-    if __name__ == '__main__':
-        create_roles()
+        print("✅ Roles and permissions created successfully!")
         
-except Exception as e:
-    print(f"❌ Error: {e}")
-    print("Make sure you're in the backend directory and Django is properly configured.")
+    except Exception as e:
+        print(f"❌ Error creating roles: {e}")

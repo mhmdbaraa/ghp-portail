@@ -97,7 +97,22 @@ const UserProfileDropdown = () => {
 
   const displayName = safeDisplayName(user);
   const initial = safeInitial(user);
-  const roleLabel = user.role || 'Utilisateur';
+  
+  const getRoleLabel = (role) => {
+    switch (role) {
+      case 'admin': return 'Administrateur';
+      case 'manager': return 'Manager';
+      case 'developer': return 'Développeur';
+      case 'designer': return 'Designer';
+      case 'tester': return 'Testeur';
+      case 'user': return 'Utilisateur';
+      case 'PROJECT_MANAGER': return 'Gestionnaire de Projet';
+      case 'PROJECT_USER': return 'Utilisateur de Projet';
+      default: return role || 'Utilisateur';
+    }
+  };
+  
+  const roleLabel = getRoleLabel(user.role);
 
   return (
     <>

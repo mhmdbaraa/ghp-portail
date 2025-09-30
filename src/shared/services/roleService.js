@@ -1,230 +1,183 @@
-import djangoApiService from './djangoApiService';
+import axiosInstance from './axiosInstance';
 
-class RoleService {
-  constructor() {
-    this.baseURL = '/auth/roles/';
-  }
-
+const roleService = {
   // Get all roles
-  async getRoles(params = {}) {
+  getRoles: async () => {
     try {
-      const response = await djangoApiService.get(this.baseURL, { params });
+      const response = await axiosInstance.get('/authentication/roles/');
       return {
         success: true,
-        data: response.data,
+        data: response.data.results || response.data,
         message: 'Roles retrieved successfully'
       };
     } catch (error) {
+      console.error('Error fetching roles:', error);
       return {
         success: false,
         error: error.response?.data?.detail || error.message,
         message: 'Failed to retrieve roles'
       };
     }
-  }
+  },
 
   // Get role by ID
-  async getRole(id) {
+  getRole: async (id) => {
     try {
-      const response = await djangoApiService.get(`${this.baseURL}${id}/`);
+      const response = await axiosInstance.get(`/authentication/roles/${id}/`);
       return {
         success: true,
         data: response.data,
         message: 'Role retrieved successfully'
       };
     } catch (error) {
+      console.error('Error fetching role:', error);
       return {
         success: false,
         error: error.response?.data?.detail || error.message,
         message: 'Failed to retrieve role'
       };
     }
-  }
+  },
 
   // Create new role
-  async createRole(roleData) {
+  createRole: async (roleData) => {
     try {
-      const response = await djangoApiService.post(this.baseURL, roleData);
+      const response = await axiosInstance.post('/authentication/roles/', roleData);
       return {
         success: true,
         data: response.data,
         message: 'Role created successfully'
       };
     } catch (error) {
+      console.error('Error creating role:', error);
       return {
         success: false,
-        error: error.response?.data?.detail || error.message,
+        error: error.response?.data || error.message,
         message: 'Failed to create role'
       };
     }
-  }
+  },
 
   // Update role
-  async updateRole(id, roleData) {
+  updateRole: async (id, roleData) => {
     try {
-      const response = await djangoApiService.put(`${this.baseURL}${id}/`, roleData);
+      const response = await axiosInstance.put(`/authentication/roles/${id}/`, roleData);
       return {
         success: true,
         data: response.data,
         message: 'Role updated successfully'
       };
     } catch (error) {
+      console.error('Error updating role:', error);
       return {
         success: false,
-        error: error.response?.data?.detail || error.message,
+        error: error.response?.data || error.message,
         message: 'Failed to update role'
       };
     }
-  }
+  },
 
   // Delete role
-  async deleteRole(id) {
+  deleteRole: async (id) => {
     try {
-      await djangoApiService.delete(`${this.baseURL}${id}/`);
+      const response = await axiosInstance.delete(`/authentication/roles/${id}/`);
       return {
         success: true,
+        data: response.data,
         message: 'Role deleted successfully'
       };
     } catch (error) {
+      console.error('Error deleting role:', error);
       return {
         success: false,
         error: error.response?.data?.detail || error.message,
         message: 'Failed to delete role'
       };
     }
-  }
+  },
 
   // Get role permissions
-  async getRolePermissions(roleId) {
+  getRolePermissions: async (id) => {
     try {
-      const response = await djangoApiService.get(`${this.baseURL}${roleId}/permissions/`);
-      return {
-        success: true,
-        data: response.data,
-        message: 'Role permissions retrieved successfully'
-      };
+      const response = await axiosInstance.get(`/authentication/roles/${id}/permissions/`);
+      return response.data;
     } catch (error) {
-      return {
-        success: false,
-        error: error.response?.data?.detail || error.message,
-        message: 'Failed to retrieve role permissions'
-      };
+      console.error('Error fetching role permissions:', error);
+      throw error;
     }
-  }
+  },
 
   // Update role permissions
-  async updateRolePermissions(roleId, permissions) {
+  updateRolePermissions: async (id, permissions) => {
     try {
-      const response = await djangoApiService.put(`${this.baseURL}${roleId}/permissions/`, {
-        permissions: permissions
+      const response = await axiosInstance.put(`/authentication/roles/${id}/permissions/update/`, {
+        permissions
       });
-      return {
-        success: true,
-        data: response.data,
-        message: 'Role permissions updated successfully'
-      };
+      return response.data;
     } catch (error) {
-      return {
-        success: false,
-        error: error.response?.data?.detail || error.message,
-        message: 'Failed to update role permissions'
-      };
+      console.error('Error updating role permissions:', error);
+      throw error;
     }
-  }
+  },
 
-  // Get users with role
-  async getUsersWithRole(roleId) {
+  // Get users with specific role
+  getRoleUsers: async (id) => {
     try {
-      const response = await djangoApiService.get(`${this.baseURL}${roleId}/users/`);
-      return {
-        success: true,
-        data: response.data,
-        message: 'Role users retrieved successfully'
-      };
+      const response = await axiosInstance.get(`/authentication/roles/${id}/users/`);
+      return response.data;
     } catch (error) {
-      return {
-        success: false,
-        error: error.response?.data?.detail || error.message,
-        message: 'Failed to retrieve role users'
-      };
+      console.error('Error fetching role users:', error);
+      throw error;
     }
-  }
+  },
 
   // Assign role to user
-  async assignRoleToUser(userId, roleId) {
+  assignRoleToUser: async (roleId, userId) => {
     try {
-      const response = await djangoApiService.post(`${this.baseURL}${roleId}/assign/`, {
+      const response = await axiosInstance.post(`/authentication/roles/${roleId}/assign/`, {
         user_id: userId
       });
-      return {
-        success: true,
-        data: response.data,
-        message: 'Role assigned to user successfully'
-      };
+      return response.data;
     } catch (error) {
-      return {
-        success: false,
-        error: error.response?.data?.detail || error.message,
-        message: 'Failed to assign role to user'
-      };
+      console.error('Error assigning role to user:', error);
+      throw error;
     }
-  }
+  },
 
   // Remove role from user
-  async removeRoleFromUser(userId, roleId) {
+  removeRoleFromUser: async (roleId, userId) => {
     try {
-      const response = await djangoApiService.delete(`${this.baseURL}${roleId}/assign/`, {
-        data: { user_id: userId }
+      const response = await axiosInstance.post(`/authentication/roles/${roleId}/remove/`, {
+        user_id: userId
       });
-      return {
-        success: true,
-        data: response.data,
-        message: 'Role removed from user successfully'
-      };
+      return response.data;
     } catch (error) {
-      return {
-        success: false,
-        error: error.response?.data?.detail || error.message,
-        message: 'Failed to remove role from user'
-      };
+      console.error('Error removing role from user:', error);
+      throw error;
     }
-  }
+  },
 
   // Get role statistics
-  async getRoleStats() {
+  getRoleStatistics: async () => {
     try {
-      const response = await djangoApiService.get(`${this.baseURL}/statistics/`);
-      return {
-        success: true,
-        data: response.data,
-        message: 'Role statistics retrieved successfully'
-      };
+      const response = await axiosInstance.get('/authentication/roles/statistics/');
+      return response.data;
     } catch (error) {
-      return {
-        success: false,
-        error: error.response?.data?.detail || error.message,
-        message: 'Failed to retrieve role statistics'
-      };
+      console.error('Error fetching role statistics:', error);
+      throw error;
     }
-  }
+  },
 
   // Clone role
-  async cloneRole(roleId, newRoleData) {
+  cloneRole: async (id, newRoleData) => {
     try {
-      const response = await djangoApiService.post(`${this.baseURL}${roleId}/clone/`, newRoleData);
-      return {
-        success: true,
-        data: response.data,
-        message: 'Role cloned successfully'
-      };
+      const response = await axiosInstance.post(`/authentication/roles/${id}/clone/`, newRoleData);
+      return response.data;
     } catch (error) {
-      return {
-        success: false,
-        error: error.response?.data?.detail || error.message,
-        message: 'Failed to clone role'
-      };
+      console.error('Error cloning role:', error);
+      throw error;
     }
   }
-}
+};
 
-export default new RoleService();
+export default roleService;

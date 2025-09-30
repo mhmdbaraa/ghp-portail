@@ -57,6 +57,7 @@ const NoProjectAccess = ({ userRole }) => {
           </Typography>
           
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+            {/* Manager-level roles */}
             <Box
               sx={{
                 display: 'flex',
@@ -64,16 +65,16 @@ const NoProjectAccess = ({ userRole }) => {
                 gap: 2,
                 p: 2,
                 backgroundColor: (theme) =>
-                  theme.palette.mode === 'dark' ? 'rgba(99, 102, 241, 0.1)' : 'rgba(99, 102, 241, 0.05)',
+                  theme.palette.mode === 'dark' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(239, 68, 68, 0.05)',
                 borderRadius: 1,
                 border: '1px solid',
-                borderColor: 'primary.main',
+                borderColor: 'error.main',
               }}
             >
-              <AdminPanelSettings color="primary" />
+              <AdminPanelSettings color="error" />
               <Box sx={{ textAlign: 'left' }}>
-                <Typography variant="subtitle1" fontWeight={600} color="primary.main">
-                  PROJECT_MANAGER
+                <Typography variant="subtitle1" fontWeight={600} color="error.main">
+                  Admin, Manager, PROJECT_MANAGER
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
                   Accès complet : créer, modifier, supprimer des projets et tâches
@@ -81,6 +82,7 @@ const NoProjectAccess = ({ userRole }) => {
               </Box>
             </Box>
             
+            {/* User-level roles */}
             <Box
               sx={{
                 display: 'flex',
@@ -97,10 +99,10 @@ const NoProjectAccess = ({ userRole }) => {
               <AdminPanelSettings color="success" />
               <Box sx={{ textAlign: 'left' }}>
                 <Typography variant="subtitle1" fontWeight={600} color="success.main">
-                  PROJECT_USER
+                  Developer, Designer, Tester, User, PROJECT_USER
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  Accès lecture seule : consulter les projets et tâches
+                  Accès lecture : consulter les projets et tâches
                 </Typography>
               </Box>
             </Box>

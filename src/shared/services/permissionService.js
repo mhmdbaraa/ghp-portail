@@ -2,7 +2,7 @@ import djangoApiService from './djangoApiService';
 
 class PermissionService {
   constructor() {
-    this.baseURL = '/auth/permissions/';
+    this.baseURL = '/authentication/permissions/';
   }
 
   // Get all permissions

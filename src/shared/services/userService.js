@@ -3,7 +3,7 @@ import djangoApiService from './djangoApiService';
 
 class UserService {
   constructor() {
-    this.baseURL = '/auth/users';
+    this.baseURL = '/authentication/users';
   }
 
   // Get all users with pagination and filters
@@ -80,6 +80,7 @@ class UserService {
   // Update user
   async updateUser(id, userData) {
     try {
+      console.log('Updating user with ID:', id, 'Data:', userData);
       const response = await djangoApiService.put(`${this.baseURL}/${id}/`, userData);
       return {
         success: true,
@@ -87,6 +88,8 @@ class UserService {
         message: 'User updated successfully'
       };
     } catch (error) {
+      console.error('User update error:', error);
+      console.error('Error response:', error.response?.data);
       return {
         success: false,
         error: error.response?.data || error.message,
@@ -353,7 +356,7 @@ class UserService {
   // Get user statistics for dashboard
   async getUserStats() {
     try {
-      const response = await djangoApiService.get('/auth/users/statistics/');
+      const response = await djangoApiService.get('/authentication/users/statistics/');
       return {
         success: true,
         data: response.data.data,
@@ -371,7 +374,7 @@ class UserService {
   // Get recent users for dashboard
   async getRecentUsers() {
     try {
-      const response = await djangoApiService.get('/auth/users/recent/');
+      const response = await djangoApiService.get('/authentication/users/recent/');
       return {
         success: true,
         data: response.data.data,

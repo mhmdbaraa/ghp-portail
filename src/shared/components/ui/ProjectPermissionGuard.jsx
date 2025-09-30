@@ -27,16 +27,20 @@ const ProjectPermissionGuard = ({
   
   const userRole = user.role || user.user_role || '';
   
-  // If requireManager is true, only PROJECT_MANAGER can see the content
+  // Define roles that have project access
+  const projectManagerRoles = ['admin', 'manager', 'PROJECT_MANAGER'];
+  const projectUserRoles = ['admin', 'manager', 'developer', 'designer', 'tester', 'user', 'PROJECT_MANAGER', 'PROJECT_USER'];
+  
+  // If requireManager is true, only manager-level roles can see the content
   if (requireManager) {
-    if (userRole === 'PROJECT_MANAGER') {
+    if (projectManagerRoles.includes(userRole)) {
       return <>{children}</>;
     }
     return fallback;
   }
   
-  // If not requireManager, both PROJECT_MANAGER and PROJECT_USER can see
-  if (userRole === 'PROJECT_MANAGER' || userRole === 'PROJECT_USER') {
+  // If not requireManager, all project-related roles can see
+  if (projectUserRoles.includes(userRole)) {
     return <>{children}</>;
   }
   
@@ -51,13 +55,17 @@ export const useProjectPermissions = () => {
   
   const userRole = user?.role || user?.user_role || '';
   
+  // Define roles that have project access
+  const projectManagerRoles = ['admin', 'manager', 'PROJECT_MANAGER'];
+  const projectUserRoles = ['admin', 'manager', 'developer', 'designer', 'tester', 'user', 'PROJECT_MANAGER', 'PROJECT_USER'];
+  
   return {
-    isProjectManager: userRole === 'PROJECT_MANAGER',
-    isProjectUser: userRole === 'PROJECT_USER',
-    canView: userRole === 'PROJECT_MANAGER' || userRole === 'PROJECT_USER',
-    canEdit: userRole === 'PROJECT_MANAGER',
-    canCreate: userRole === 'PROJECT_MANAGER',
-    canDelete: userRole === 'PROJECT_MANAGER',
+    isProjectManager: projectManagerRoles.includes(userRole),
+    isProjectUser: projectUserRoles.includes(userRole),
+    canView: projectUserRoles.includes(userRole),
+    canEdit: projectManagerRoles.includes(userRole),
+    canCreate: projectManagerRoles.includes(userRole),
+    canDelete: projectManagerRoles.includes(userRole),
     userRole: userRole,
   };
 };

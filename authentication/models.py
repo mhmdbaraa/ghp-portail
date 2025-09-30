@@ -15,6 +15,8 @@ class User(AbstractUser):
         ('designer', 'Designer'),
         ('tester', 'Tester'),
         ('user', 'User'),
+        ('PROJECT_MANAGER', 'Project Manager'),
+        ('PROJECT_USER', 'Project User'),
     ]
     
     STATUS_CHOICES = [
@@ -59,64 +61,135 @@ class User(AbstractUser):
     
     def has_permission(self, permission):
         """Check if user has a specific permission"""
-        if self.role == 'admin':
+        # Superuser (admin) has ALL permissions - no restrictions
+        if self.role == 'admin' or self.is_superuser or self.is_staff:
             return True
         
-        # Define role-based permissions
+        # Define simple role-based permission groups
         role_permissions = {
-            'manager': [
+            'admin': [
                 'project:view', 'project:create', 'project:edit', 'project:delete',
                 'task:view', 'task:create', 'task:edit', 'task:delete',
-                'team:view', 'team:manage', 'user:view'
+                'user:view', 'user:create', 'user:edit', 'user:delete', 'user:manage'
+            ],
+            'manager': [
+                'project:view', 'project:create', 'project:edit', 'project:delete',
+                'task:view', 'task:create', 'task:edit', 'task:delete'
+                # Removed user permissions - only superuser can manage users
             ],
             'developer': [
-                'project:view', 'task:view', 'task:create', 'task:edit',
-                'team:view'
+                'project:view', 'task:view', 'task:create', 'task:edit'
             ],
             'designer': [
-                'project:view', 'task:view', 'task:create', 'task:edit',
-                'team:view'
+                'project:view', 'task:view', 'task:create', 'task:edit'
             ],
             'tester': [
-                'project:view', 'task:view', 'task:edit',
-                'team:view'
+                'project:view', 'task:view', 'task:edit'
             ],
             'user': [
-                'project:view', 'task:view', 'team:view'
+                'project:view', 'task:view'
+            ],
+            'PROJECT_MANAGER': [
+                'project:view', 'project:create', 'project:edit', 'project:delete',
+                'task:view', 'task:create', 'task:edit', 'task:delete'
+                # Removed user permissions - only superuser can manage users
+            ],
+            'PROJECT_USER': [
+                'project:view', 'task:view'
             ]
         }
         
         return permission in role_permissions.get(self.role, [])
     
+    def save(self, *args, **kwargs):
+        """Override save to ensure superuser has admin role"""
+        if self.is_superuser and self.role != 'admin':
+            self.role = 'admin'
+        # Ensure admin/staff flags are consistent for superusers
+        if self.is_superuser:
+            if not self.is_staff:
+                self.is_staff = True
+        super().save(*args, **kwargs)
+    
+    def is_protected_user(self):
+        """Check if user is protected from frontend modifications"""
+        return self.is_superuser or self.username in ['admin', 'root', 'superuser']
+    
+    def can_be_modified_by(self, requesting_user):
+        """Check if this user can be modified by the requesting user"""
+        if not requesting_user:
+            return False
+        
+        # Superusers can only be modified by other superusers
+        if self.is_superuser:
+            return requesting_user.is_superuser
+        
+        # Regular users can be modified by superusers or managers
+        return requesting_user.is_superuser or requesting_user.role in ['admin', 'manager']
+    
+    @classmethod
+    def fix_superuser_roles(cls):
+        """Fix all superusers to have admin role"""
+        superusers = cls.objects.filter(is_superuser=True)
+        for user in superusers:
+            if user.role != 'admin':
+                user.role = 'admin'
+                user.save()
+                print(f"Fixed role for superuser: {user.username}")
+        return superusers.count()
+    
+    @classmethod
+    def fix_admin_user(cls):
+        """Fix the admin user specifically"""
+        try:
+            admin_user = cls.objects.get(username='admin')
+            if admin_user.role != 'admin':
+                admin_user.role = 'admin'
+                admin_user.save()
+                print(f"Fixed admin user role: {admin_user.role}")
+            return admin_user
+        except cls.DoesNotExist:
+            print("Admin user not found")
+            return None
+    
     def get_permissions(self):
         """Get all permissions for the user"""
-        if self.role == 'admin':
+        # Superuser (admin) has ALL permissions
+        if self.role == 'admin' or self.is_superuser or self.is_staff:
             return [
                 'project:view', 'project:create', 'project:edit', 'project:delete',
                 'task:view', 'task:create', 'task:edit', 'task:delete',
-                'team:view', 'team:manage', 'user:manage'
+                'user:view', 'user:create', 'user:edit', 'user:delete', 'user:manage',
+                'team:view', 'team:manage',
+                'system:admin'  # Special permission for system administration
             ]
         
+        # Simple role-based permission groups
         role_permissions = {
             'manager': [
                 'project:view', 'project:create', 'project:edit', 'project:delete',
                 'task:view', 'task:create', 'task:edit', 'task:delete',
-                'team:view', 'team:manage', 'user:view'
+                'user:view', 'user:create', 'user:edit'
             ],
             'developer': [
-                'project:view', 'task:view', 'task:create', 'task:edit',
-                'team:view'
+                'project:view', 'task:view', 'task:create', 'task:edit'
             ],
             'designer': [
-                'project:view', 'task:view', 'task:create', 'task:edit',
-                'team:view'
+                'project:view', 'task:view', 'task:create', 'task:edit'
             ],
             'tester': [
-                'project:view', 'task:view', 'task:edit',
-                'team:view'
+                'project:view', 'task:view', 'task:edit'
             ],
             'user': [
-                'project:view', 'task:view', 'team:view'
+                'project:view', 'task:view'
+            ],
+            'PROJECT_MANAGER': [
+                'project:view', 'project:create', 'project:edit', 'project:delete',
+                'task:view', 'task:create', 'task:edit', 'task:delete',
+                'user:view', 'user:create', 'user:edit'
+            ],
+            'PROJECT_USER': [
+                'project:view', 'task:view'
             ]
         }
         

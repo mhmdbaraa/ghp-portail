@@ -282,18 +282,35 @@ def change_password_view(request):
 # User Management Views
 class UserListView(generics.ListCreateAPIView):
     """
-    List all users or create a new user
+    List all users or create a new user - Only superusers can access
     """
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [permissions.AllowAny]  # Temporaire pour les tests
+    permission_classes = [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['role', 'status', 'department']
     search_fields = ['username', 'first_name', 'last_name', 'email']
     ordering_fields = ['username', 'first_name', 'last_name', 'created_at', 'last_login']
     ordering = ['-created_at']
-
+    
     def get_queryset(self):
+        """All authenticated users can see all users (for project team management)"""
+        return User.objects.all()
+    
+    def list(self, request, *args, **kwargs):
+        """Check permissions before listing users"""
+        # Allow all authenticated users to view user list (for project team management)
+        if not request.user.is_authenticated:
+            return Response({
+                'success': False,
+                'message': 'Authentication required.',
+                'error': 'Authentication required'
+            }, status=status.HTTP_401_UNAUTHORIZED)
+        
+        return super().list(request, *args, **kwargs)
+
+    def get_queryset_filtered(self):
+        """Get filtered queryset for superusers"""
         queryset = User.objects.all()
         
         # Filter by status if provided
@@ -332,15 +349,45 @@ class UserListView(generics.ListCreateAPIView):
 
 class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
     """
-    Retrieve, update or delete a user
+    Retrieve, update or delete a user - Only superusers can access other users
     """
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [permissions.AllowAny]  # Temporaire pour les tests
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_object(self):
+        """Only superusers can access other users' details"""
+        obj = super().get_object()
+        
+        # Users can always access their own details
+        if obj.id == self.request.user.id:
+            return obj
+        
+        # Only superusers can access other users' details
+        if not self.request.user.is_superuser:
+            return Response({
+                'success': False,
+                'message': 'Access denied. Only superusers can view other users.',
+                'error': 'Insufficient permissions'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        return obj
 
     def update(self, request, *args, **kwargs):
-        partial = kwargs.pop('partial', False)
+        # Allow partial updates to reduce validation friction on role-only edits
+        partial = True
         instance = self.get_object()
+        
+        # Protect superusers from modification
+        if instance.is_protected_user():
+            # Only allow superusers to modify other superusers
+            if not request.user.is_superuser:
+                return Response({
+                    'success': False,
+                    'message': 'Cannot modify protected user (superuser)',
+                    'error': 'Protected user cannot be modified from frontend'
+                }, status=status.HTTP_403_FORBIDDEN)
+        
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         
         if serializer.is_valid():
@@ -365,6 +412,15 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
+        
+        # Protect superusers from deletion
+        if instance.is_protected_user():
+            return Response({
+                'success': False,
+                'message': 'Cannot delete protected user (superuser)',
+                'error': 'Protected user cannot be deleted from frontend'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
         self.perform_destroy(instance)
         return Response({
             'success': True,
@@ -436,6 +492,90 @@ def recent_users(request):
         'success': True,
         'data': serializer.data
     })
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def user_roles(request, user_id):
+    """
+    Get roles for a specific user
+    """
+    try:
+        user = User.objects.get(id=user_id)
+        roles = user.roles.all()
+        serializer = RoleSerializer(roles, many=True)
+        
+        return Response({
+            'success': True,
+            'data': serializer.data
+        })
+    except User.DoesNotExist:
+        return Response({
+            'success': False,
+            'message': 'User not found'
+        }, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def assign_roles_to_user(request, user_id):
+    """
+    Assign multiple roles to a user
+    """
+    try:
+        user = User.objects.get(id=user_id)
+        role_ids = request.data.get('role_ids', [])
+        
+        if not role_ids:
+            return Response({
+                'success': False,
+                'message': 'role_ids is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        roles = Role.objects.filter(id__in=role_ids)
+        user.roles.set(roles)
+        
+        return Response({
+            'success': True,
+            'message': f'Roles assigned to user {user.username}',
+            'data': UserSerializer(user).data
+        })
+    except User.DoesNotExist:
+        return Response({
+            'success': False,
+            'message': 'User not found'
+        }, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def remove_roles_from_user(request, user_id):
+    """
+    Remove roles from a user
+    """
+    try:
+        user = User.objects.get(id=user_id)
+        role_ids = request.data.get('role_ids', [])
+        
+        if not role_ids:
+            return Response({
+                'success': False,
+                'message': 'role_ids is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        roles = Role.objects.filter(id__in=role_ids)
+        user.roles.remove(*roles)
+        
+        return Response({
+            'success': True,
+            'message': f'Roles removed from user {user.username}',
+            'data': UserSerializer(user).data
+        })
+    except User.DoesNotExist:
+        return Response({
+            'success': False,
+            'message': 'User not found'
+        }, status=status.HTTP_404_NOT_FOUND)
 
 
 # Permission Views
@@ -660,12 +800,12 @@ def assign_role_to_user(request, pk):
         
         try:
             user = User.objects.get(id=user_id)
-            user.role = role.name
-            user.save()
+            user.roles.add(role)
             
             return Response({
                 'success': True,
-                'message': f'Role {role.name} assigned to user {user.username}'
+                'message': f'Role {role.name} assigned to user {user.username}',
+                'data': UserSerializer(user).data
             })
         except User.DoesNotExist:
             return Response({

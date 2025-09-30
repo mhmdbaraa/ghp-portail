@@ -25,7 +25,12 @@ import {
   Select,
   MenuItem,
   DialogContentText,
+  useTheme,
 } from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { fr } from 'date-fns/locale';
 import { DataGrid } from '@mui/x-data-grid';
 import {
   Add,
@@ -44,6 +49,7 @@ import { useAuth } from '../../shared/contexts/AuthContext';
 
 const Tasks = () => {
   const { isAuthenticated, user } = useAuth();
+  const theme = useTheme();
   const [tasks, setTasks] = useState([]);
   const [projects, setProjects] = useState([]);
   const [users, setUsers] = useState([]);
@@ -212,6 +218,28 @@ const Tasks = () => {
 
   const handleSnackbarClose = () => {
     setSnackbar(prev => ({ ...prev, open: false }));
+  };
+
+  // Date handlers for MUI DatePicker
+  const createValidDate = (dateString) => {
+    if (!dateString) return null;
+    const date = new Date(dateString);
+    return isNaN(date.getTime()) ? null : date;
+  };
+
+  const handleDueDateChange = (date) => {
+    let formattedDate = '';
+    if (date && !isNaN(date.getTime())) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      formattedDate = `${year}-${month}-${day}`;
+    }
+    
+    setTaskForm(prev => ({ 
+      ...prev, 
+      due_date: formattedDate
+    }));
   };
 
   // CRUD Operations
@@ -486,7 +514,7 @@ const Tasks = () => {
       }
       
       const token = localStorage.getItem('accessToken');
-      const response = await fetch('/api/auth/users/', {
+      const response = await fetch('/api/authentication/users/', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -818,7 +846,8 @@ const Tasks = () => {
   }
 
   return (
-    <Box sx={{ p: 2 }}>
+    <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={fr}>
+      <Box sx={{ p: 2 }}>
       {/* En-tête avec bouton d'ajout */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" fontWeight={600}>
@@ -1124,7 +1153,6 @@ const Tasks = () => {
               required
               value={selectedAssignee ? `${selectedAssignee.first_name || ''} ${selectedAssignee.last_name || ''}`.trim() || selectedAssignee.username : ''}
               onClick={openAssigneeDialog}
-              helperText="Cliquez pour sélectionner un utilisateur"
               InputProps={{
                 readOnly: true,
                 endAdornment: (
@@ -1143,14 +1171,52 @@ const Tasks = () => {
                 )
               }}
             />
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <TextField
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
+              <DatePicker
                 label="Date d'échéance"
-                type="date"
-                value={taskForm.due_date}
-                onChange={(e) => setTaskForm(prev => ({ ...prev, due_date: e.target.value }))}
-                InputLabelProps={{ shrink: true }}
-                fullWidth
+                value={createValidDate(taskForm.due_date)}
+                onChange={handleDueDateChange}
+                inputFormat="dd/MM/yyyy"
+                mask="__/__/____"
+                allowSameDateSelection
+                slotProps={{
+                  textField: {
+                    margin: "dense",
+                    fullWidth: true,
+                    variant: "outlined",
+                    placeholder: "Cliquez pour sélectionner",
+                    inputProps: { readOnly: true },
+                    sx: {
+                      '& .MuiOutlinedInput-root': {
+                        color: theme.palette.text.primary,
+                        cursor: 'pointer',
+                        '& fieldset': {
+                          borderColor: theme.palette.divider,
+                        },
+                        '&:hover fieldset': {
+                          borderColor: theme.palette.primary.main,
+                        },
+                        '&.Mui-focused fieldset': {
+                          borderColor: theme.palette.primary.main,
+                        },
+                      },
+                      '& .MuiInputLabel-root': {
+                        color: theme.palette.text.secondary,
+                        '&.Mui-focused': {
+                          color: theme.palette.primary.main,
+                        },
+                      },
+                    },
+                  },
+                  popper: {
+                    sx: {
+                      '& .MuiPaper-root': {
+                        borderRadius: 2,
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+                      },
+                    },
+                  },
+                }}
               />
               <TextField
                 label="Temps estimé (heures)"
@@ -1158,6 +1224,8 @@ const Tasks = () => {
                 value={taskForm.estimated_time}
                 onChange={(e) => setTaskForm(prev => ({ ...prev, estimated_time: e.target.value }))}
                 fullWidth
+                margin="dense"
+                variant="outlined"
               />
             </Box>
             <TextField
@@ -1696,14 +1764,52 @@ const Tasks = () => {
                 )
               }}
             />
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <TextField
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
+              <DatePicker
                 label="Date d'échéance"
-                type="date"
-                value={taskForm.due_date}
-                onChange={(e) => setTaskForm(prev => ({ ...prev, due_date: e.target.value }))}
-                InputLabelProps={{ shrink: true }}
-                fullWidth
+                value={createValidDate(taskForm.due_date)}
+                onChange={handleDueDateChange}
+                inputFormat="dd/MM/yyyy"
+                mask="__/__/____"
+                allowSameDateSelection
+                slotProps={{
+                  textField: {
+                    margin: "dense",
+                    fullWidth: true,
+                    variant: "outlined",
+                    placeholder: "Cliquez pour sélectionner",
+                    inputProps: { readOnly: true },
+                    sx: {
+                      '& .MuiOutlinedInput-root': {
+                        color: theme.palette.text.primary,
+                        cursor: 'pointer',
+                        '& fieldset': {
+                          borderColor: theme.palette.divider,
+                        },
+                        '&:hover fieldset': {
+                          borderColor: theme.palette.primary.main,
+                        },
+                        '&.Mui-focused fieldset': {
+                          borderColor: theme.palette.primary.main,
+                        },
+                      },
+                      '& .MuiInputLabel-root': {
+                        color: theme.palette.text.secondary,
+                        '&.Mui-focused': {
+                          color: theme.palette.primary.main,
+                        },
+                      },
+                    },
+                  },
+                  popper: {
+                    sx: {
+                      '& .MuiPaper-root': {
+                        borderRadius: 2,
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+                      },
+                    },
+                  },
+                }}
               />
               <TextField
                 label="Temps estimé (heures)"
@@ -1711,6 +1817,8 @@ const Tasks = () => {
                 value={taskForm.estimated_time}
                 onChange={(e) => setTaskForm(prev => ({ ...prev, estimated_time: e.target.value }))}
                 fullWidth
+                margin="dense"
+                variant="outlined"
               />
             </Box>
             <TextField
@@ -1837,7 +1945,8 @@ const Tasks = () => {
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+      </Box>
+    </LocalizationProvider>
   );
 };
 

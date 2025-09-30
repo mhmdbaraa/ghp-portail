@@ -290,6 +290,8 @@ const Projects = () => {
       handleClose(); 
     };
     const handleEdit = () => { 
+      console.log('🔧 Datagrid Edit - Project data:', row);
+      
       setEditingProject(row);
       setEditProject({
         name: row.name || '',
@@ -297,8 +299,8 @@ const Projects = () => {
         startDate: row.startDate || '',
         deadline: row.deadline || '',
         status: row.status || 'Planification',
-        priority: row.priority || 'Moyen',
-        category: row.category || 'Web',
+        priority: row.priority === 'haute' || row.priority === 'Haute' ? 'Élevé' : row.priority === 'moyenne' || row.priority === 'Moyenne' ? 'Moyen' : row.priority === 'faible' || row.priority === 'Faible' ? 'Faible' : 'Moyen',
+        category: row.category === 'développement' || row.category === 'Développement' ? 'Web' : row.category || 'Web',
         budget: row.budget ? row.budget.replace(/[€,\s]/g, '') : '',
         projectManager: row.manager || '',
         filiales: row.filiales || []
@@ -308,6 +310,19 @@ const Projects = () => {
           ? { id: String(row.manager || ''), name: row.manager_name || row.projectManager || '', function: row.manager_position || row.projectManagerFunction || 'Chef de Projet' }
           : null
       );
+      // Reset field errors when opening edit dialog
+      setEditFieldErrors({
+        name: false,
+        description: false,
+        startDate: false,
+        deadline: false,
+        projectManager: false,
+        status: false,
+        priority: false,
+        category: false,
+        budget: false,
+        filiales: false
+      });
       setEditProjectDialog(true);
       handleClose();
     };
@@ -374,24 +389,50 @@ const Projects = () => {
     };
     
     const handleEdit = () => { 
+      console.log('🔧 Kanban Edit - Project data:', project);
+      
       setEditingProject(project);
       setEditProject({
         name: project.name || '',
         description: project.description || '',
-        startDate: project.startDate || '',
-        deadline: project.deadline || '',
+        startDate: project.startDate || project.start_date || '',
+        deadline: project.deadline || project.end_date || '',
         status: project.status || 'Planification',
-        priority: project.priority || 'Moyen',
-        category: project.category || 'Web',
+        priority: project.priority === 'haute' || project.priority === 'Haute' ? 'Élevé' : project.priority === 'moyenne' || project.priority === 'Moyenne' ? 'Moyen' : project.priority === 'faible' || project.priority === 'Faible' ? 'Faible' : 'Moyen',
+        category: project.category === 'développement' || project.category === 'Développement' ? 'Web' : project.category || 'Web',
         budget: project.budget ? project.budget.replace(/[€,\s]/g, '') : '',
-        projectManager: project.manager || '',
-        filiales: project.filiales || []
+        projectManager: project.manager || project.manager_id || '',
+        filiales: project.filiales || project.tags || []
       });
+      
+      // Handle manager selection with multiple possible property names
+      const managerId = project.manager || project.manager_id || project.managerId;
+      const managerName = project.manager_name || project.managerName || project.projectManager;
+      const managerPosition = project.manager_position || project.managerPosition || project.projectManagerFunction;
+      
       setEditSelectedEmployee(
-        (project.manager || project.manager_name || project.projectManager)
-          ? { id: String(project.manager || ''), name: project.manager_name || project.projectManager || '', function: project.manager_position || project.projectManagerFunction || 'Chef de Projet' }
+        (managerId || managerName)
+          ? { 
+              id: String(managerId || ''), 
+              name: managerName || '', 
+              function: managerPosition || 'Chef de Projet' 
+            }
           : null
       );
+      
+      // Reset field errors when opening edit dialog
+      setEditFieldErrors({
+        name: false,
+        description: false,
+        startDate: false,
+        deadline: false,
+        projectManager: false,
+        status: false,
+        priority: false,
+        category: false,
+        budget: false,
+        filiales: false
+      });
       setEditProjectDialog(true);
       handleClose();
     };
@@ -798,6 +839,11 @@ const Projects = () => {
         hasErrors = true;
       }
       
+      if (!editSelectedEmployee) {
+        newFieldErrors.projectManager = true;
+        hasErrors = true;
+      }
+      
       if (!editProject.priority) {
         newFieldErrors.priority = true;
         hasErrors = true;
@@ -813,6 +859,32 @@ const Projects = () => {
         hasErrors = true;
       }
       
+      if (!editProject.budget || editProject.budget === '') {
+        newFieldErrors.budget = true;
+        hasErrors = true;
+      }
+      
+      if (!editProject.filiales || editProject.filiales.length === 0) {
+        newFieldErrors.filiales = true;
+        hasErrors = true;
+      }
+      
+      // Validate date logic
+      if (editProject.startDate && editProject.deadline) {
+        const startDate = new Date(editProject.startDate + 'T00:00:00');
+        const endDate = new Date(editProject.deadline + 'T00:00:00');
+        
+        if (startDate >= endDate) {
+          newFieldErrors.deadline = true;
+          hasErrors = true;
+          setSnackbar({
+            open: true,
+            message: 'La date de fin doit être postérieure à la date de début',
+            severity: 'error'
+          });
+        }
+      }
+      
       if (hasErrors) {
         setEditFieldErrors(newFieldErrors);
         setSnackbar({
@@ -823,13 +895,13 @@ const Projects = () => {
         return;
       }
       
-      // Create project data in React format
+      // Create project data in React format (keep French values for transformer)
       const reactProjectData = {
         name: editProject.name,
         description: editProject.description,
         status: editProject.status || 'Planification',
-        priority: editProject.priority,
-        category: editProject.category || 'Web',
+        priority: editProject.priority, // Keep French values (Élevé, Moyen, Faible)
+        category: editProject.category, // Keep French values (Web, Mobile, etc.)
         startDate: editProject.startDate,
         deadline: editProject.deadline,
         budget: editProject.budget || 0,
@@ -1819,93 +1891,7 @@ const Projects = () => {
   };
 
   const handleSubmitEditProject = () => {
-    // Réinitialiser les erreurs
-    setEditFieldErrors({
-      name: false,
-      description: false,
-      startDate: false,
-      deadline: false,
-      projectManager: false,
-      status: false,
-      priority: false,
-      category: false,
-      budget: false,
-      filiales: false
-    });
-    
-    let hasErrors = false;
-    const newFieldErrors = { ...editFieldErrors };
-    
-    if (!editProject.name.trim()) {
-      newFieldErrors.name = true;
-      hasErrors = true;
-    }
-    
-    if (!editProject.description.trim()) {
-      newFieldErrors.description = true;
-      hasErrors = true;
-    }
-    
-    if (!editProject.startDate) {
-      newFieldErrors.startDate = true;
-      hasErrors = true;
-    }
-    
-    if (!editProject.deadline) {
-      newFieldErrors.deadline = true;
-      hasErrors = true;
-    }
-    
-    if (!editSelectedEmployee) {
-      newFieldErrors.projectManager = true;
-      hasErrors = true;
-    }
-    
-    if (!editProject.priority) {
-      newFieldErrors.priority = true;
-      hasErrors = true;
-    }
-    
-    if (!editProject.status) {
-      newFieldErrors.status = true;
-      hasErrors = true;
-    }
-    
-    if (!editProject.category) {
-      newFieldErrors.category = true;
-      hasErrors = true;
-    }
-    
-    // Filiales are optional, so no validation needed
-    
-    if (editProject.startDate && editProject.deadline) {
-      const startDate = new Date(editProject.startDate + 'T00:00:00');
-      const endDate = new Date(editProject.deadline + 'T00:00:00');
-      
-      if (startDate >= endDate) {
-        newFieldErrors.deadline = true;
-        hasErrors = true;
-        setSnackbar({
-          open: true,
-          message: 'La date de fin doit être postérieure à la date de début',
-          severity: 'error'
-        });
-        setEditFieldErrors(newFieldErrors);
-        return;
-      }
-    }
-    
-    if (hasErrors) {
-      setEditFieldErrors(newFieldErrors);
-      setSnackbar({
-        open: true,
-        message: 'Veuillez remplir tous les champs obligatoires',
-        severity: 'error'
-      });
-      return;
-    }
-    
-    // Call the actual update function
+    // Call the actual update function which now includes all validation
     handleUpdateProject();
   };
 

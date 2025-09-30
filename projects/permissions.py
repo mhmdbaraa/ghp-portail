@@ -14,6 +14,10 @@ class IsProjectManagerOrReadOnly(permissions.BasePermission):
         if not request.user or not request.user.is_authenticated:
             return False
         
+        # Admins/superusers always allowed
+        if getattr(request.user, 'is_superuser', False) or getattr(request.user, 'is_staff', False) or getattr(request.user, 'role', None) == 'admin':
+            return True
+
         # Allow read-only for safe methods
         if request.method in permissions.SAFE_METHODS:
             return True
@@ -27,6 +31,10 @@ class IsProjectManagerOrReadOnly(permissions.BasePermission):
         if not request.user or not request.user.is_authenticated:
             return False
         
+        # Admins/superusers always allowed
+        if getattr(request.user, 'is_superuser', False) or getattr(request.user, 'is_staff', False) or getattr(request.user, 'role', None) == 'admin':
+            return True
+
         # Allow read-only for safe methods
         if request.method in permissions.SAFE_METHODS:
             return True
@@ -45,61 +53,69 @@ class IsProjectManager(permissions.BasePermission):
         if not request.user or not request.user.is_authenticated:
             return False
         
+        # Admins/superusers always allowed
+        if getattr(request.user, 'is_superuser', False) or getattr(request.user, 'is_staff', False) or getattr(request.user, 'role', None) == 'admin':
+            return True
+
         user_role = getattr(request.user, 'role', None)
         return user_role == 'PROJECT_MANAGER'
 
 
 class CanViewProject(permissions.BasePermission):
     """
-    Permission that allows both PROJECT_MANAGER and PROJECT_USER to view
+    Permission that allows all authenticated users to view projects and tasks
     """
     
     def has_permission(self, request, view):
         if not request.user or not request.user.is_authenticated:
             return False
         
-        user_role = getattr(request.user, 'role', None)
-        return user_role in ['PROJECT_MANAGER', 'PROJECT_USER']
+        # All authenticated users can view data
+        return True
 
 
 class CanModifyProject(permissions.BasePermission):
     """
-    Permission that only allows PROJECT_MANAGER to modify
-    Blocks access entirely if user doesn't have PROJECT_MANAGER or PROJECT_USER role
+    Permission that allows all authenticated users to view data
+    Only allows PROJECT_MANAGER, admin, manager roles to modify
     """
-    
-    message = "Vous devez avoir un rôle PROJECT_MANAGER ou PROJECT_USER pour accéder aux projets."
     
     def has_permission(self, request, view):
         if not request.user or not request.user.is_authenticated:
             return False
         
+        # Admins/superusers always allowed (both read and modify)
+        if getattr(request.user, 'is_superuser', False) or getattr(request.user, 'is_staff', False) or getattr(request.user, 'role', None) == 'admin':
+            return True
+
         user_role = getattr(request.user, 'role', None)
         
-        # Block access if user doesn't have any project role
-        if user_role not in ['PROJECT_MANAGER', 'PROJECT_USER']:
-            return False
+        # Allow all authenticated users to read data
+        if request.method in permissions.SAFE_METHODS:
+            return True
         
-        # Only allow modifications for PROJECT_MANAGER
+        # Only allow modifications for specific roles
         if request.method not in permissions.SAFE_METHODS:
-            return user_role == 'PROJECT_MANAGER'
+            return user_role in ['PROJECT_MANAGER', 'manager', 'admin']
         
-        # Allow read for both roles
         return True
     
     def has_object_permission(self, request, view, obj):
         if not request.user or not request.user.is_authenticated:
             return False
         
+        # Admins/superusers always allowed (both read and modify)
+        if getattr(request.user, 'is_superuser', False) or getattr(request.user, 'is_staff', False) or getattr(request.user, 'role', None) == 'admin':
+            return True
+
         user_role = getattr(request.user, 'role', None)
         
-        # Block access if user doesn't have any project role
-        if user_role not in ['PROJECT_MANAGER', 'PROJECT_USER']:
-            return False
+        # Allow all authenticated users to read data
+        if request.method in permissions.SAFE_METHODS:
+            return True
         
-        # Only allow modifications for PROJECT_MANAGER
+        # Only allow modifications for specific roles
         if request.method not in permissions.SAFE_METHODS:
-            return user_role == 'PROJECT_MANAGER'
+            return user_role in ['PROJECT_MANAGER', 'manager', 'admin']
         
-        # Allow read for both roles
         return True

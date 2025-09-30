@@ -119,7 +119,7 @@ export const AuthProvider = ({ children }) => {
     try { 
       const refreshToken = localStorage.getItem(STORAGE_KEYS.REFRESH);
       if (refreshToken) {
-        await axiosInstance.post('/auth/logout/', { refresh_token: refreshToken });
+        await axiosInstance.post('/authentication/logout/', { refresh_token: refreshToken });
       }
     } catch (e) {
       console.error('Logout error:', e);
@@ -134,10 +134,52 @@ export const AuthProvider = ({ children }) => {
 
   // Fonctions de vérification des permissions et rôles
   const hasPermission = (permission) => {
-    if (!user) return false;
-    // Pour simplifier, tous les utilisateurs connectés ont toutes les permissions
-    // Dans une vraie app, vous vérifieriez les permissions depuis l'API
-    return true;
+    if (!user) {
+      return false;
+    }
+    
+    // Superuser (admin) has ALL permissions - NO RESTRICTIONS
+    if (user.role === 'admin' || user.is_superuser || user.is_staff) {
+      return true;
+    }
+    
+    // Simple role-based permission groups
+    const rolePermissions = {
+      'admin': [
+        'project:view', 'project:create', 'project:edit', 'project:delete',
+        'task:view', 'task:create', 'task:edit', 'task:delete',
+        'user:view', 'user:create', 'user:edit', 'user:delete', 'user:manage'
+      ],
+      'manager': [
+        'project:view', 'project:create', 'project:edit', 'project:delete',
+        'task:view', 'task:create', 'task:edit', 'task:delete'
+        // Removed user permissions - only superuser can manage users
+      ],
+      'developer': [
+        'project:view', 'task:view', 'task:create', 'task:edit'
+      ],
+      'designer': [
+        'project:view', 'task:view', 'task:create', 'task:edit'
+      ],
+      'tester': [
+        'project:view', 'task:view', 'task:edit'
+      ],
+      'user': [
+        'project:view', 'task:view'
+      ],
+      'PROJECT_MANAGER': [
+        'project:view', 'project:create', 'project:edit', 'project:delete',
+        'task:view', 'task:create', 'task:edit', 'task:delete'
+        // Removed user permissions - only superuser can manage users
+      ],
+      'PROJECT_USER': [
+        'project:view', 'task:view'
+      ]
+    };
+    
+    const userRole = user.role || '';
+    const permissions = rolePermissions[userRole] || [];
+    return permissions.includes(permission);
   };
 
   const hasRole = (role) => {

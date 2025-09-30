@@ -12,6 +12,7 @@ import {
   Login,
   Register
 } from './shared';
+import SuperuserOnlyGuard from './shared/components/SuperuserOnlyGuard';
 import { NavigationProvider } from './shared/contexts/NavigationContext';
 
 // Module imports
@@ -26,6 +27,7 @@ import {
 } from './modules/users';
 import AuthDebug from './components/AuthDebug'; // Added for debugging
 import AuthTest from './components/AuthTest'; // Added for testing
+import PermissionTest from './components/PermissionTest'; // Added for permission testing
 
 function App() {
   return (
@@ -86,66 +88,87 @@ function App() {
               </ProtectedRoute>
             } />
             
-            {/* User Management Routes */}
+            {/* User Management Routes - Superuser Only */}
             <Route path="/users/dashboard" element={
-              <ProtectedRoute requiredPermission={PERMISSIONS.USER_VIEW}>
-                <Layout>
-                  <UserList />
-                </Layout>
+              <ProtectedRoute>
+                <SuperuserOnlyGuard>
+                  <Layout>
+                    <UserList />
+                  </Layout>
+                </SuperuserOnlyGuard>
               </ProtectedRoute>
             } />
             
             <Route path="/users/list" element={
-              <ProtectedRoute requiredPermission={PERMISSIONS.USER_VIEW}>
-                <Layout>
-                  <UserList />
-                </Layout>
+              <ProtectedRoute>
+                <SuperuserOnlyGuard>
+                  <Layout>
+                    <UserList />
+                  </Layout>
+                </SuperuserOnlyGuard>
               </ProtectedRoute>
             } />
             
             <Route path="/users/create" element={
-              <ProtectedRoute requiredPermission={PERMISSIONS.USER_ADD}>
-                <Layout>
-                  <UserForm />
-                </Layout>
+              <ProtectedRoute>
+                <SuperuserOnlyGuard>
+                  <Layout>
+                    <UserForm />
+                  </Layout>
+                </SuperuserOnlyGuard>
               </ProtectedRoute>
             } />
             
             <Route path="/users/edit/:id" element={
-              <ProtectedRoute requiredPermission={PERMISSIONS.USER_CHANGE}>
-                <Layout>
-                  <UserForm />
-                </Layout>
+              <ProtectedRoute>
+                <SuperuserOnlyGuard>
+                  <Layout>
+                    <UserForm />
+                  </Layout>
+                </SuperuserOnlyGuard>
               </ProtectedRoute>
             } />
             
             <Route path="/users/profile/:id" element={
-              <ProtectedRoute requiredPermission={PERMISSIONS.USER_VIEW}>
-                <Layout>
-                  <UserProfile />
-                </Layout>
+              <ProtectedRoute>
+                <SuperuserOnlyGuard>
+                  <Layout>
+                    <UserProfile />
+                  </Layout>
+                </SuperuserOnlyGuard>
               </ProtectedRoute>
             } />
             
             <Route path="/users/permissions" element={
-              <ProtectedRoute requiredPermission={PERMISSIONS.USER_CHANGE}>
-                <Layout>
-                  <PermissionManagement />
-                </Layout>
+              <ProtectedRoute>
+                <SuperuserOnlyGuard>
+                  <Layout>
+                    <PermissionManagement />
+                  </Layout>
+                </SuperuserOnlyGuard>
               </ProtectedRoute>
             } />
             
             <Route path="/users/roles" element={
-              <ProtectedRoute requiredPermission={PERMISSIONS.USER_CHANGE}>
-                <Layout>
-                  <RoleManagement />
-                </Layout>
+              <ProtectedRoute>
+                <SuperuserOnlyGuard>
+                  <Layout>
+                    <RoleManagement />
+                  </Layout>
+                </SuperuserOnlyGuard>
               </ProtectedRoute>
             } />
             
             {/* Debug routes - temporaires */}
             <Route path="/debug/auth" element={<AuthDebug />} />
             <Route path="/test/auth" element={<AuthTest />} />
+            <Route path="/test/permissions" element={
+              <ProtectedRoute>
+                <Layout>
+                  <PermissionTest />
+                </Layout>
+              </ProtectedRoute>
+            } />
             
             </Routes>
           </NavigationProvider>

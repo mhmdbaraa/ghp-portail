@@ -21,6 +21,9 @@ urlpatterns = [
     path('users/', views.UserListView.as_view(), name='user_list'),
     path('users/<int:pk>/', views.UserDetailView.as_view(), name='user_detail'),
     path('users/<int:user_id>/toggle-status/', views.toggle_user_status, name='toggle_user_status'),
+    path('users/<int:user_id>/roles/', views.user_roles, name='user_roles'),
+    path('users/<int:user_id>/roles/assign/', views.assign_roles_to_user, name='assign_roles_to_user'),
+    path('users/<int:user_id>/roles/remove/', views.remove_roles_from_user, name='remove_roles_from_user'),
     path('users/statistics/', views.user_statistics, name='user_statistics'),
     path('users/recent/', views.recent_users, name='recent_users'),
     

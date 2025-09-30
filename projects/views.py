@@ -28,8 +28,8 @@ from .permissions import IsProjectManagerOrReadOnly, IsProjectManager, CanViewPr
 class ProjectViewSet(viewsets.ModelViewSet):
     """
     ViewSet for managing projects
-    - PROJECT_MANAGER: Full access (CRUD)
-    - PROJECT_USER: Read-only access
+    - All authenticated users: Read access
+    - PROJECT_MANAGER, manager, admin: Full access (CRUD)
     """
     queryset = Project.objects.all()
     permission_classes = [permissions.IsAuthenticated, CanModifyProject]
@@ -71,13 +71,37 @@ class ProjectViewSet(viewsets.ModelViewSet):
         # Other users can only see projects they're part of
         return Project.objects.filter(team=user)
     
-    @action(detail=True, methods=['patch'])
+    @action(detail=True, methods=['patch'], permission_classes=[permissions.IsAuthenticated])
     def update_progress(self, request, pk=None):
         """
         Update project progress
         """
         try:
             project = self.get_object()
+            
+            # Check if user has permission to update progress
+            user = request.user
+            user_role = getattr(user, 'role', None)
+            
+            # Allow progress updates for team members, managers, and admins
+            can_update = (
+                user.is_superuser or 
+                user.is_staff or 
+                user_role == 'admin' or 
+                user_role == 'manager' or 
+                user_role == 'PROJECT_MANAGER' or
+                project.team.filter(id=user.id).exists() or
+                project.manager == user
+            )
+            
+            if not can_update:
+                return Response({
+                    'success': False,
+                    'error': 'Permission insuffisante',
+                    'message': 'Vous devez être membre de l\'équipe du projet, gestionnaire ou administrateur pour modifier le progrès.',
+                    'required_roles': ['admin', 'manager', 'PROJECT_MANAGER', 'membre_équipe']
+                }, status=status.HTTP_403_FORBIDDEN)
+            
             progress = request.data.get('progress')
             
             if progress is None:
@@ -245,10 +269,12 @@ class ProjectViewSet(viewsets.ModelViewSet):
         
         # Check permissions
         if not self._can_manage_project(project, request.user):
-            return Response(
-                {'error': 'Permission denied'}, 
-                status=status.HTTP_403_FORBIDDEN
-            )
+            return Response({
+                'success': False,
+                'error': 'Permission insuffisante',
+                'message': 'Vous devez être gestionnaire du projet ou administrateur pour ajouter des membres à l\'équipe.',
+                'required_roles': ['admin', 'manager', 'PROJECT_MANAGER']
+            }, status=status.HTTP_403_FORBIDDEN)
         
         user_id = request.data.get('user_id')
         if not user_id:
@@ -365,7 +391,8 @@ class ProjectStatisticsView(viewsets.ViewSet):
                 Q(manager=user) | Q(team=user)
             ).distinct()
         else:
-            projects = Project.objects.filter(team=user)
+            # For all other roles, show all projects (read-only access)
+            projects = Project.objects.all()
         
         total_projects = projects.count()
         active_projects = projects.filter(status='in_progress').count()
@@ -394,8 +421,8 @@ class ProjectStatisticsView(viewsets.ViewSet):
 class TaskViewSet(viewsets.ModelViewSet):
     """
     ViewSet for managing tasks
-    - PROJECT_MANAGER: Full access (CRUD)
-    - PROJECT_USER: Read-only access
+    - All authenticated users: Read access
+    - PROJECT_MANAGER, manager, admin: Full access (CRUD)
     """
     queryset = Task.objects.all()
     permission_classes = [permissions.IsAuthenticated, CanModifyProject]
@@ -448,10 +475,12 @@ class TaskViewSet(viewsets.ModelViewSet):
         
         # Check permissions
         if not self._can_manage_task(task, request.user):
-            return Response(
-                {'error': 'Permission denied'}, 
-                status=status.HTTP_403_FORBIDDEN
-            )
+            return Response({
+                'success': False,
+                'error': 'Permission insuffisante',
+                'message': 'Vous devez être gestionnaire du projet ou administrateur pour assigner des tâches.',
+                'required_roles': ['admin', 'manager', 'PROJECT_MANAGER']
+            }, status=status.HTTP_403_FORBIDDEN)
         
         user_id = request.data.get('user_id')
         if not user_id:
@@ -479,10 +508,12 @@ class TaskViewSet(viewsets.ModelViewSet):
         
         # Check permissions
         if not self._can_manage_task(task, request.user):
-            return Response(
-                {'error': 'Permission denied'}, 
-                status=status.HTTP_403_FORBIDDEN
-            )
+            return Response({
+                'success': False,
+                'error': 'Permission insuffisante',
+                'message': 'Vous devez être assigné à cette tâche, gestionnaire du projet ou administrateur pour changer le statut.',
+                'required_roles': ['admin', 'manager', 'PROJECT_MANAGER', 'assigné_à_la_tâche']
+            }, status=status.HTTP_403_FORBIDDEN)
         
         new_status = request.data.get('status')
         if not new_status:
@@ -611,9 +642,8 @@ class TaskStatisticsView(viewsets.ViewSet):
                 Q(project__manager=user) | Q(project__team=user)
             ).distinct()
         else:
-            tasks = Task.objects.filter(
-                Q(assignee=user) | Q(project__team=user)
-            ).distinct()
+            # For all other roles, show all tasks (read-only access)
+            tasks = Task.objects.all()
         
         total_tasks = tasks.count()
         completed_tasks = tasks.filter(status='completed').count()
@@ -668,10 +698,9 @@ def dashboard_data(request):
                 Q(project__manager=user) | Q(project__team=user)
             ).distinct()
         else:
-            projects = Project.objects.filter(team=user)
-            tasks = Task.objects.filter(
-                Q(assignee=user) | Q(project__team=user)
-            ).distinct()
+            # For all other roles, show all data (read-only access)
+            projects = Project.objects.all()
+            tasks = Task.objects.all()
         
         # Project statistics
         total_projects = projects.count()

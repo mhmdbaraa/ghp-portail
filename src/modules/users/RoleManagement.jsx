@@ -51,6 +51,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useUserNavigation } from './useUserNavigation';
 import roleService from '../../shared/services/roleService';
+import permissionService from '../../shared/services/permissionService';
 
 const RoleManagement = () => {
   const theme = useTheme();
@@ -100,25 +101,16 @@ const RoleManagement = () => {
 
   const loadPermissions = async () => {
     try {
-      // Simuler des permissions - à remplacer par l'API Django
-      const mockPermissions = [
-        { id: 1, name: 'Can view user', codename: 'view_user', category: 'users' },
-        { id: 2, name: 'Can add user', codename: 'add_user', category: 'users' },
-        { id: 3, name: 'Can change user', codename: 'change_user', category: 'users' },
-        { id: 4, name: 'Can delete user', codename: 'delete_user', category: 'users' },
-        { id: 5, name: 'Can view project', codename: 'view_project', category: 'projects' },
-        { id: 6, name: 'Can add project', codename: 'add_project', category: 'projects' },
-        { id: 7, name: 'Can change project', codename: 'change_project', category: 'projects' },
-        { id: 8, name: 'Can delete project', codename: 'delete_project', category: 'projects' },
-        { id: 9, name: 'Can view task', codename: 'view_task', category: 'tasks' },
-        { id: 10, name: 'Can add task', codename: 'add_task', category: 'tasks' },
-        { id: 11, name: 'Can change task', codename: 'change_task', category: 'tasks' },
-        { id: 12, name: 'Can delete task', codename: 'delete_task', category: 'tasks' },
-      ];
-
-      setPermissions(mockPermissions);
+      const result = await permissionService.getPermissions();
+      if (result.success) {
+        setPermissions(result.data.results || result.data);
+      } else {
+        console.error('Error loading permissions:', result.error);
+        showSnackbar(result.message || 'Erreur lors du chargement des permissions', 'error');
+      }
     } catch (error) {
       console.error('Error loading permissions:', error);
+      showSnackbar('Erreur lors du chargement des permissions', 'error');
     }
   };
 

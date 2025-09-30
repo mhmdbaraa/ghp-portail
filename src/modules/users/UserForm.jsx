@@ -34,6 +34,7 @@ import {
 import { useNavigate, useParams } from 'react-router-dom';
 import { useUserNavigation } from './useUserNavigation';
 import userService from '../../shared/services/userService';
+import roleService from '../../shared/services/roleService';
 
 const UserForm = ({ onSuccess, onCancel, onShowSuccessMessage, userId }) => {
   const theme = useTheme();
@@ -66,6 +67,8 @@ const UserForm = ({ onSuccess, onCancel, onShowSuccessMessage, userId }) => {
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [submitLoading, setSubmitLoading] = useState(false);
+  const [roles, setRoles] = useState([]);
+  const [loadingRoles, setLoadingRoles] = useState(false);
   
   // Références pour les champs de formulaire
   const usernameRef = useRef(null);
@@ -74,6 +77,7 @@ const UserForm = ({ onSuccess, onCancel, onShowSuccessMessage, userId }) => {
   const confirmPasswordRef = useRef(null);
 
   useEffect(() => {
+    loadRoles();
     if (isEdit) {
       loadUser();
     } else if (isModal) {
@@ -105,6 +109,55 @@ const UserForm = ({ onSuccess, onCancel, onShowSuccessMessage, userId }) => {
       }, 100);
     }
   }, [id, isEdit, isModal]);
+
+  // Debug effect to log roles changes
+  useEffect(() => {
+    console.log('Roles state updated:', roles);
+  }, [roles]);
+
+  const loadRoles = async () => {
+    try {
+      setLoadingRoles(true);
+      console.log('Loading roles...');
+      const response = await roleService.getRoles();
+      console.log('Roles response:', response);
+      if (response.success) {
+        console.log('Roles loaded successfully:', response.data);
+        setRoles(response.data || []);
+      } else {
+        console.log('API failed, using fallback roles');
+        // Fallback to hardcoded roles if API fails
+        const fallbackRoles = [
+          { id: 1, name: 'admin', description: 'Administrator' },
+          { id: 2, name: 'manager', description: 'Manager' },
+          { id: 3, name: 'developer', description: 'Developer' },
+          { id: 4, name: 'designer', description: 'Designer' },
+          { id: 5, name: 'tester', description: 'Tester' },
+          { id: 6, name: 'user', description: 'User' },
+          { id: 7, name: 'PROJECT_MANAGER', description: 'Project Manager' },
+          { id: 8, name: 'PROJECT_USER', description: 'Project User' }
+        ];
+        setRoles(fallbackRoles);
+      }
+    } catch (error) {
+      console.error('Error loading roles:', error);
+      console.log('Using fallback roles due to error');
+      // Fallback to hardcoded roles if API fails
+      const fallbackRoles = [
+        { id: 1, name: 'admin', description: 'Administrator' },
+        { id: 2, name: 'manager', description: 'Manager' },
+        { id: 3, name: 'developer', description: 'Developer' },
+        { id: 4, name: 'designer', description: 'Designer' },
+        { id: 5, name: 'tester', description: 'Tester' },
+        { id: 6, name: 'user', description: 'User' },
+        { id: 7, name: 'PROJECT_MANAGER', description: 'Project Manager' },
+        { id: 8, name: 'PROJECT_USER', description: 'Project User' }
+      ];
+      setRoles(fallbackRoles);
+    } finally {
+      setLoadingRoles(false);
+    }
+  };
 
   const loadUser = async () => {
     try {
@@ -202,11 +255,15 @@ const UserForm = ({ onSuccess, onCancel, onShowSuccessMessage, userId }) => {
         status: formData.status,
         is_staff: formData.is_staff,
         is_active: formData.is_active,
-        department: formData.department,
-        position: formData.position,
-        phone: formData.phone,
-        filiale: formData.filiale,
+        department: formData.department || '',
+        position: formData.position || '',
+        phone: formData.phone || '',
+        filiale: formData.filiale || '',
+        location: '', // Add missing field
+        preferences: {} // Add missing field
       };
+
+      console.log('Sending user data:', userData);
 
       if (!isEdit && formData.password) {
         userData.password = formData.password;
@@ -242,7 +299,11 @@ const UserForm = ({ onSuccess, onCancel, onShowSuccessMessage, userId }) => {
           }, 1500);
         }
       } else {
-        showSnackbar(result.message || 'Erreur lors de la sauvegarde', 'error');
+        console.error('Update failed:', result);
+        const errorMessage = result.error?.errors ? 
+          Object.values(result.error.errors).flat().join(', ') : 
+          result.message || 'Erreur lors de la sauvegarde';
+        showSnackbar(errorMessage, 'error');
       }
     } catch (error) {
       console.error('Error saving user:', error);
@@ -281,6 +342,8 @@ const UserForm = ({ onSuccess, onCancel, onShowSuccessMessage, userId }) => {
       case 'designer': return 'Designer';
       case 'tester': return 'Testeur';
       case 'user': return 'Utilisateur';
+      case 'PROJECT_MANAGER': return 'Gestionnaire de Projet';
+      case 'PROJECT_USER': return 'Utilisateur de Projet';
       default: return role;
     }
   };
@@ -450,13 +513,26 @@ const UserForm = ({ onSuccess, onCancel, onShowSuccessMessage, userId }) => {
                             value={formData.role}
                             label="Rôle"
                             onChange={handleChange('role')}
+                            disabled={loadingRoles}
                           >
-                            <MenuItem value="user">Utilisateur</MenuItem>
-                            <MenuItem value="admin">Administrateur</MenuItem>
-                            <MenuItem value="manager">Manager</MenuItem>
-                            <MenuItem value="developer">Développeur</MenuItem>
-                            <MenuItem value="designer">Designer</MenuItem>
-                            <MenuItem value="tester">Testeur</MenuItem>
+                            {loadingRoles ? (
+                              <MenuItem disabled>
+                                <CircularProgress size={16} sx={{ mr: 1 }} />
+                                Chargement des rôles...
+                              </MenuItem>
+                            ) : (
+                              roles.length > 0 ? (
+                                roles.map((role) => (
+                                  <MenuItem key={role.id} value={role.name}>
+                                    {getRoleLabel(role.name)}
+                                  </MenuItem>
+                                ))
+                              ) : (
+                                <MenuItem disabled>
+                                  Aucun rôle disponible
+                                </MenuItem>
+                              )
+                            )}
                           </Select>
                         </FormControl>
                       </Grid>
@@ -470,7 +546,7 @@ const UserForm = ({ onSuccess, onCancel, onShowSuccessMessage, userId }) => {
                           >
                             <MenuItem value="active">Actif</MenuItem>
                             <MenuItem value="inactive">Inactif</MenuItem>
-                            <MenuItem value="pending">En attente</MenuItem>
+                            <MenuItem value="suspended">Suspendu</MenuItem>
                           </Select>
                         </FormControl>
                       </Grid>

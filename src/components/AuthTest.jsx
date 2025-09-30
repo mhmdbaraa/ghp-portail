@@ -22,7 +22,7 @@ const AuthTest = () => {
         return;
       }
 
-      const response = await fetch('http://localhost:8000/api/auth/users/', {
+      const response = await fetch('http://localhost:8000/api/authentication/users/', {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json'

@@ -1,8 +1,8 @@
 export default {
-  loginEndpoint: '/auth/login/',
-  registerEndpoint: '/auth/register/',
-  refreshEndpoint: '/auth/refresh/',
-  logoutEndpoint: '/auth/logout/',
+  loginEndpoint: '/authentication/login/',
+  registerEndpoint: '/authentication/register/',
+  refreshEndpoint: '/authentication/refresh/',
+  logoutEndpoint: '/authentication/logout/',
 
   tokenType: 'Bearer',
 

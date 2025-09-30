@@ -6,12 +6,77 @@ from django.core.exceptions import ValidationError
 from .models import User, Permission, Role
 
 
+class PermissionSerializer(serializers.ModelSerializer):
+    """
+    Serializer for Permission model
+    """
+    class Meta:
+        model = Permission
+        fields = [
+            'id', 'name', 'codename', 'description', 'category', 
+            'is_active', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class RoleSerializer(serializers.ModelSerializer):
+    """
+    Serializer for Role model
+    """
+    permissions = PermissionSerializer(many=True, read_only=True)
+    permission_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        write_only=True,
+        required=False
+    )
+    user_count = serializers.ReadOnlyField()
+    
+    class Meta:
+        model = Role
+        fields = [
+            'id', 'name', 'description', 'permissions', 'permission_ids',
+            'is_active', 'is_system', 'user_count', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'is_system', 'created_at', 'updated_at']
+    
+    def create(self, validated_data):
+        """Create role with permissions"""
+        permission_ids = validated_data.pop('permission_ids', [])
+        role = Role.objects.create(**validated_data)
+        
+        if permission_ids:
+            permissions = Permission.objects.filter(id__in=permission_ids)
+            role.permissions.set(permissions)
+        
+        return role
+    
+    def update(self, instance, validated_data):
+        """Update role with permissions"""
+        permission_ids = validated_data.pop('permission_ids', None)
+        
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        
+        if permission_ids is not None:
+            permissions = Permission.objects.filter(id__in=permission_ids)
+            instance.permissions.set(permissions)
+        
+        return instance
+
+
 class UserSerializer(serializers.ModelSerializer):
     """
     Serializer for User model - used for API responses
     """
     full_name = serializers.ReadOnlyField()
     permissions = serializers.SerializerMethodField()
+    roles = RoleSerializer(many=True, read_only=True)
+    role_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        write_only=True,
+        required=False
+    )
     last_login = serializers.DateTimeField(read_only=True)
     created_at = serializers.DateTimeField(read_only=True)
     updated_at = serializers.DateTimeField(read_only=True)
@@ -21,14 +86,59 @@ class UserSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'username', 'email', 'first_name', 'last_name', 'full_name',
             'role', 'status', 'avatar', 'phone', 'location', 'department', 
-            'position', 'filiale', 'join_date', 'last_login', 'preferences', 'permissions',
-            'created_at', 'updated_at'
+            'position', 'filiale', 'join_date', 'last_login', 'preferences', 
+            'permissions', 'roles', 'role_ids', 'created_at', 'updated_at',
+            'is_superuser', 'is_staff'
         ]
-        read_only_fields = ['id', 'last_login', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'last_login', 'created_at', 'updated_at', 'is_superuser', 'is_staff']
     
     def get_permissions(self, obj):
-        """Get user permissions based on role"""
-        return obj.get_permissions()
+        """Get user permissions based on role and custom roles"""
+        # Get permissions from both the built-in role and custom roles
+        permissions = set(obj.get_permissions())
+        
+        # Add permissions from custom roles
+        for role in obj.roles.all():
+            for permission in role.permissions.all():
+                permissions.add(permission.codename)
+        
+        return list(permissions)
+    
+    def update(self, instance, validated_data):
+        """Update user with roles - with superuser protection"""
+        # Check if trying to modify a protected user
+        if instance.is_protected_user():
+            # Only allow superusers to modify other superusers
+            requesting_user = self.context.get('request').user if self.context.get('request') else None
+            if not requesting_user or not requesting_user.is_superuser:
+                raise serializers.ValidationError(
+                    "Cannot modify protected user (superuser) from frontend"
+                )
+        
+        role_ids = validated_data.pop('role_ids', None)
+        
+        # Prevent changing superuser status from frontend
+        if 'is_superuser' in validated_data:
+            validated_data.pop('is_superuser')
+        if 'is_staff' in validated_data:
+            validated_data.pop('is_staff')
+        
+        # Support partial update for role/status only without requiring all fields
+        # Keep existing values when not provided
+        for key in ['username', 'email', 'first_name', 'last_name', 'status', 'department', 'position', 'phone', 'filiale', 'location', 'preferences', 'role']:
+            if key not in validated_data:
+                # do not overwrite existing values
+                continue
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        
+        if role_ids is not None:
+            roles = Role.objects.filter(id__in=role_ids)
+            instance.roles.set(roles)
+        
+        return instance
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
@@ -187,65 +297,6 @@ class ChangePasswordSerializer(serializers.Serializer):
             raise serializers.ValidationError("Old password is incorrect")
         
         return value
-
-
-class PermissionSerializer(serializers.ModelSerializer):
-    """
-    Serializer for Permission model
-    """
-    class Meta:
-        model = Permission
-        fields = [
-            'id', 'name', 'codename', 'description', 'category', 
-            'is_active', 'created_at', 'updated_at'
-        ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
-
-
-class RoleSerializer(serializers.ModelSerializer):
-    """
-    Serializer for Role model
-    """
-    permissions = PermissionSerializer(many=True, read_only=True)
-    permission_ids = serializers.ListField(
-        child=serializers.IntegerField(),
-        write_only=True,
-        required=False
-    )
-    user_count = serializers.ReadOnlyField()
-    
-    class Meta:
-        model = Role
-        fields = [
-            'id', 'name', 'description', 'permissions', 'permission_ids',
-            'is_active', 'is_system', 'user_count', 'created_at', 'updated_at'
-        ]
-        read_only_fields = ['id', 'is_system', 'created_at', 'updated_at']
-    
-    def create(self, validated_data):
-        """Create role with permissions"""
-        permission_ids = validated_data.pop('permission_ids', [])
-        role = Role.objects.create(**validated_data)
-        
-        if permission_ids:
-            permissions = Permission.objects.filter(id__in=permission_ids)
-            role.permissions.set(permissions)
-        
-        return role
-    
-    def update(self, instance, validated_data):
-        """Update role with permissions"""
-        permission_ids = validated_data.pop('permission_ids', None)
-        
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        instance.save()
-        
-        if permission_ids is not None:
-            permissions = Permission.objects.filter(id__in=permission_ids)
-            instance.permissions.set(permissions)
-        
-        return instance
 
 
 class RolePermissionSerializer(serializers.Serializer):

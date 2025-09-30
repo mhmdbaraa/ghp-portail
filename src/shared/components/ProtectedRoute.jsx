@@ -39,7 +39,12 @@ const ProtectedRoute = ({
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Vérification des permissions requises
+  // Superuser (admin) : ACCÈS TOTAL - AUCUN VÉRROU
+  if (user.role === 'admin' || user.is_superuser || user.is_staff) {
+    return children;
+  }
+
+  // Vérification des permissions requises pour les autres utilisateurs
   if (requiredPermission && !hasPermission(requiredPermission)) {
     return (
       <Box

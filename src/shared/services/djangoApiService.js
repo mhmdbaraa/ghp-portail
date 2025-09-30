@@ -55,7 +55,7 @@ class DjangoApiService {
   // Authentication methods
   async login(credentials) {
     try {
-      const response = await axiosInstance.post('/auth/login/', credentials);
+      const response = await axiosInstance.post('/authentication/login/', credentials);
       return {
         success: true,
         data: response.data,
@@ -72,7 +72,7 @@ class DjangoApiService {
 
   async register(userData) {
     try {
-      const response = await axiosInstance.post('/auth/register/', userData);
+      const response = await axiosInstance.post('/authentication/register/', userData);
       return {
         success: true,
         data: response.data,
@@ -94,7 +94,7 @@ class DjangoApiService {
         throw new Error('No refresh token available');
       }
       
-      const response = await axiosInstance.post('/auth/refresh/', {
+      const response = await axiosInstance.post('/authentication/refresh/', {
         refresh: refreshToken
       });
       
@@ -116,7 +116,7 @@ class DjangoApiService {
     try {
       const refreshToken = localStorage.getItem('refreshToken');
       if (refreshToken) {
-        await axiosInstance.post('/auth/logout/', {
+        await axiosInstance.post('/authentication/logout/', {
           refresh_token: refreshToken
         });
       }
@@ -553,7 +553,7 @@ class DjangoApiService {
   // User methods
   async getUserProfile() {
     try {
-      const response = await axiosInstance.get('/auth/user-info/');
+      const response = await axiosInstance.get('/authentication/user-info/');
       return {
         success: true,
         data: response.data,
@@ -570,7 +570,7 @@ class DjangoApiService {
 
   async updateUserProfile(userData) {
     try {
-      const response = await axiosInstance.put('/auth/profile/', userData);
+      const response = await axiosInstance.put('/authentication/profile/', userData);
       return {
         success: true,
         data: response.data,
@@ -587,7 +587,7 @@ class DjangoApiService {
 
   async changePassword(passwordData) {
     try {
-      const response = await axiosInstance.post('/auth/change-password/', passwordData);
+      const response = await axiosInstance.post('/authentication/change-password/', passwordData);
       return {
         success: true,
         data: response.data,

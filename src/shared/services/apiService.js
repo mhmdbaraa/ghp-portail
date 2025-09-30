@@ -181,10 +181,10 @@ class ApiService {
   // Gestion des opérations POST
   async handlePost(entity, data) {
     switch (entity) {
-      case 'auth/login':
+      case 'authentication/login':
         return this.handleLogin(data);
       
-      case 'auth/register':
+      case 'authentication/register':
         return this.handleRegister(data);
       
       case 'projects': {
@@ -514,11 +514,11 @@ class ApiService {
   }
 
   async login(credentials) {
-    return this.apiCall('POST', 'auth/login', credentials);
+    return this.apiCall('POST', 'authentication/login', credentials);
   }
 
   async register(userData) {
-    return this.apiCall('POST', 'auth/register', userData);
+    return this.apiCall('POST', 'authentication/register', userData);
   }
 
   async logout() {

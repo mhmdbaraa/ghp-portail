@@ -43,7 +43,7 @@ const AuthDebug = () => {
     
     try {
       const accessToken = localStorage.getItem('accessToken');
-      const response = await fetch('http://localhost:8000/api/auth/users/', {
+      const response = await fetch('http://localhost:8000/api/authentication/users/', {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json'

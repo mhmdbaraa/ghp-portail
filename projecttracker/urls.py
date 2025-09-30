@@ -23,7 +23,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     
     # API endpoints
-    path('api/auth/', include('authentication.urls')),
+    path('api/authentication/', include('authentication.urls')),
     path('api/projects/', include('projects.urls')),
 ]
 

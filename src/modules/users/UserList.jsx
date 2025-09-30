@@ -124,6 +124,13 @@ const UserList = () => {
   };
 
   const handleEditUser = (user) => {
+    // Check if user is protected (superuser)
+    if (user.is_superuser || user.role === 'admin') {
+      showSnackbar('Cannot edit protected user (superuser)', 'error');
+      handleMenuClose();
+      return;
+    }
+    
     setEditingUser(user);
     setEditUserModalOpen(true);
     setModalKey(prev => prev + 1); // Force re-render
@@ -140,6 +147,13 @@ const UserList = () => {
   };
 
   const handleDelete = () => {
+    // Check if user is protected (superuser)
+    if (selectedUser.is_superuser || selectedUser.role === 'admin') {
+      showSnackbar('Cannot delete protected user (superuser)', 'error');
+      handleMenuClose();
+      return;
+    }
+    
     setUserToDelete(selectedUser);
     setDeleteDialogOpen(true);
     handleMenuClose();
@@ -189,9 +203,12 @@ const UserList = () => {
     switch (role) {
       case 'admin': return '#ef4444';
       case 'manager': return '#6366f1';
+      case 'PROJECT_MANAGER': return '#6366f1';
       case 'developer': return '#10b981';
       case 'designer': return '#f59e0b';
       case 'tester': return '#8b5cf6';
+      case 'user': return '#6b7280';
+      case 'PROJECT_USER': return '#6b7280';
       default: return '#6b7280';
     }
   };
@@ -203,6 +220,9 @@ const UserList = () => {
       case 'developer': return 'Développeur';
       case 'designer': return 'Designer';
       case 'tester': return 'Testeur';
+      case 'user': return 'Utilisateur';
+      case 'PROJECT_MANAGER': return 'Gestionnaire de Projet';
+      case 'PROJECT_USER': return 'Utilisateur de Projet';
       default: return role;
     }
   };
@@ -309,9 +329,12 @@ const UserList = () => {
                     <MenuItem value="all">Tous les rôles</MenuItem>
                     <MenuItem value="admin">Administrateur</MenuItem>
                     <MenuItem value="manager">Manager</MenuItem>
+                    <MenuItem value="PROJECT_MANAGER">Gestionnaire de Projet</MenuItem>
                     <MenuItem value="developer">Développeur</MenuItem>
                     <MenuItem value="designer">Designer</MenuItem>
                     <MenuItem value="tester">Testeur</MenuItem>
+                    <MenuItem value="user">Utilisateur</MenuItem>
+                    <MenuItem value="PROJECT_USER">Utilisateur de Projet</MenuItem>
                   </Select>
                 </FormControl>
               </Grid>
@@ -346,6 +369,7 @@ const UserList = () => {
               <TableHead>
                 <TableRow>
                   <TableCell sx={{ py: 1.5, fontWeight: 600 }}>Utilisateur</TableCell>
+                  <TableCell sx={{ py: 1.5, fontWeight: 600 }}>Nom d'utilisateur</TableCell>
                   <TableCell sx={{ py: 1.5, fontWeight: 600 }}>Rôle</TableCell>
                   <TableCell sx={{ py: 1.5, fontWeight: 600 }}>Statut</TableCell>
                   <TableCell sx={{ py: 1.5, fontWeight: 600 }}>Département</TableCell>
@@ -381,17 +405,40 @@ const UserList = () => {
                         </Box>
                       </TableCell>
                       <TableCell sx={{ py: 1 }}>
-                        <Chip
-                          label={getRoleLabel(user.role)}
-                          size="small"
-                          sx={{
-                            height: 20,
-                            fontSize: '0.7rem',
-                            background: `${getRoleColor(user.role)}20`,
-                            color: getRoleColor(user.role),
-                            fontWeight: 600,
-                          }}
-                        />
+                        <Typography variant="body2" fontWeight={500} color="text.primary" sx={{ lineHeight: 1.2 }}>
+                          {user.username}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.2 }}>
+                          ID: {user.id}
+                        </Typography>
+                      </TableCell>
+                      <TableCell sx={{ py: 1 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Chip
+                            label={getRoleLabel(user.role)}
+                            size="small"
+                            sx={{
+                              height: 20,
+                              fontSize: '0.7rem',
+                              background: `${getRoleColor(user.role)}20`,
+                              color: getRoleColor(user.role),
+                              fontWeight: 600,
+                            }}
+                          />
+                          {(user.is_superuser || user.role === 'admin') && (
+                            <Chip
+                              label="PROTECTED"
+                              size="small"
+                              sx={{
+                                height: 16,
+                                fontSize: '0.6rem',
+                                background: '#ef444420',
+                                color: '#ef4444',
+                                fontWeight: 700,
+                              }}
+                            />
+                          )}
+                        </Box>
                       </TableCell>
                       <TableCell sx={{ py: 1 }}>
                         <Chip
@@ -465,27 +512,41 @@ const UserList = () => {
             <Visibility sx={{ mr: 1 }} />
             Voir le profil
           </MenuItem>
-          <MenuItem onClick={handleEdit}>
-            <Edit sx={{ mr: 1 }} />
-            Modifier
-          </MenuItem>
-          <MenuItem onClick={handleToggleStatus}>
-            {selectedUser?.status === 'active' ? (
-              <>
-                <Block sx={{ mr: 1 }} />
-                Désactiver
-              </>
-            ) : (
-              <>
-                <CheckCircle sx={{ mr: 1 }} />
-                Activer
-              </>
-            )}
-          </MenuItem>
-          <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }}>
-            <Delete sx={{ mr: 1 }} />
-            Supprimer
-          </MenuItem>
+          
+          {/* Only show edit/delete options for non-superusers */}
+          {!(selectedUser?.is_superuser || selectedUser?.role === 'admin') && (
+            <>
+              <MenuItem onClick={handleEdit}>
+                <Edit sx={{ mr: 1 }} />
+                Modifier
+              </MenuItem>
+              <MenuItem onClick={handleToggleStatus}>
+                {selectedUser?.status === 'active' ? (
+                  <>
+                    <Block sx={{ mr: 1 }} />
+                    Désactiver
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle sx={{ mr: 1 }} />
+                    Activer
+                  </>
+                )}
+              </MenuItem>
+              <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }}>
+                <Delete sx={{ mr: 1 }} />
+                Supprimer
+              </MenuItem>
+            </>
+          )}
+          
+          {/* Show protected message for superusers */}
+          {(selectedUser?.is_superuser || selectedUser?.role === 'admin') && (
+            <MenuItem disabled>
+              <Block sx={{ mr: 1 }} />
+              Utilisateur protégé (superuser)
+            </MenuItem>
+          )}
         </Menu>
 
         {/* Delete Confirmation Dialog */}

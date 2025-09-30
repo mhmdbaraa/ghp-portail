@@ -38,6 +38,9 @@ class User(AbstractUser):
     # User preferences
     preferences = models.JSONField(default=dict, blank=True)
     
+    # Custom roles relationship
+    roles = models.ManyToManyField('Role', blank=True, related_name='users')
+    
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

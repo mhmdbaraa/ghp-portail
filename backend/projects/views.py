@@ -5,6 +5,11 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q, Count, Avg, Sum
 from django.utils import timezone
 from django.contrib.auth import get_user_model
+from django.http import HttpResponse
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from openpyxl.utils import get_column_letter
+from datetime import datetime
 
 from .models import Project, ProjectComment, ProjectAttachment, Task, TaskComment, TaskAttachment, TimeEntry, ProjectNote
 
@@ -17,14 +22,17 @@ from .serializers import (
     ProjectNoteSerializer
 )
 from .filters import ProjectFilter, TaskFilter
+from .permissions import IsProjectManagerOrReadOnly, IsProjectManager, CanViewProject, CanModifyProject
 
 
 class ProjectViewSet(viewsets.ModelViewSet):
     """
     ViewSet for managing projects
+    - PROJECT_MANAGER: Full access (CRUD)
+    - PROJECT_USER: Read-only access
     """
     queryset = Project.objects.all()
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, CanModifyProject]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = ProjectFilter
     search_fields = ['name', 'description', 'tags']
@@ -386,9 +394,11 @@ class ProjectStatisticsView(viewsets.ViewSet):
 class TaskViewSet(viewsets.ModelViewSet):
     """
     ViewSet for managing tasks
+    - PROJECT_MANAGER: Full access (CRUD)
+    - PROJECT_USER: Read-only access
     """
     queryset = Task.objects.all()
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, CanModifyProject]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = TaskFilter
     search_fields = ['title', 'description', 'tags']
@@ -883,3 +893,268 @@ class ProjectNoteViewSet(viewsets.ModelViewSet):
                 'success': False,
                 'error': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def export_projects_excel(request):
+    """
+    Export projects and tasks to Excel with 3 sheets:
+    1. Projects - All projects with full details
+    2. Tasks - All tasks with full details
+    3. Projects with Tasks - Projects with their related tasks
+    """
+    try:
+        # Create workbook
+        wb = Workbook()
+        
+        # Styling
+        header_font = Font(bold=True, color="FFFFFF", size=12)
+        header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+        header_alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+        
+        # ============ SHEET 1: PROJECTS ============
+        ws_projects = wb.active
+        ws_projects.title = "Projets"
+        
+        # Project headers
+        project_headers = [
+            "N° Projet", "Nom", "Description", "Statut", "Priorité", "Catégorie",
+            "Chef de Projet", "Fonction CP", "Équipe (Nb)", "Membres Équipe",
+            "Date Début", "Date Fin", "Date Terminé", "Budget", "Dépensé",
+            "Progrès (%)", "Tâches Totales", "Tâches Terminées", "Tags/Filiales",
+            "Notes", "En Retard", "Utilisation Budget (%)", "Créé le", "Modifié le"
+        ]
+        
+        # Write project headers
+        for col, header in enumerate(project_headers, 1):
+            cell = ws_projects.cell(row=1, column=col, value=header)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = header_alignment
+            cell.border = border
+        
+        # Get all projects with related data
+        projects = Project.objects.all().prefetch_related('team', 'manager', 'tasks')
+        
+        # Write project data
+        for row, project in enumerate(projects, 2):
+            team_members = ", ".join([m.full_name or m.username for m in project.team.all()])
+            tags_str = ", ".join(project.tags) if project.tags else ""
+            
+            project_data = [
+                project.project_number or "",
+                project.name,
+                project.description or "",
+                project.get_status_display(),
+                project.get_priority_display(),
+                project.get_category_display(),
+                project.manager.full_name if project.manager else "",
+                getattr(project.manager, 'position', '') if project.manager else "",
+                project.team_count,
+                team_members,
+                project.start_date.strftime('%d/%m/%Y') if project.start_date else "",
+                project.deadline.strftime('%d/%m/%Y') if project.deadline else "",
+                project.completed_date.strftime('%d/%m/%Y') if project.completed_date else "",
+                f"{project.budget:.2f} €" if project.budget else "0.00 €",
+                f"{project.spent:.2f} €" if project.spent else "0.00 €",
+                project.progress,
+                project.get_tasks_count(),
+                project.get_completed_tasks_count(),
+                tags_str,
+                project.notes or "",
+                "Oui" if project.is_overdue else "Non",
+                f"{project.budget_utilization:.1f} %" if project.budget > 0 else "0 %",
+                project.created_at.strftime('%d/%m/%Y %H:%M') if project.created_at else "",
+                project.updated_at.strftime('%d/%m/%Y %H:%M') if project.updated_at else "",
+            ]
+            
+            for col, value in enumerate(project_data, 1):
+                cell = ws_projects.cell(row=row, column=col, value=value)
+                cell.border = border
+                cell.alignment = Alignment(vertical="top", wrap_text=True)
+        
+        # Auto-size columns for projects
+        for col in range(1, len(project_headers) + 1):
+            ws_projects.column_dimensions[get_column_letter(col)].width = 15
+        
+        # ============ SHEET 2: TASKS ============
+        ws_tasks = wb.create_sheet("Tâches")
+        
+        # Task headers
+        task_headers = [
+            "N° Tâche", "Titre", "Description", "Projet", "N° Projet", "Statut",
+            "Priorité", "Type", "Assigné à", "Rapporteur", "Date Échéance",
+            "Date Terminé", "Temps Estimé (h)", "Temps Réel (h)", "Variance (%)",
+            "Progrès (%)", "Tags", "Notes", "En Retard", "Créé le", "Modifié le"
+        ]
+        
+        # Write task headers
+        for col, header in enumerate(task_headers, 1):
+            cell = ws_tasks.cell(row=1, column=col, value=header)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = header_alignment
+            cell.border = border
+        
+        # Get all tasks
+        tasks = Task.objects.all().select_related('project', 'assignee', 'reporter')
+        
+        # Write task data
+        for row, task in enumerate(tasks, 2):
+            task_tags = ", ".join(task.tags) if task.tags else ""
+            
+            task_data = [
+                task.task_number or "",
+                task.title,
+                task.description or "",
+                task.project.name if task.project else "",
+                task.project.project_number if task.project else "",
+                task.get_status_display(),
+                task.get_priority_display(),
+                task.get_task_type_display(),
+                task.assignee.full_name if task.assignee else "",
+                task.reporter.full_name if task.reporter else "",
+                task.due_date.strftime('%d/%m/%Y') if task.due_date else "",
+                task.completed_date.strftime('%d/%m/%Y') if task.completed_date else "",
+                task.estimated_time or 0,
+                task.actual_time or 0,
+                f"{task.time_variance:.1f} %" if task.estimated_time and task.estimated_time > 0 else "0 %",
+                task.progress_percentage,
+                task_tags,
+                task.notes or "",
+                "Oui" if task.is_overdue else "Non",
+                task.created_at.strftime('%d/%m/%Y %H:%M') if task.created_at else "",
+                task.updated_at.strftime('%d/%m/%Y %H:%M') if task.updated_at else "",
+            ]
+            
+            for col, value in enumerate(task_data, 1):
+                cell = ws_tasks.cell(row=row, column=col, value=value)
+                cell.border = border
+                cell.alignment = Alignment(vertical="top", wrap_text=True)
+        
+        # Auto-size columns for tasks
+        for col in range(1, len(task_headers) + 1):
+            ws_tasks.column_dimensions[get_column_letter(col)].width = 15
+        
+        # ============ SHEET 3: PROJECTS WITH TASKS ============
+        ws_combined = wb.create_sheet("Projets avec Tâches")
+        
+        # Combined headers
+        combined_headers = [
+            "Type", "N° Projet", "Nom Projet", "Statut Projet", "Chef de Projet", "Progrès Projet (%)",
+            "N° Tâche", "Titre Tâche", "Statut Tâche", "Assigné à", "Échéance Tâche",
+            "Progrès Tâche (%)", "Temps Estimé (h)", "Temps Réel (h)"
+        ]
+        
+        # Write combined headers
+        for col, header in enumerate(combined_headers, 1):
+            cell = ws_combined.cell(row=1, column=col, value=header)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = header_alignment
+            cell.border = border
+        
+        # Styling for project rows and task rows
+        project_fill = PatternFill(start_color="E8F0FE", end_color="E8F0FE", fill_type="solid")
+        task_fill = PatternFill(start_color="F8F9FA", end_color="F8F9FA", fill_type="solid")
+        project_font_bold = Font(bold=True, size=11)
+        task_indent = Alignment(horizontal="left", vertical="top", indent=2)
+        
+        # Write combined data with visual hierarchy
+        current_row = 2
+        for project in projects:
+            project_tasks = project.tasks.all()
+            
+            # Write project header row
+            project_row_data = [
+                "PROJET",  # Type indicator
+                project.project_number or "",
+                project.name,
+                project.get_status_display(),
+                project.manager.full_name if project.manager else "",
+                project.progress,
+                "", "", "", "", "", "", "", ""  # Empty task columns
+            ]
+            
+            for col, value in enumerate(project_row_data, 1):
+                cell = ws_combined.cell(row=current_row, column=col, value=value)
+                cell.border = border
+                cell.fill = project_fill
+                if col <= 6:  # Project columns
+                    cell.font = project_font_bold
+                cell.alignment = Alignment(vertical="top", horizontal="left")
+            
+            current_row += 1
+            
+            # Write tasks as sub-rows
+            if project_tasks.exists():
+                for task in project_tasks:
+                    task_row_data = [
+                        "  → Tâche",  # Indented type indicator
+                        "", "", "", "", "",  # Empty project columns
+                        task.task_number or "",
+                        task.title,
+                        task.get_status_display(),
+                        task.assignee.full_name if task.assignee else "",
+                        task.due_date.strftime('%d/%m/%Y') if task.due_date else "",
+                        task.progress_percentage,
+                        task.estimated_time or 0,
+                        task.actual_time or 0,
+                    ]
+                    
+                    for col, value in enumerate(task_row_data, 1):
+                        cell = ws_combined.cell(row=current_row, column=col, value=value)
+                        cell.border = border
+                        cell.fill = task_fill
+                        if col == 1:  # Type column with indent
+                            cell.alignment = task_indent
+                        else:
+                            cell.alignment = Alignment(vertical="top")
+                    
+                    current_row += 1
+            else:
+                # Project without tasks - add a note row
+                no_task_row = [
+                    "  (Aucune tâche)",
+                    "", "", "", "", "", "", "", "", "", "", "", "", ""
+                ]
+                
+                for col, value in enumerate(no_task_row, 1):
+                    cell = ws_combined.cell(row=current_row, column=col, value=value)
+                    cell.border = border
+                    cell.fill = task_fill
+                    cell.font = Font(italic=True, color="999999")
+                    cell.alignment = task_indent
+                
+                current_row += 1
+        
+        # Auto-size columns for combined
+        ws_combined.column_dimensions['A'].width = 15  # Type column
+        for col in range(2, len(combined_headers) + 1):
+            ws_combined.column_dimensions[get_column_letter(col)].width = 18
+        
+        # Create response
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        response['Content-Disposition'] = f'attachment; filename=export_projets_{timestamp}.xlsx'
+        
+        # Save workbook to response
+        wb.save(response)
+        
+        return response
+        
+    except Exception as e:
+        return Response({
+            'success': False,
+            'error': str(e),
+            'message': 'Erreur lors de l\'export Excel'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

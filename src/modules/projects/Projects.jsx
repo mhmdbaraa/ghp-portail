@@ -48,13 +48,17 @@ import {
   Warning,
   Search,
 } from '@mui/icons-material';
-import { DataGrid, GridToolbar, GridToolbarContainer, GridToolbarExport, GridToolbarQuickFilter } from '@mui/x-data-grid';
+import { DataGrid, GridToolbar, GridToolbarContainer, GridToolbarQuickFilter } from '@mui/x-data-grid';
+import { FileDownload as FileDownloadIcon } from '@mui/icons-material';
 import projectService from '../../shared/services/projectService';
 import ProjectDataTransformer from '../../shared/services/projectDataTransformer';
 import { useAuth } from '../../shared/contexts/AuthContext';
 import userService from '../../shared/services/userService';
 import EditableProgressBar from '../../shared/components/ui/EditableProgressBar';
 import ProjectDetails from './ProjectDetails';
+import axiosInstance from '../../shared/services/axiosInstance';
+import ProjectPermissionGuard, { useProjectPermissions } from '../../shared/components/ui/ProjectPermissionGuard';
+import NoProjectAccess from '../../shared/components/ui/NoProjectAccess';
 
 // Options de statut pour les projets (correspondant aux choix Django)
 const PROJECT_STATUS_OPTIONS = [
@@ -73,6 +77,12 @@ const Projects = () => {
   
   const theme = useTheme();
   const { user } = useAuth();
+  const { canEdit, canCreate, canDelete, isProjectManager, isProjectUser, canView, userRole } = useProjectPermissions();
+  
+  // Block access if user doesn't have required roles
+  if (!canView) {
+    return <NoProjectAccess userRole={userRole} />;
+  }
   
   // Use transition for smoother updates
   const [isPending, startTransition] = useTransition();
@@ -332,12 +342,16 @@ const Projects = () => {
           <MenuItem onClick={handleView}>
             <Visibility fontSize="small" style={{ marginRight: 8 }} /> Voir
           </MenuItem>
-          <MenuItem onClick={handleEdit}>
-            <Edit fontSize="small" style={{ marginRight: 8 }} /> Modifier
-          </MenuItem>
-          <MenuItem onClick={handleDelete}>
-            <Delete fontSize="small" style={{ marginRight: 8 }} /> Supprimer
-          </MenuItem>
+          {canEdit && (
+            <MenuItem onClick={handleEdit}>
+              <Edit fontSize="small" style={{ marginRight: 8 }} /> Modifier
+            </MenuItem>
+          )}
+          {canDelete && (
+            <MenuItem onClick={handleDelete}>
+              <Delete fontSize="small" style={{ marginRight: 8 }} /> Supprimer
+            </MenuItem>
+          )}
         </Menu>
       </Box>
     );
@@ -413,12 +427,16 @@ const Projects = () => {
           <MenuItem onClick={handleView}>
             <Visibility fontSize="small" style={{ marginRight: 8 }} /> Détail
           </MenuItem>
-          <MenuItem onClick={handleEdit}>
-            <Edit fontSize="small" style={{ marginRight: 8 }} /> Modifier
-          </MenuItem>
-          <MenuItem onClick={handleDelete}>
-            <Delete fontSize="small" style={{ marginRight: 8 }} /> Supprimer
-          </MenuItem>
+          {canEdit && (
+            <MenuItem onClick={handleEdit}>
+              <Edit fontSize="small" style={{ marginRight: 8 }} /> Modifier
+            </MenuItem>
+          )}
+          {canDelete && (
+            <MenuItem onClick={handleDelete}>
+              <Delete fontSize="small" style={{ marginRight: 8 }} /> Supprimer
+            </MenuItem>
+          )}
         </Menu>
       </Box>
     );
@@ -1392,6 +1410,45 @@ const Projects = () => {
     }
   };
 
+  // Function to handle Excel export
+  const handleExportExcel = async () => {
+    try {
+      const response = await axiosInstance.get('/projects/export/excel/', {
+        responseType: 'blob'
+      });
+      
+      // Create blob link to download
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Get filename from response headers or use default
+      const contentDisposition = response.headers['content-disposition'];
+      const filename = contentDisposition
+        ? contentDisposition.split('filename=')[1].replace(/"/g, '')
+        : `export_projets_${new Date().toISOString().slice(0,10)}.xlsx`;
+      
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      setSnackbar({
+        open: true,
+        message: 'Export Excel réussi !',
+        severity: 'success'
+      });
+    } catch (error) {
+      console.error('Error exporting Excel:', error);
+      setSnackbar({
+        open: true,
+        message: 'Erreur lors de l\'export Excel',
+        severity: 'error'
+      });
+    }
+  };
+
   // Toolbar personnalisée avec seulement recherche et export
   const CustomToolbar = () => {
     return (
@@ -1430,16 +1487,24 @@ const Projects = () => {
             },
           }}
         />
-        <GridToolbarExport 
-          sx={{
-            color: theme.palette.primary.main,
-            '&:hover': {
-              backgroundColor: theme.palette.mode === 'dark'
-                ? 'rgba(129, 140, 248, 0.1)'
-                : 'rgba(99, 102, 241, 0.1)',
-            },
-          }}
-        />
+        <Tooltip title="Exporter vers Excel (Projets + Tâches + Combiné)">
+          <Button
+            size="small"
+            startIcon={<FileDownloadIcon />}
+            onClick={handleExportExcel}
+            sx={{
+              color: theme.palette.primary.main,
+              textTransform: 'none',
+              '&:hover': {
+                backgroundColor: theme.palette.mode === 'dark'
+                  ? 'rgba(129, 140, 248, 0.1)'
+                  : 'rgba(99, 102, 241, 0.1)'
+              }
+            }}
+          >
+            Export Excel
+          </Button>
+        </Tooltip>
       </GridToolbarContainer>
     );
   };
@@ -2431,40 +2496,42 @@ const Projects = () => {
             </ToggleButton>
           </ToggleButtonGroup>
 
-          <Button
-            variant="contained"
-            startIcon={<Add />}
-            size="small"
-            onClick={handleNewProject}
-            sx={{
-              background: theme.palette.mode === 'dark'
-                ? 'linear-gradient(135deg, #818cf8 0%, #f472b6 100%)'
-                : 'linear-gradient(135deg, #6366f1 0%, #ec4899 100%)',
-              '&:hover': {
+          <ProjectPermissionGuard requireManager>
+            <Button
+              variant="contained"
+              startIcon={<Add />}
+              size="small"
+              onClick={handleNewProject}
+              sx={{
                 background: theme.palette.mode === 'dark'
-                  ? 'linear-gradient(135deg, #a5b4fc 0%, #f9a8d4 100%)'
-                  : 'linear-gradient(135deg, #818cf8 0%, #f472b6 100%)',
-                transform: 'translateY(-1px)',
+                  ? 'linear-gradient(135deg, #818cf8 0%, #f472b6 100%)'
+                  : 'linear-gradient(135deg, #6366f1 0%, #ec4899 100%)',
+                '&:hover': {
+                  background: theme.palette.mode === 'dark'
+                    ? 'linear-gradient(135deg, #a5b4fc 0%, #f9a8d4 100%)'
+                    : 'linear-gradient(135deg, #818cf8 0%, #f472b6 100%)',
+                  transform: 'translateY(-1px)',
+                  boxShadow: theme.palette.mode === 'dark'
+                    ? '0 6px 20px rgba(129, 140, 248, 0.4)'
+                    : '0 6px 20px rgba(99, 102, 241, 0.4)',
+                },
+                transition: 'all 0.2s ease',
                 boxShadow: theme.palette.mode === 'dark'
-                  ? '0 6px 20px rgba(129, 140, 248, 0.4)'
-                  : '0 6px 20px rgba(99, 102, 241, 0.4)',
-              },
-              transition: 'all 0.2s ease',
-              boxShadow: theme.palette.mode === 'dark'
-                ? '0 4px 12px rgba(129, 140, 248, 0.3)'
-                : '0 4px 12px rgba(99, 102, 241, 0.3)',
-              fontSize: { xs: '0.75rem', sm: '0.875rem' },
-              px: { xs: 1.5, sm: 2 },
-              py: { xs: 0.5, sm: 1 },
-            }}
-          >
-            <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
-              Nouveau
-            </Box>
-            <Box component="span" sx={{ display: { xs: 'inline', sm: 'none' } }}>
-              +
-            </Box>
-          </Button>
+                  ? '0 4px 12px rgba(129, 140, 248, 0.3)'
+                  : '0 4px 12px rgba(99, 102, 241, 0.3)',
+                fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                px: { xs: 1.5, sm: 2 },
+                py: { xs: 0.5, sm: 1 },
+              }}
+            >
+              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                Nouveau
+              </Box>
+              <Box component="span" sx={{ display: { xs: 'inline', sm: 'none' } }}>
+                +
+              </Box>
+            </Button>
+          </ProjectPermissionGuard>
 
         </Box>
       </Box>

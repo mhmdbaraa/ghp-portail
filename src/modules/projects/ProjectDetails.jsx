@@ -62,16 +62,17 @@ const ProjectDetails = ({ open, onClose, project }) => {
 
   useEffect(() => {
     if (open && project) {
+      setActiveTab(0); // Reset to first tab when opening
       loadProjectTasks();
       loadProjectNotes();
     }
   }, [open, project]);
 
   useEffect(() => {
-    if (activeTab === 3) {
-      scrollToBottom();
+    if (activeTab === 3 && notes.length > 0) {
+      setTimeout(() => scrollToBottom(), 100);
     }
-  }, [activeTab, notes]);
+  }, [activeTab]);
 
   const scrollToBottom = () => {
     notesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -205,7 +206,10 @@ const ProjectDetails = ({ open, onClose, project }) => {
       PaperProps={{
         sx: {
           borderRadius: 3,
+          height: '90vh',
           maxHeight: '90vh',
+          display: 'flex',
+          flexDirection: 'column',
         }
       }}
     >
@@ -314,9 +318,9 @@ const ProjectDetails = ({ open, onClose, project }) => {
         </Box>
       </Box>
 
-      <DialogContent sx={{ p: 0 }}>
+      <DialogContent sx={{ p: 0, flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {/* Tabs */}
-        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', flexShrink: 0 }}>
           <Tabs
             value={activeTab}
             onChange={(e, newValue) => setActiveTab(newValue)}
@@ -337,7 +341,7 @@ const ProjectDetails = ({ open, onClose, project }) => {
         </Box>
 
         {/* Tab Content */}
-        <Box sx={{ p: 3 }}>
+        <Box sx={{ p: 3, flex: 1, overflow: 'auto' }}>
           {/* Overview Tab */}
           {activeTab === 0 && (
             <Grid container spacing={3}>
@@ -600,10 +604,10 @@ const ProjectDetails = ({ open, onClose, project }) => {
 
           {/* Notes Tab - Social Media Style */}
           {activeTab === 3 && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', height: 'calc(90vh - 400px)' }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
               {/* Post New Note */}
-              <Card sx={{ mb: 2 }}>
-                <CardContent>
+              <Card sx={{ mb: 2, flexShrink: 0 }}>
+                <CardContent sx={{ py: 1.5, px: 2, '&:last-child': { pb: 1.5 } }}>
                   <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
                     <Avatar sx={{ bgcolor: 'primary.main', mt: 1 }}>
                       {user?.full_name?.charAt(0) || user?.username?.charAt(0) || 'U'}
@@ -612,24 +616,26 @@ const ProjectDetails = ({ open, onClose, project }) => {
                       <TextField
                         fullWidth
                         multiline
-                        rows={3}
+                        rows={2}
                         placeholder="Écrivez une note sur ce projet..."
                         value={newNote}
                         onChange={(e) => setNewNote(e.target.value)}
                         variant="outlined"
+                        size="small"
                         sx={{
                           '& .MuiOutlinedInput-root': {
                             borderRadius: 2,
                           }
                         }}
                       />
-                      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 0.5 }}>
                         <Button
                           variant="contained"
-                          endIcon={postingNote ? <CircularProgress size={20} color="inherit" /> : <Send />}
+                          size="small"
+                          endIcon={postingNote ? <CircularProgress size={16} color="inherit" /> : <Send fontSize="small" />}
                           onClick={handlePostNote}
                           disabled={!newNote.trim() || postingNote}
-                          sx={{ borderRadius: 20 }}
+                          sx={{ borderRadius: 20, textTransform: 'none' }}
                         >
                           {postingNote ? 'Envoi...' : 'Publier'}
                         </Button>
@@ -661,47 +667,54 @@ const ProjectDetails = ({ open, onClose, project }) => {
                 ) : (
                   <List sx={{ py: 0 }}>
                     {notes.map((note) => (
-                      <Card key={note.id} sx={{ mb: 2, borderRadius: 2 }}>
-                        <CardContent>
-                          <Box sx={{ display: 'flex', gap: 2 }}>
-                            <Avatar sx={{ bgcolor: 'primary.main' }}>
+                      <Card key={note.id} sx={{ mb: 1.5, borderRadius: 2 }}>
+                        <CardContent sx={{ py: 1.5, px: 2, '&:last-child': { pb: 1.5 } }}>
+                          <Box sx={{ display: 'flex', gap: 1.5 }}>
+                            <Avatar sx={{ bgcolor: 'primary.main', width: 36, height: 36 }}>
                               {note.author_name?.charAt(0) || note.author_username?.charAt(0) || 'U'}
                             </Avatar>
-                            <Box sx={{ flex: 1 }}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                                <Box>
-                                  <Typography variant="subtitle2" fontWeight={600}>
-                                    {note.author_name || note.author_username}
-                                  </Typography>
-                                  <Typography variant="caption" color="text.secondary">
-                                    {note.author_position && `${note.author_position} • `}
-                                    {new Date(note.created_at).toLocaleString('fr-FR', {
-                                      day: 'numeric',
-                                      month: 'short',
-                                      hour: '2-digit',
-                                      minute: '2-digit'
-                                    })}
-                                  </Typography>
-                                </Box>
+                            <Box sx={{ flex: 1, minWidth: 0 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, mb: 0.5 }}>
+                                <Typography variant="subtitle2" fontWeight={600} sx={{ fontSize: '0.875rem' }}>
+                                  {note.author_name || note.author_username}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                                  {note.author_position && `${note.author_position} • `}
+                                  {new Date(note.created_at).toLocaleString('fr-FR', {
+                                    day: 'numeric',
+                                    month: 'short',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                </Typography>
                               </Box>
-                              <Typography variant="body1" sx={{ mb: 2, whiteSpace: 'pre-wrap' }}>
+                              <Typography 
+                                variant="body2" 
+                                sx={{ 
+                                  mb: 1, 
+                                  whiteSpace: 'pre-wrap',
+                                  fontSize: '0.875rem',
+                                  lineHeight: 1.5
+                                }}
+                              >
                                 {note.content}
                               </Typography>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                                 <IconButton
                                   size="small"
                                   onClick={() => handleToggleLike(note.id)}
                                   sx={{
+                                    p: 0.5,
                                     color: note.is_liked ? 'error.main' : 'text.secondary',
                                     '&:hover': {
                                       backgroundColor: note.is_liked ? alpha(theme.palette.error.main, 0.1) : 'action.hover',
                                     }
                                   }}
                                 >
-                                  {note.is_liked ? <Favorite fontSize="small" /> : <FavoriteBorder fontSize="small" />}
+                                  {note.is_liked ? <Favorite sx={{ fontSize: 18 }} /> : <FavoriteBorder sx={{ fontSize: 18 }} />}
                                 </IconButton>
-                                <Typography variant="caption" color="text.secondary">
-                                  {note.likes_count || 0} {note.likes_count === 1 ? 'like' : 'likes'}
+                                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                                  {note.likes_count || 0}
                                 </Typography>
                               </Box>
                             </Box>

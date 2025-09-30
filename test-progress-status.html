@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Progress to Status Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .demo-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .project-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            background: #fafafa;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 600;
+            margin: 5px 0;
+        }
+        .status-planification { background: #e3f2fd; color: #1976d2; }
+        .status-en-cours { background: #e8f5e8; color: #2e7d32; }
+        .status-termine { background: #f3e5f5; color: #7b1fa2; }
+        .progress-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        .progress-bar {
+            flex: 1;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4caf50, #8bc34a);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        .slider {
+            width: 100%;
+            margin: 10px 0;
+        }
+        .demo-text {
+            background: #e8f5e8;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            border-left: 4px solid #4caf50;
+        }
+        .status-change {
+            background: #fff3e0;
+            padding: 8px;
+            border-radius: 4px;
+            margin: 5px 0;
+            border-left: 4px solid #ff9800;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <h2>🎯 Progress to Status Auto-Update Demo</h2>
+        
+        <div class="demo-text">
+            <strong>Auto Status Updates:</strong><br>
+            • Progress 100% → Status becomes "Terminé"<br>
+            • Progress > 0% from "Planification" → Status becomes "En cours"<br>
+            • Completed date is automatically set when status becomes "Terminé"
+        </div>
+
+        <div class="project-card">
+            <h3>Project Demo</h3>
+            <div>
+                <strong>Status:</strong> 
+                <span id="status" class="status-badge status-planification">Planification</span>
+            </div>
+            <div>
+                <strong>Progress:</strong> <span id="progressValue">0%</span>
+            </div>
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div id="progressFill" class="progress-fill" style="width: 0%"></div>
+                </div>
+            </div>
+            <input type="range" class="slider" min="0" max="100" value="0" id="progressSlider" oninput="updateProgress(this.value)">
+            <div id="statusChange" class="status-change" style="display: none;"></div>
+        </div>
+
+        <div class="demo-text">
+            <strong>Try these scenarios:</strong><br>
+            1. Move slider to 25% → Status changes to "En cours"<br>
+            2. Move slider to 100% → Status changes to "Terminé"<br>
+            3. Move slider back to 50% → Status stays "En cours"<br>
+            4. Move slider to 100% again → Status becomes "Terminé"
+        </div>
+    </div>
+
+    <script>
+        function updateProgress(value) {
+            const progressFill = document.getElementById('progressFill');
+            const progressValue = document.getElementById('progressValue');
+            const status = document.getElementById('status');
+            const statusChange = document.getElementById('statusChange');
+            
+            // Update progress bar
+            progressFill.style.width = value + '%';
+            progressValue.textContent = value + '%';
+            
+            // Simulate status changes based on progress
+            let newStatus = '';
+            let statusClass = '';
+            let changeMessage = '';
+            
+            if (value >= 100) {
+                newStatus = 'Terminé';
+                statusClass = 'status-termine';
+                changeMessage = '✅ Progress reached 100% - Status automatically changed to "Terminé"';
+            } else if (value > 0) {
+                newStatus = 'En cours';
+                statusClass = 'status-en-cours';
+                if (status.textContent === 'Planification') {
+                    changeMessage = '🔄 Progress started - Status automatically changed to "En cours"';
+                }
+            } else {
+                newStatus = 'Planification';
+                statusClass = 'status-planification';
+            }
+            
+            // Update status if it changed
+            if (status.textContent !== newStatus) {
+                status.textContent = newStatus;
+                status.className = 'status-badge ' + statusClass;
+                
+                // Show status change message
+                statusChange.textContent = changeMessage;
+                statusChange.style.display = 'block';
+                
+                // Hide message after 3 seconds
+                setTimeout(() => {
+                    statusChange.style.display = 'none';
+                }, 3000);
+            } else {
+                statusChange.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>

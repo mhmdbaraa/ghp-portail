@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Progress Slider Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .demo-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .progress-demo {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background-color: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .progress-bar:hover {
+            opacity: 0.8;
+            transform: scale(1.02);
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4caf50, #8bc34a);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        .progress-text {
+            margin-top: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .slider {
+            flex: 1;
+            height: 4px;
+            background: #e0e0e0;
+            border-radius: 2px;
+            outline: none;
+            cursor: pointer;
+        }
+        .slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #2196f3;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        .slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: #2196f3;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+        .demo-text {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <h2>🎯 Editable Progress Bar Demo</h2>
+        
+        <div class="demo-text">
+            <strong>How it works:</strong><br>
+            • Click on any progress bar to edit it<br>
+            • Use the slider to adjust progress (0-100%)<br>
+            • No edit icon visible - clean interface<br>
+            • Hover effect shows it's clickable
+        </div>
+
+        <div class="progress-demo">
+            <h4>Click to Edit Progress Bars:</h4>
+            
+            <div class="progress-bar" onclick="editProgress(this, 25)">
+                <div class="progress-fill" style="width: 25%"></div>
+            </div>
+            <div class="progress-text">25% - Click to edit</div>
+
+            <div class="progress-bar" onclick="editProgress(this, 60)">
+                <div class="progress-fill" style="width: 60%"></div>
+            </div>
+            <div class="progress-text">60% - Click to edit</div>
+
+            <div class="progress-bar" onclick="editProgress(this, 90)">
+                <div class="progress-fill" style="width: 90%"></div>
+            </div>
+            <div class="progress-text">90% - Click to edit</div>
+        </div>
+
+        <div id="slider-demo" style="display: none;">
+            <h4>Adjust Progress with Slider:</h4>
+            <div class="slider-container">
+                <span>0%</span>
+                <input type="range" class="slider" min="0" max="100" value="50" id="progressSlider" oninput="updateSliderValue(this.value)">
+                <span>100%</span>
+                <span id="sliderValue" style="font-weight: bold; color: #2196f3;">50%</span>
+            </div>
+            <button onclick="saveProgress()" style="background: #4caf50; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-top: 10px;">Save Progress</button>
+            <button onclick="cancelEdit()" style="background: #f44336; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-top: 10px; margin-left: 10px;">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        let currentProgressBar = null;
+        let originalValue = 0;
+
+        function editProgress(progressBar, value) {
+            currentProgressBar = progressBar;
+            originalValue = value;
+            
+            // Hide all progress bars
+            document.querySelectorAll('.progress-bar').forEach(bar => {
+                bar.style.display = 'none';
+            });
+            
+            // Show slider demo
+            document.getElementById('slider-demo').style.display = 'block';
+            document.getElementById('progressSlider').value = value;
+            updateSliderValue(value);
+        }
+
+        function updateSliderValue(value) {
+            document.getElementById('sliderValue').textContent = value + '%';
+        }
+
+        function saveProgress() {
+            const newValue = document.getElementById('progressSlider').value;
+            if (currentProgressBar) {
+                currentProgressBar.querySelector('.progress-fill').style.width = newValue + '%';
+                currentProgressBar.nextElementSibling.textContent = newValue + '% - Click to edit';
+            }
+            cancelEdit();
+        }
+
+        function cancelEdit() {
+            // Show all progress bars
+            document.querySelectorAll('.progress-bar').forEach(bar => {
+                bar.style.display = 'block';
+            });
+            
+            // Hide slider demo
+            document.getElementById('slider-demo').style.display = 'none';
+            currentProgressBar = null;
+        }
+    </script>
+</body>
+</html>
+

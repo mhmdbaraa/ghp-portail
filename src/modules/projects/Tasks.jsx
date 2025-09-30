@@ -859,136 +859,169 @@ const Tasks = () => {
           </Typography>
         </Box>
       ) : (
-      <Grid container spacing={3}>
+      <Grid container spacing={2}>
         {tasks.map((task) => (
-          <Grid item xs={12} md={6} lg={4} key={task.id}>
+          <Grid item xs={12} sm={6} md={4} lg={3} xl={2.4} key={task.id}>
             <Card
               sx={{
                 height: '100%',
+                maxHeight: 320,
                 '&:hover': {
-                  transform: 'translateY(-4px)',
-                  boxShadow: 3,
+                  transform: 'translateY(-2px)',
+                  boxShadow: 2,
                 },
-                transition: 'all 0.3s ease',
+                transition: 'all 0.2s ease',
+                borderRadius: 2,
+                border: '1px solid',
+                borderColor: 'divider',
               }}
             >
-              <CardContent>
+              <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
                 {/* En-tête de la tâche */}
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                  <Box sx={{ flex: 1 }}>
-                    <Typography variant="h6" fontWeight={600} gutterBottom>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography 
+                      variant="subtitle1" 
+                      fontWeight={600} 
+                      sx={{ 
+                        mb: 0.5,
+                        fontSize: '0.9rem',
+                        lineHeight: 1.3,
+                        wordBreak: 'break-word',
+                        hyphens: 'auto',
+                      }}
+                    >
                       {task.title}
                     </Typography>
                     {task.task_number && (
                       <Typography variant="caption" sx={{ 
                         color: 'primary.main',
                         fontWeight: 600,
-                        fontSize: '0.75rem',
+                        fontSize: '0.7rem',
                         display: 'block',
-                        mb: 1
+                        mb: 0.5
                       }}>
                         {task.task_number}
                       </Typography>
                     )}
-                    <Typography variant="body2" color="primary" sx={{ mb: 1, fontWeight: 500 }}>
+                    <Typography 
+                      variant="caption" 
+                      color="primary" 
+                      sx={{ 
+                        mb: 0.5, 
+                        fontWeight: 500,
+                        fontSize: '0.75rem',
+                        display: 'block',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
                       📁 {getProjectName(task.project)}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                          {task.description || 'Aucune description'}
-                    </Typography>
                   </Box>
-                  <IconButton size="small">
-                    <MoreVert />
+                  <IconButton size="small" sx={{ p: 0.5 }}>
+                    <MoreVert fontSize="small" />
                   </IconButton>
                 </Box>
 
-                {/* Projet et assigné */}
-                <Box sx={{ mb: 2 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                    <Assignment sx={{ fontSize: 16, color: 'text.secondary' }} />
-                    <Typography variant="body2" color="text.secondary">
-                          {getProjectName(task.project)}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Person sx={{ fontSize: 16, color: 'text.secondary' }} />
-                    <Typography variant="body2" color="text.secondary">
-                          {task.assignee_name || 'Non assigné'}
+                {/* Assigné */}
+                <Box sx={{ mb: 1.5 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <Person sx={{ fontSize: 14, color: 'text.secondary' }} />
+                    <Typography 
+                      variant="caption" 
+                      color="text.secondary"
+                      sx={{
+                        fontSize: '0.75rem',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      {task.assignee_name || 'Non assigné'}
                     </Typography>
                   </Box>
                 </Box>
 
                 {/* Statuts et priorités */}
-                    <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+                <Box sx={{ display: 'flex', gap: 0.5, mb: 1.5, flexWrap: 'wrap' }}>
                   <Chip
-                        label={getStatusLabel(task.status)} 
+                    label={getStatusLabel(task.status)} 
                     color={getStatusColor(task.status)}
                     size="small"
+                    sx={{ 
+                      fontSize: '0.7rem', 
+                      height: 20,
+                      '& .MuiChip-label': { px: 1 }
+                    }}
                   />
                   <Chip
                     label={getPriorityLabel(task.priority)}
                     color={getPriorityColor(task.priority)}
                     size="small"
+                    sx={{ 
+                      fontSize: '0.7rem', 
+                      height: 20,
+                      '& .MuiChip-label': { px: 1 }
+                    }}
                   />
                 </Box>
 
-                    {/* Barre de progression */}
-                <Box sx={{ mb: 2 }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                    <Typography variant="body2" color="text.secondary">
+                {/* Barre de progression */}
+                <Box sx={{ mb: 1.5 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
                       Progression
                     </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {task.progress_percentage || 0}%
+                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem', fontWeight: 600 }}>
+                      {task.progress_percentage || 0}%
                     </Typography>
                   </Box>
                   <LinearProgress
                     variant="determinate"
-                        value={task.progress_percentage || 0}
-                        sx={{ height: 6, borderRadius: 3 }}
+                    value={task.progress_percentage || 0}
+                    sx={{ height: 4, borderRadius: 2 }}
                   />
                 </Box>
 
-                    {/* Date d'échéance et temps estimé */}
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <Schedule sx={{ fontSize: 14, color: 'text.secondary' }} />
-                      <Typography variant="body2" color="text.secondary">
-                          {task.due_date ? new Date(task.due_date).toLocaleDateString('fr-FR') : 'Pas de date'}
-                      </Typography>
-                    </Box>
-                      <Typography variant="body2" color="text.secondary">
-                        {task.estimated_time || 0}h
+                {/* Date d'échéance et temps estimé */}
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <Schedule sx={{ fontSize: 12, color: 'text.secondary' }} />
+                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                      {task.due_date ? new Date(task.due_date).toLocaleDateString('fr-FR') : 'Pas de date'}
                     </Typography>
                   </Box>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                    {task.estimated_time || 0}h
+                  </Typography>
+                </Box>
 
                 {/* Actions */}
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                      <Button
-                        size="small"
-                        startIcon={<Visibility />}
-                        variant="outlined"
-                        sx={{ flex: 1 }}
-                        onClick={() => openDetailsDialog(task)}
-                      >
-                        Détails
-                      </Button>
-                      <Button
-                        size="small"
-                        startIcon={<Edit />}
-                        variant="outlined"
-                        sx={{ flex: 1 }}
-                        onClick={() => openEditDialog(task)}
-                      >
-                        Modifier
-                      </Button>
-                      <IconButton 
-                        size="small" 
-                        color="error"
-                        onClick={() => openDeleteDialog(task)}
-                      >
-                      <Delete />
-                    </IconButton>
+                <Box sx={{ display: 'flex', gap: 0.5, mt: 'auto' }}>
+                  <IconButton 
+                    size="small" 
+                    onClick={() => openDetailsDialog(task)}
+                    sx={{ p: 0.5, minWidth: 28, height: 28 }}
+                  >
+                    <Visibility fontSize="small" />
+                  </IconButton>
+                  <IconButton 
+                    size="small" 
+                    onClick={() => openEditDialog(task)}
+                    sx={{ p: 0.5, minWidth: 28, height: 28 }}
+                  >
+                    <Edit fontSize="small" />
+                  </IconButton>
+                  <IconButton 
+                    size="small" 
+                    color="error"
+                    onClick={() => openDeleteDialog(task)}
+                    sx={{ p: 0.5, minWidth: 28, height: 28 }}
+                  >
+                    <Delete fontSize="small" />
+                  </IconButton>
                 </Box>
               </CardContent>
             </Card>

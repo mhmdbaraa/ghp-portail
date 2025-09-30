@@ -53,6 +53,8 @@ import projectService from '../../shared/services/projectService';
 import ProjectDataTransformer from '../../shared/services/projectDataTransformer';
 import { useAuth } from '../../shared/contexts/AuthContext';
 import userService from '../../shared/services/userService';
+import EditableProgressBar from '../../shared/components/ui/EditableProgressBar';
+import ProjectDetails from './ProjectDetails';
 
 // Options de statut pour les projets (correspondant aux choix Django)
 const PROJECT_STATUS_OPTIONS = [
@@ -263,12 +265,20 @@ const Projects = () => {
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState(null);
 
+  // État pour le dialog de détails
+  const [detailsDialog, setDetailsDialog] = useState(false);
+  const [selectedProject, setSelectedProject] = useState(null);
+
   const ActionMenuCell = ({ row }) => {
     const [anchorEl, setAnchorEl] = useState(null);
     const open = Boolean(anchorEl);
     const handleOpen = (event) => setAnchorEl(event.currentTarget);
     const handleClose = () => setAnchorEl(null);
-    const handleView = () => { handleClose(); };
+    const handleView = () => { 
+      setSelectedProject(row);
+      setDetailsDialog(true);
+      handleClose(); 
+    };
     const handleEdit = () => { 
       setEditingProject(row);
       setEditProject({
@@ -344,6 +354,8 @@ const Projects = () => {
     const handleClose = () => setAnchorEl(null);
     
     const handleView = () => { 
+      setSelectedProject(project);
+      setDetailsDialog(true);
       handleClose(); 
     };
     
@@ -987,6 +999,79 @@ const Projects = () => {
     setEditingCell(projectId);
   };
 
+  // Handle project progress update
+  const handleProgressUpdate = async (projectId, newProgress) => {
+    try {
+      // Find the current project to get its original progress
+      const currentProject = projectsState.projects.find(p => p.id === projectId);
+      const originalProgress = currentProject?.progress;
+      
+      // Update local state immediately for better UX
+      setProjectsState(prev => ({
+        ...prev,
+        projects: prev.projects.map(project => 
+          project.id === projectId ? { ...project, progress: newProgress } : project
+        )
+      }));
+
+      // Call API to update the project progress
+      const result = await projectService.updateProjectProgress(projectId, newProgress);
+      
+      if (result.success) {
+        setSnackbar({
+          open: true,
+          message: `Progrès mis à jour avec succès: ${newProgress}%`,
+          severity: 'success'
+        });
+        // Update with the returned data from API
+        setProjectsState(prev => ({
+          ...prev,
+          projects: prev.projects.map(project => 
+            project.id === projectId ? result.data : project
+          )
+        }));
+        // Refresh current page to ensure data consistency
+        setTimeout(() => {
+          loadProjectsForPage(projectsState.paginationModel.page + 1, projectsState.paginationModel.pageSize);
+          // Also refresh kanban data
+          const statuses = ['En attente', 'En cours', 'En retard', 'Terminé'];
+          statuses.forEach(status => {
+            loadKanbanColumnProjects(status, 1);
+          });
+        }, 1000);
+      } else {
+        console.error('❌ API progress update failed:', result.error);
+        // Revert local state if API call failed
+        setProjectsState(prev => ({
+          ...prev,
+          projects: prev.projects.map(project => 
+            project.id === projectId ? { ...project, progress: originalProgress } : project
+          )
+        }));
+        
+        setSnackbar({
+          open: true,
+          message: `Erreur lors de la mise à jour du progrès: ${result.error}`,
+          severity: 'error'
+        });
+      }
+    } catch (error) {
+      console.error('❌ Exception during progress update:', error);
+      // Revert local state
+      setProjectsState(prev => ({
+        ...prev,
+        projects: prev.projects.map(project => 
+          project.id === projectId ? { ...project, progress: projectsState.projects.find(p => p.id === projectId)?.progress } : project
+        )
+      }));
+      setSnackbar({
+        open: true,
+        message: `Erreur lors de la mise à jour du progrès: ${error.message}`,
+        severity: 'error'
+      });
+    }
+  };
+
   const getStatusLabel = (status) => {
     // Mapping des statuts vers les labels (gère les valeurs françaises et anglaises)
     const statusLabelMap = {
@@ -1012,6 +1097,31 @@ const Projects = () => {
 
   // Colonnes pour le DataGrid optimisées pour l'espace maximum et responsives
   const columns = [
+    {
+      field: 'projectNumber',
+      headerName: 'N°',
+      flex: 0.8,
+      minWidth: 90,
+      renderCell: (params) => (
+        <Typography 
+          variant="caption" 
+          sx={{ 
+            fontSize: '0.75rem',
+            fontWeight: 700,
+            color: 'primary.main',
+            fontFamily: 'monospace',
+            backgroundColor: theme.palette.mode === 'dark' 
+              ? 'rgba(99, 102, 241, 0.1)' 
+              : 'rgba(99, 102, 241, 0.08)',
+            padding: '4px 8px',
+            borderRadius: 1,
+            display: 'inline-block',
+          }}
+        >
+          {params.value || '—'}
+        </Typography>
+      ),
+    },
     {
       field: 'name',
       headerName: 'Projet',
@@ -1110,16 +1220,14 @@ const Projects = () => {
       flex: 2.0,
       minWidth: 140,
       renderCell: (params) => (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
-          <LinearProgress
-            variant="determinate"
-            value={params.value}
-            sx={{ flex: 1, height: 5, borderRadius: 2.5 }}
-          />
-          <Typography variant="caption" sx={{ minWidth: 24, fontSize: '0.7rem' }}>
-            {params.value}%
-          </Typography>
-        </Box>
+        <EditableProgressBar
+          value={params.value || 0}
+          onUpdate={handleProgressUpdate}
+          projectId={params.id}
+          size="small"
+          showPercentage={true}
+          sx={{ width: '100%' }}
+        />
       ),
     },
     {
@@ -4560,6 +4668,16 @@ const Projects = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      {/* Project Details Dialog */}
+      <ProjectDetails
+        open={detailsDialog}
+        onClose={() => {
+          setDetailsDialog(false);
+          setSelectedProject(null);
+        }}
+        project={selectedProject}
+      />
     </Box>
   );
 };

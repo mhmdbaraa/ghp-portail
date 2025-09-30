@@ -213,6 +213,37 @@ class ProjectService {
   }
 
   /**
+   * Update project progress
+   */
+  async updateProjectProgress(id, progress) {
+    try {
+      const response = await djangoApiService.updateProjectProgress(id, progress);
+      
+      if (response.success) {
+        const transformedProject = ProjectDataTransformer.transformProject(response.data);
+        
+        return {
+          success: true,
+          data: transformedProject,
+          message: response.message || 'Progress updated successfully'
+        };
+      } else {
+        return {
+          success: false,
+          error: response.error,
+          message: response.message || 'Failed to update progress'
+        };
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message,
+        message: 'Error updating progress'
+      };
+    }
+  }
+
+  /**
    * Delete a project
    */
   async deleteProject(id) {

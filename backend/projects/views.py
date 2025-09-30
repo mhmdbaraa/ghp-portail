@@ -62,6 +62,77 @@ class ProjectViewSet(viewsets.ModelViewSet):
         # Other users can only see projects they're part of
         return Project.objects.filter(team=user)
     
+    @action(detail=True, methods=['patch'])
+    def update_progress(self, request, pk=None):
+        """
+        Update project progress
+        """
+        try:
+            project = self.get_object()
+            progress = request.data.get('progress')
+            
+            if progress is None:
+                return Response(
+                    {'error': 'Progress value is required'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Validate progress value
+            try:
+                progress = int(progress)
+                if progress < 0 or progress > 100:
+                    return Response(
+                        {'error': 'Progress must be between 0 and 100'}, 
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            except (ValueError, TypeError):
+                return Response(
+                    {'error': 'Progress must be a valid number'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Update progress
+            project.progress = progress
+            
+            # Auto-update status based on progress
+            if progress >= 100:
+                if project.status != 'Terminé':
+                    project.status = 'Terminé'
+                    project.completed_date = timezone.now().date()
+            elif progress > 0:
+                if project.status == 'Planification':
+                    project.status = 'En cours'
+                elif project.status == 'Terminé':
+                    # If going back from 100% to less than 100%, change to 'En cours'
+                    project.status = 'En cours'
+                    project.completed_date = None  # Clear completed date
+            else:  # progress == 0
+                if project.status in ['En cours', 'Terminé']:
+                    # If going back to 0%, change to 'Planification'
+                    project.status = 'Planification'
+                    project.completed_date = None  # Clear completed date
+            
+            project.save()
+            
+            # Return updated project data
+            serializer = ProjectSerializer(project)
+            return Response({
+                'success': True,
+                'data': serializer.data,
+                'message': 'Progress updated successfully'
+            })
+            
+        except Project.DoesNotExist:
+            return Response(
+                {'error': 'Project not found'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {'error': str(e)}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
     def perform_create(self, serializer):
         """Set the manager to the current user if not specified"""
         if not serializer.validated_data.get('manager'):
@@ -89,9 +160,34 @@ class ProjectViewSet(viewsets.ModelViewSet):
         return response
 
     def partial_update(self, request, *args, **kwargs):
+        # Get the project instance before update
+        instance = self.get_object()
+        old_status = instance.status
+        old_progress = instance.progress
+        
+        # Check if status is being updated
+        new_status = request.data.get('status')
+        
         response = super().partial_update(request, *args, **kwargs)
         if response.status_code in [status.HTTP_200_OK, status.HTTP_201_CREATED]:
+            # Get updated instance
             instance = self.get_object()
+            
+            # Auto-update progress based on status change
+            if new_status and new_status != old_status:
+                if new_status == 'Terminé' and old_progress < 100:
+                    instance.progress = 100
+                    instance.completed_date = timezone.now().date()
+                elif new_status == 'Planification' and old_progress > 0:
+                    instance.progress = 0
+                    instance.completed_date = None
+                elif new_status == 'En cours' and old_progress == 0:
+                    instance.progress = 50  # Set to middle value when starting
+                elif new_status in ['En attente', 'En retard'] and old_progress == 100:
+                    instance.progress = 75  # Set to high value when pausing
+                
+                instance.save()
+            
             data = ProjectSerializer(instance).data
             return Response(data, status=response.status_code)
         return response

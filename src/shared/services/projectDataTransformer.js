@@ -9,6 +9,7 @@ class ProjectDataTransformer {
     return {
       id: apiProject.id,
       name: apiProject.name,
+      projectNumber: apiProject.project_number || '',
       project_number: apiProject.project_number || '',
       description: apiProject.description || '',
       status: this.transformStatus(apiProject.status),

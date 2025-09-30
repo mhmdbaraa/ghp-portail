@@ -123,14 +123,35 @@ class Project(models.Model):
         super().save(*args, **kwargs)
     
     def generate_project_number(self):
-        """Generate unique project number in format prj-exercice-index"""
+        """Generate unique project number in format prj-year-index"""
         from django.db.models import Max
+        from datetime import datetime
         
-        # Get the highest index for projects
-        max_index = Project.objects.aggregate(Max('id'))['id__max'] or 0
-        next_index = max_index + 1
+        # Get current year (last 2 digits)
+        current_year = datetime.now().year % 100
         
-        return f"prj-exercice-{next_index:04d}"
+        # Get the highest index for projects in current year
+        existing_projects = Project.objects.filter(
+            project_number__startswith=f"prj-{current_year:02d}-"
+        )
+        
+        if existing_projects.exists():
+            # Extract the highest index from existing project numbers
+            max_index = 0
+            for project in existing_projects:
+                try:
+                    # Extract index from project_number like "prj-25-01"
+                    parts = project.project_number.split('-')
+                    if len(parts) == 3 and parts[2].isdigit():
+                        index = int(parts[2])
+                        max_index = max(max_index, index)
+                except (ValueError, IndexError):
+                    continue
+            next_index = max_index + 1
+        else:
+            next_index = 1
+        
+        return f"prj-{current_year:02d}-{next_index:02d}"
 
 
 class ProjectComment(models.Model):
@@ -277,14 +298,35 @@ class Task(models.Model):
         super().save(*args, **kwargs)
     
     def generate_task_number(self):
-        """Generate unique task number in format t-exercice-index"""
+        """Generate unique task number in format t-year-index"""
         from django.db.models import Max
+        from datetime import datetime
         
-        # Get the highest index for tasks
-        max_index = Task.objects.aggregate(Max('id'))['id__max'] or 0
-        next_index = max_index + 1
+        # Get current year (last 2 digits)
+        current_year = datetime.now().year % 100
         
-        return f"t-exercice-{next_index:04d}"
+        # Get the highest index for tasks in current year
+        existing_tasks = Task.objects.filter(
+            task_number__startswith=f"t-{current_year:02d}-"
+        )
+        
+        if existing_tasks.exists():
+            # Extract the highest index from existing task numbers
+            max_index = 0
+            for task in existing_tasks:
+                try:
+                    # Extract index from task_number like "t-25-01"
+                    parts = task.task_number.split('-')
+                    if len(parts) == 3 and parts[2].isdigit():
+                        index = int(parts[2])
+                        max_index = max(max_index, index)
+                except (ValueError, IndexError):
+                    continue
+            next_index = max_index + 1
+        else:
+            next_index = 1
+        
+        return f"t-{current_year:02d}-{next_index:02d}"
 
 
 class TaskComment(models.Model):

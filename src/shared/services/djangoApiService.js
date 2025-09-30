@@ -285,6 +285,25 @@ class DjangoApiService {
     }
   }
 
+  async updateProjectProgress(id, progress) {
+    try {
+      const response = await axiosInstance.patch(`/projects/${id}/update_progress/`, {
+        progress: progress
+      });
+      return {
+        success: true,
+        data: response.data.data,
+        message: response.data.message || 'Progress updated successfully'
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.message,
+        message: 'Failed to update project progress'
+      };
+    }
+  }
+
   async deleteProject(id) {
     try {
       await axiosInstance.delete(`/projects/${id}/`);

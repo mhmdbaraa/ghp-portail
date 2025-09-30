@@ -10,8 +10,8 @@ class ProjectService {
     try {
       // Removed console.log to eliminate perceived "reload" feeling
       
-      // Use the existing getProjects method with pagination
-      const response = await djangoApiService.getProjects(null, page, pageSize);
+      // Use the existing getProjects method with pagination and filters
+      const response = await djangoApiService.getProjects(filters, page, pageSize);
       
       if (response.success) {
         // Handle paginated response
@@ -98,7 +98,7 @@ class ProjectService {
    */
   async getProject(id) {
     try {
-      const response = await djangoApiService.getProjects(id);
+      const response = await djangoApiService.getProjectById(id);
       
       if (response.success) {
         const transformedProject = ProjectDataTransformer.transformProject(response.data);

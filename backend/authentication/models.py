@@ -1,6 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
+from datetime import date
 
 
 class User(AbstractUser):
@@ -31,7 +32,7 @@ class User(AbstractUser):
     department = models.CharField(max_length=100, blank=True, null=True)
     position = models.CharField(max_length=100, blank=True, null=True)
     filiale = models.CharField(max_length=50, blank=True, null=True)
-    join_date = models.DateField(default=timezone.now)
+    join_date = models.DateField(default=date.today)
     last_login_ip = models.GenericIPAddressField(blank=True, null=True)
     
     # User preferences

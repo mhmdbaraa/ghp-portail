@@ -20,7 +20,7 @@ class ProjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = Project
         fields = [
-            'id', 'name', 'description', 'status', 'priority', 'category',
+            'id', 'name', 'project_number', 'description', 'status', 'priority', 'category',
             'manager', 'manager_name', 'team', 'team_members', 'team_count',
             'start_date', 'deadline', 'completed_date', 'budget', 'spent',
             'progress', 'tags', 'attachments', 'notes', 'is_overdue',
@@ -61,8 +61,9 @@ class ProjectListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Project
         fields = [
-            'id', 'name', 'description', 'status', 'priority', 'category',
+            'id', 'name', 'project_number', 'description', 'status', 'priority', 'category',
             'manager', 'manager_name', 'manager_details', 'team_count', 'start_date', 'deadline',
+            'budget', 'spent', 'tags', 'notes',
             'progress', 'is_overdue', 'created_at'
         ]
     
@@ -91,6 +92,35 @@ class ProjectCreateUpdateSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id']
     
+    def validate(self, data):
+        """Validate required fields and logical constraints"""
+        errors = {}
+
+        required_fields = ['name', 'status', 'priority', 'category', 'start_date', 'deadline', 'manager']
+        for field in required_fields:
+            if not data.get(field):
+                errors[field] = ["Ce champ est obligatoire"]
+
+        # Dates order
+        start_date = data.get('start_date')
+        deadline = data.get('deadline')
+        if start_date and deadline and start_date > deadline:
+            errors['deadline'] = ["La date de fin doit être postérieure à la date de début"]
+
+        # Budget >= 0
+        budget = data.get('budget')
+        if budget is not None:
+            try:
+                if float(budget) < 0:
+                    errors['budget'] = ["Le budget doit être supérieur ou égal à 0"]
+            except Exception:
+                errors['budget'] = ["Budget invalide"]
+
+        if errors:
+            raise serializers.ValidationError(errors)
+
+        return data
+
     def create(self, validated_data):
         """Override create method to add debug logging"""
         import logging
@@ -100,6 +130,8 @@ class ProjectCreateUpdateSerializer(serializers.ModelSerializer):
         logger.info(f"Manager: {validated_data.get('manager')}")
         logger.info(f"Start date: {validated_data.get('start_date')}")
         logger.info(f"Deadline: {validated_data.get('deadline')}")
+        logger.info(f"Budget: {validated_data.get('budget')}")
+        logger.info(f"Tags: {validated_data.get('tags')}")
         
         return super().create(validated_data)
     
@@ -112,6 +144,8 @@ class ProjectCreateUpdateSerializer(serializers.ModelSerializer):
         logger.info(f"Manager in data: {self.initial_data.get('manager')}")
         logger.info(f"Start date in data: {self.initial_data.get('start_date')}")
         logger.info(f"Deadline in data: {self.initial_data.get('deadline')}")
+        logger.info(f"Budget in data: {self.initial_data.get('budget')}")
+        logger.info(f"Tags in data: {self.initial_data.get('tags')}")
         
         result = super().is_valid(raise_exception=raise_exception)
         
@@ -204,7 +238,7 @@ class TaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
         fields = [
-            'id', 'title', 'description', 'status', 'priority', 'task_type',
+            'id', 'title', 'task_number', 'description', 'status', 'priority', 'task_type',
             'project', 'project_name', 'assignee', 'assignee_name', 'reporter',
             'reporter_name', 'due_date', 'completed_date', 'estimated_time',
             'actual_time', 'tags', 'attachments', 'notes', 'is_overdue',
@@ -224,7 +258,7 @@ class TaskListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
         fields = [
-            'id', 'title', 'status', 'priority', 'task_type', 'project',
+            'id', 'title', 'task_number', 'description', 'status', 'priority', 'task_type', 'project',
             'project_name', 'assignee', 'assignee_name', 'due_date',
             'estimated_time', 'actual_time', 'is_overdue', 'created_at'
         ]

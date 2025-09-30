@@ -160,15 +160,23 @@ class DjangoApiService {
   }
 
   // Projects methods
-  async getProjects(id = null, page = 1, pageSize = 20) {
+  async getProjects(filters = {}, page = 1, pageSize = 20) {
     try {
-      const url = id ? `/projects/${id}/` : '/projects/';
+      const url = '/projects/';
       const params = new URLSearchParams();
-      if (!id) {
-        params.append('page', page);
-        params.append('page_size', pageSize);
-      }
-      const fullUrl = params.toString() ? `${url}?${params.toString()}` : url;
+      
+      // Add pagination parameters
+      params.append('page', page);
+      params.append('page_size', pageSize);
+      
+      // Add filter parameters
+      if (filters.status) params.append('status', filters.status);
+      if (filters.priority) params.append('priority', filters.priority);
+      if (filters.category) params.append('category', filters.category);
+      if (filters.manager) params.append('manager', filters.manager);
+      if (filters.sort) params.append('ordering', filters.sort);
+      
+      const fullUrl = `${url}?${params.toString()}`;
       
       // Removed console.log to eliminate perceived "reload" feeling
       
@@ -191,6 +199,33 @@ class DjangoApiService {
         success: false,
         error: error.response?.data?.detail || error.message,
         message: 'Failed to load projects'
+      };
+    }
+  }
+
+  async getProjectById(id) {
+    try {
+      const url = `/projects/${id}/`;
+      
+      const response = await axiosInstance.get(url);
+      
+      return {
+        success: true,
+        data: response.data,
+        message: 'Project retrieved'
+      };
+    } catch (error) {
+      console.error('API Error:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message
+      });
+      
+      return {
+        success: false,
+        error: error.response?.data?.detail || error.message,
+        message: 'Failed to load project'
       };
     }
   }

@@ -9,6 +9,7 @@ class ProjectDataTransformer {
     return {
       id: apiProject.id,
       name: apiProject.name,
+      project_number: apiProject.project_number || '',
       description: apiProject.description || '',
       status: this.transformStatus(apiProject.status),
       progress: apiProject.progress || 0,
@@ -37,6 +38,7 @@ class ProjectDataTransformer {
       'in_progress': 'En cours',
       'completed': 'Terminé',
       'on_hold': 'En attente',
+      'overdue': 'En retard',
       'cancelled': 'Annulé'
     };
     return statusMap[djangoStatus] || djangoStatus;
@@ -223,9 +225,10 @@ class ProjectDataTransformer {
       'En cours': 'in_progress',
       'Terminé': 'completed',
       'En attente': 'on_hold',
+      'En retard': 'overdue',
       'Annulé': 'cancelled'
     };
-    return statusMap[reactStatus] || reactStatus.toLowerCase();
+    return statusMap[reactStatus] || reactStatus;
   }
 
   /**
@@ -251,11 +254,15 @@ class ProjectDataTransformer {
    * Parse budget string to number
    */
   static parseBudget(budgetString) {
+    console.log('💰 Parsing budget:', budgetString);
     if (!budgetString) return 0;
     try {
       const cleanString = budgetString.replace(/[€,\s]/g, '');
-      return parseFloat(cleanString) || 0;
+      const parsed = parseFloat(cleanString) || 0;
+      console.log('💰 Parsed budget:', parsed);
+      return parsed;
     } catch (error) {
+      console.log('💰 Budget parsing error:', error);
       return 0;
     }
   }
@@ -264,8 +271,11 @@ class ProjectDataTransformer {
    * Transform filiales to tags
    */
   static transformFilialesToTags(filiales) {
+    console.log('🏢 Transforming filiales to tags:', filiales);
     if (!filiales || !Array.isArray(filiales)) return [];
-    return filiales.filter(filiale => filiale && filiale.trim() !== '');
+    const filtered = filiales.filter(filiale => filiale && filiale.trim() !== '');
+    console.log('🏢 Filtered tags:', filtered);
+    return filtered;
   }
 
   /**

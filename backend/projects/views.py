@@ -34,6 +34,8 @@ class ProjectViewSet(viewsets.ModelViewSet):
         if self.action == 'list':
             return ProjectListSerializer
         elif self.action in ['create', 'update', 'partial_update']:
+            # Use create/update serializer for validation on input,
+            # but we'll override response to return full ProjectSerializer
             return ProjectCreateUpdateSerializer
         return ProjectSerializer
     
@@ -66,6 +68,33 @@ class ProjectViewSet(viewsets.ModelViewSet):
             serializer.save(manager=self.request.user)
         else:
             serializer.save()
+
+    def create(self, request, *args, **kwargs):
+        response = super().create(request, *args, **kwargs)
+        # Re-serialize with full serializer so client immediately gets manager_name, etc.
+        if response.status_code in [status.HTTP_200_OK, status.HTTP_201_CREATED]:
+            project_id = response.data.get('id') if isinstance(response.data, dict) else None
+            if project_id:
+                instance = Project.objects.get(id=project_id)
+                data = ProjectSerializer(instance).data
+                return Response(data, status=response.status_code)
+        return response
+
+    def update(self, request, *args, **kwargs):
+        response = super().update(request, *args, **kwargs)
+        if response.status_code in [status.HTTP_200_OK, status.HTTP_201_CREATED]:
+            instance = self.get_object()
+            data = ProjectSerializer(instance).data
+            return Response(data, status=response.status_code)
+        return response
+
+    def partial_update(self, request, *args, **kwargs):
+        response = super().partial_update(request, *args, **kwargs)
+        if response.status_code in [status.HTTP_200_OK, status.HTTP_201_CREATED]:
+            instance = self.get_object()
+            data = ProjectSerializer(instance).data
+            return Response(data, status=response.status_code)
+        return response
     
     @action(detail=True, methods=['get'])
     def statistics(self, request, pk=None):
@@ -281,6 +310,10 @@ class TaskViewSet(viewsets.ModelViewSet):
         Filter tasks based on user permissions
         """
         user = self.request.user
+        
+        # For development: allow all authenticated users to see all tasks
+        if user.is_authenticated:
+            return Task.objects.all()
         
         # Admin can see all tasks
         if user.role == 'admin':

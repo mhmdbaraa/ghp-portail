@@ -52,10 +52,11 @@ import { DataGrid, GridToolbar, GridToolbarContainer, GridToolbarExport, GridToo
 import projectService from '../../shared/services/projectService';
 import ProjectDataTransformer from '../../shared/services/projectDataTransformer';
 import { useAuth } from '../../shared/contexts/AuthContext';
+import userService from '../../shared/services/userService';
 
 // Options de statut pour les projets (correspondant aux choix Django)
 const PROJECT_STATUS_OPTIONS = [
-  { value: 'planning', label: 'Planification', color: 'default' },
+  { value: 'Planification', label: 'Planification', color: 'default' },
   { value: 'En cours', label: 'En cours', color: 'primary' },
   { value: 'En attente', label: 'En attente', color: 'warning' },
   { value: 'En retard', label: 'En retard', color: 'error' },
@@ -145,59 +146,40 @@ const Projects = () => {
     ));
   }, []);
   
-  // Fonction pour générer un grand dataset d'employés (memoized pour performance)
-  const employees = useMemo(() => {
-    const firstNames = [
-      'ABBAS', 'ABBAS', 'Abbas', 'ABBES', 'ABBES', 'ABBES', 'Abbes', 'ALI', 'AMAR', 'BENALI',
-      'CHERIF', 'DJELLOULI', 'FERHAT', 'GHERBI', 'HAMIDI', 'IBRAHIM', 'JAMAL', 'KARIM', 'LARBI',
-      'MOHAMED', 'NADIR', 'OMAR', 'RACHID', 'SALAH', 'TARIK', 'YACINE', 'ZAKARIA', 'AHMED',
-      'BOUDJEMAA', 'CHERIF', 'DJAMEL', 'FARID', 'HOCINE', 'ISMAIL', 'JALAL', 'KHALED', 'LAKHDAR',
-      'MUSTAPHA', 'NOUREDDINE', 'OUSSAMA', 'REDA', 'SAID', 'TAREK', 'YASSINE', 'ZINE', 'ADEL',
-      'BILAL', 'CHOUAIB', 'DJAMAL', 'FARES', 'HASSAN', 'IDRIS', 'JIHAD', 'KAMEL', 'LOTFI'
-    ];
-    
-    const lastNames = [
-      'LARBAQUI', 'NAIT CHABANE', 'RADJI', 'BEROKIA', 'BOUNOUA', 'HABIS', 'HAMDI', 'BENCHERIF',
-      'BOUZID', 'MOHAMED', 'BOUALEM', 'KARIM', 'YACINE', 'SALAH', 'NASSIM', 'BENALI', 'DJELLOULI',
-      'FERHAT', 'GHERBI', 'HAMIDI', 'IBRAHIM', 'JAMAL', 'KARIM', 'LARBI', 'MOHAMED', 'NADIR',
-      'OMAR', 'RACHID', 'SALAH', 'TARIK', 'YACINE', 'ZAKARIA', 'AHMED', 'BOUDJEMAA', 'CHERIF',
-      'DJAMEL', 'FARID', 'HOCINE', 'ISMAIL', 'JALAL', 'KHALED', 'LAKHDAR', 'MUSTAPHA', 'NOUREDDINE',
-      'OUSSAMA', 'REDA', 'SAID', 'TAREK', 'YASSINE', 'ZINE', 'ADEL', 'BILAL', 'CHOUAIB', 'DJAMAL',
-      'FARES', 'HASSAN', 'IDRIS', 'JIHAD', 'KAMEL', 'LOTFI', 'MALIK', 'NASSER', 'OUMAR', 'PAPA',
-      'QUASSIM', 'RACHID', 'SALIM', 'TARIK', 'UMAR', 'VICTOR', 'WALID', 'XAVIER', 'YOUSSEF', 'ZAKI'
-    ];
-    
-    const functions = [
-      'Agent de sécurité', 'Délégué aux visites officines', 'Responsable Informatique', 'Agent d\'entreposage',
-      'Préparateur de commandes', 'Chauffeur livreur', 'Chef de projet', 'Ingénieur logiciel', 'Analyste système',
-      'Développeur senior', 'Chef d\'équipe', 'Gestionnaire de projet', 'Superviseur technique', 'Coordinateur projet',
-      'Technicien réseau', 'Administrateur système', 'Développeur frontend', 'Développeur backend', 'Architecte logiciel',
-      'Testeur QA', 'Chef de produit', 'Scrum Master', 'DevOps Engineer', 'Data Analyst', 'UX/UI Designer',
-      'Graphiste', 'Rédacteur technique', 'Formateur', 'Consultant', 'Auditeur', 'Contrôleur qualité',
-      'Gestionnaire de stock', 'Logisticien', 'Comptable', 'Assistant RH', 'Secrétaire', 'Réceptionniste',
-      'Agent d\'accueil', 'Commercial', 'Vendeur', 'Conseiller client', 'Support technique', 'Maintenance',
-      'Électricien', 'Plombier', 'Mécanicien', 'Chauffeur', 'Livreur', 'Magasinier', 'Inventoriste'
-    ];
-    
-    const employees = [];
-    for (let i = 1; i <= 1200; i++) {
-      const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
-      const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
-      const employeeFunction = functions[Math.floor(Math.random() * functions.length)];
-      
-      employees.push({
-        id: i.toString(),
-        name: `${firstName} ${lastName}`,
-        function: employeeFunction,
-        department: ['IT', 'RH', 'Finance', 'Logistique', 'Commercial', 'Production', 'Qualité'][Math.floor(Math.random() * 7)],
-        email: `${firstName.toLowerCase()}.${lastName.toLowerCase().replace(/\s+/g, '')}@company.com`,
-        phone: `+213 ${Math.floor(Math.random() * 900000000) + 100000000}`,
-        status: ['Actif', 'Inactif', 'En congé'][Math.floor(Math.random() * 3)]
-      });
-    }
-    
-    return employees.sort((a, b) => a.name.localeCompare(b.name));
-  }, []); // Empty dependency array means this only runs once
+  // Employés réels depuis le backend
+  const [employees, setEmployees] = useState([]);
+  const [employeesLoading, setEmployeesLoading] = useState(false);
+
+  useEffect(() => {
+    const loadEmployees = async () => {
+      try {
+        setEmployeesLoading(true);
+        // fetch many users (adapt pageSize as needed)
+        const result = await userService.getUsers({ page: 1, pageSize: 1000 });
+        if (result.success) {
+          const apiUsers = result.data.results || result.data || [];
+          const mapped = apiUsers.map(u => ({
+            id: String(u.id),
+            name: u.full_name || u.username || 'Utilisateur',
+            function: u.position || u.role || '',
+            department: u.department || '',
+            email: u.email || '',
+            phone: u.phone || '',
+            status: u.is_active === false ? 'Inactif' : 'Actif'
+          }));
+          const sorted = mapped.sort((a, b) => a.name.localeCompare(b.name));
+          setEmployees(sorted);
+          setFilteredEmployees(sorted);
+        } else {
+          setEmployees([]);
+          setFilteredEmployees([]);
+        }
+      } finally {
+        setEmployeesLoading(false);
+      }
+    };
+    loadEmployees();
+  }, []);
   
   // États pour la modale de création de projet
   const [newProjectDialog, setNewProjectDialog] = useState(false);
@@ -238,7 +220,7 @@ const Projects = () => {
   // États pour le DataGrid des employés
   const [employeeDialog, setEmployeeDialog] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filteredEmployees, setFilteredEmployees] = useState(employees);
+  const [filteredEmployees, setFilteredEmployees] = useState([]);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   
   // États d'erreur pour les champs obligatoires
@@ -261,6 +243,7 @@ const Projects = () => {
     startDate: false,
     deadline: false,
     projectManager: false,
+    status: false,
     priority: false,
     category: false,
     budget: false,
@@ -289,18 +272,22 @@ const Projects = () => {
     const handleEdit = () => { 
       setEditingProject(row);
       setEditProject({
-        name: row.name,
-        description: row.description,
-        startDate: row.startDate,
-        deadline: row.deadline,
-        priority: row.priority,
-        projectManager: row.projectManager,
+        name: row.name || '',
+        description: row.description || '',
+        startDate: row.startDate || '',
+        deadline: row.deadline || '',
+        status: row.status || 'Planification',
+        priority: row.priority || 'Moyen',
+        category: row.category || 'Web',
+        budget: row.budget ? row.budget.replace(/[€,\s]/g, '') : '',
+        projectManager: row.manager || '',
         filiales: row.filiales || []
       });
-      setEditSelectedEmployee({
-        name: row.projectManager,
-        function: row.projectManagerFunction
-      });
+      setEditSelectedEmployee(
+        (row.manager || row.manager_name || row.projectManager)
+          ? { id: String(row.manager || ''), name: row.manager_name || row.projectManager || '', function: row.manager_position || row.projectManagerFunction || 'Chef de Projet' }
+          : null
+      );
       setEditProjectDialog(true);
       handleClose();
     };
@@ -363,18 +350,22 @@ const Projects = () => {
     const handleEdit = () => { 
       setEditingProject(project);
       setEditProject({
-        name: project.name,
-        description: project.description,
-        startDate: project.startDate,
-        deadline: project.deadline,
-        priority: project.priority,
-        projectManager: project.projectManager,
+        name: project.name || '',
+        description: project.description || '',
+        startDate: project.startDate || '',
+        deadline: project.deadline || '',
+        status: project.status || 'Planification',
+        priority: project.priority || 'Moyen',
+        category: project.category || 'Web',
+        budget: project.budget ? project.budget.replace(/[€,\s]/g, '') : '',
+        projectManager: project.manager || '',
         filiales: project.filiales || []
       });
-      setEditSelectedEmployee({
-        name: project.projectManager,
-        function: project.projectManagerFunction
-      });
+      setEditSelectedEmployee(
+        (project.manager || project.manager_name || project.projectManager)
+          ? { id: String(project.manager || ''), name: project.manager_name || project.projectManager || '', function: project.manager_position || project.projectManagerFunction || 'Chef de Projet' }
+          : null
+      );
       setEditProjectDialog(true);
       handleClose();
     };
@@ -435,6 +426,9 @@ const Projects = () => {
       const response = await projectService.getProjects({}, page, pageSize);
       
       if (response.success) {
+        console.log('📊 Loaded projects data:', response.data);
+        console.log('📊 First project budget:', response.data[0]?.budget);
+        console.log('📊 First project filiales:', response.data[0]?.filiales);
         // Single state update with all data
         setProjectsState(prev => ({
           ...prev,
@@ -515,14 +509,14 @@ const Projects = () => {
   // Load projects for specific kanban column (10 projects per column)
   const loadKanbanColumnProjects = async (status, page = 1) => {
     try {
-      console.log(`🔄 Loading ${status} column projects - page ${page}`);
+      // console.log(`🔄 Loading ${status} column projects - page ${page}`);
       setProjectsState(prev => ({ ...prev, kanbanLoading: true }));
       
       // Load 10 projects for this specific status/column
       const response = await projectService.getProjects({ status }, page, 10);
       
       if (response.success) {
-        console.log(`✅ Loaded ${response.data.length} projects for ${status} column, page ${page}`);
+        // console.log(`✅ Loaded ${response.data.length} projects for ${status} column, page ${page}`);
         
         setProjectsState(prev => {
           // Update the specific column's projects
@@ -530,12 +524,12 @@ const Projects = () => {
           const totalPages = Math.ceil(response.totalCount / 10);
           const hasMore = page < totalPages;
           
-          console.log(`📈 ${status} column updated:`, {
-            projectsOnPage: newColumnProjects.length,
-            currentPage: page,
-            totalPages: totalPages,
-            hasMore: hasMore
-          });
+          // console.log(`📈 ${status} column updated:`, {
+          //   projectsOnPage: newColumnProjects.length,
+          //   currentPage: page,
+          //   totalPages: totalPages,
+          //   hasMore: hasMore
+          // });
           
           return {
             ...prev,
@@ -582,7 +576,7 @@ const Projects = () => {
     });
     
     if (!projectsState.kanbanLoading && columnData.hasMore) {
-      console.log(`✅ Loading next page for ${status} column...`);
+      // console.log(`✅ Loading next page for ${status} column...`);
       await loadKanbanColumnProjects(status, columnData.currentPage + 1);
     } else {
       console.log(`❌ Not loading next page for ${status}:`, {
@@ -608,6 +602,45 @@ const Projects = () => {
   // Project management functions
   const handleCreateProject = async () => {
     try {
+      // Validate required (create)
+      let hasErrors = false;
+      const newErrors = { ...fieldErrors };
+      if (!newProject.name?.trim()) { newErrors.name = true; hasErrors = true; }
+      if (!newProject.description?.trim()) { newErrors.description = true; hasErrors = true; }
+      if (!newProject.startDate) { newErrors.startDate = true; hasErrors = true; }
+      if (!newProject.deadline) { newErrors.deadline = true; hasErrors = true; }
+      if (!newProject.priority) { newErrors.priority = true; hasErrors = true; }
+      if (!newProject.category) { newErrors.category = true; hasErrors = true; }
+      if (!selectedEmployee?.id) { newErrors.projectManager = true; hasErrors = true; }
+
+      if (newProject.startDate && newProject.deadline) {
+        const start = new Date(newProject.startDate + 'T00:00:00');
+        const end = new Date(newProject.deadline + 'T00:00:00');
+        if (start >= end) {
+          newErrors.deadline = true; hasErrors = true;
+          setSnackbar({ open: true, message: 'La date de fin doit être postérieure à la date de début', severity: 'error' });
+        }
+      }
+
+      // Budget required and must be >= 0
+      if (
+        newProject.budget === '' ||
+        isNaN(Number(newProject.budget)) ||
+        Number(newProject.budget) < 0
+      ) {
+        newErrors.budget = true; hasErrors = true;
+      }
+
+      // Filiales required
+      if (!newProject.filiales || newProject.filiales.length === 0) {
+        newErrors.filiales = true; hasErrors = true;
+      }
+
+      if (hasErrors) {
+        setFieldErrors(newErrors);
+        if (!snackbar.open) setSnackbar({ open: true, message: 'Veuillez remplir les champs obligatoires', severity: 'error' });
+        return;
+      }
       // Create project data in React format
       const reactProjectData = {
         name: newProject.name,
@@ -623,18 +656,22 @@ const Projects = () => {
         filiales: newProject.filiales || []
       };
       
+      console.log('🔧 React project data before transformation:', reactProjectData);
+      console.log('🔧 NewProject state:', newProject);
+      
+      
       // Transform to API format
       const transformedData = ProjectDataTransformer.transformProjectForAPI(reactProjectData);
+      console.log('🔧 Transformed data for API:', transformedData);
       
-      // Add manager (not handled by transformer) - create new object to avoid corruption
-      const managerId = user?.id;
+      // Add manager from selected employee (required)
+      const managerId = selectedEmployee?.id;
       if (!managerId) {
-        throw new Error('User ID is required to create a project');
+        setFieldErrors(prev => ({ ...prev, projectManager: true }));
+        setSnackbar({ open: true, message: 'Veuillez sélectionner un chef de projet', severity: 'error' });
+        return;
       }
-      const projectData = {
-        ...transformedData,
-        manager: managerId
-      };
+      const projectData = { ...transformedData, manager: managerId };
       
       // Ensure we have valid data
       if (!projectData.manager) {
@@ -651,8 +688,10 @@ const Projects = () => {
       const response = await projectService.createProject(projectData);
       
       if (response.success) {
-        // Refresh current page to show the new project
-        loadProjectsForPage(projectsState.paginationModel.page + 1, projectsState.paginationModel.pageSize);
+        console.log('✅ Project created successfully:', response.data);
+        // Refresh first page to show the new project
+        setProjectsState(prev => ({ ...prev, paginationModel: { ...prev.paginationModel, page: 0 } }));
+        loadProjectsForPage(1, projectsState.paginationModel.pageSize);
         // Also refresh kanban data
         // Refresh all kanban columns
         const statuses = ['En attente', 'En cours', 'En retard', 'Terminé'];
@@ -705,6 +744,55 @@ const Projects = () => {
 
   const handleUpdateProject = async () => {
     try {
+      // Validate form before submitting
+      let hasErrors = false;
+      const newFieldErrors = { ...editFieldErrors };
+      
+      if (!editProject.name?.trim()) {
+        newFieldErrors.name = true;
+        hasErrors = true;
+      }
+      
+      if (!editProject.description?.trim()) {
+        newFieldErrors.description = true;
+        hasErrors = true;
+      }
+      
+      if (!editProject.startDate) {
+        newFieldErrors.startDate = true;
+        hasErrors = true;
+      }
+      
+      if (!editProject.deadline) {
+        newFieldErrors.deadline = true;
+        hasErrors = true;
+      }
+      
+      if (!editProject.priority) {
+        newFieldErrors.priority = true;
+        hasErrors = true;
+      }
+      
+      if (!editProject.status) {
+        newFieldErrors.status = true;
+        hasErrors = true;
+      }
+      
+      if (!editProject.category) {
+        newFieldErrors.category = true;
+        hasErrors = true;
+      }
+      
+      if (hasErrors) {
+        setEditFieldErrors(newFieldErrors);
+        setSnackbar({
+          open: true,
+          message: 'Veuillez corriger les erreurs avant de soumettre',
+          severity: 'error'
+        });
+        return;
+      }
+      
       // Create project data in React format
       const reactProjectData = {
         name: editProject.name,
@@ -721,22 +809,25 @@ const Projects = () => {
       };
       
       // Transform to API format
-      const transformedData = ProjectDataTransformer.transformProjectForAPI(reactProjectData);
+      const projectData = ProjectDataTransformer.transformProjectForAPI(reactProjectData);
       
-      // Add manager (not handled by transformer) - create new object to avoid corruption
-      const managerId = user?.id;
+      // Add manager (required for Django backend)
+      const managerId = editSelectedEmployee?.id || user?.id;
       if (!managerId) {
-        throw new Error('User ID is required to create a project');
+        throw new Error('User ID is required to update a project');
       }
-      const projectData = {
-        ...transformedData,
-        manager: managerId
-      };
+      projectData.manager = managerId;
+      
+      // Debug: Log the data being sent (only in development)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔧 Update Project Data:', {
+          projectId: editingProject.id,
+          reactData: reactProjectData,
+          apiData: projectData
+        });
+      }
       
       // Ensure we have valid data
-      if (!projectData.manager) {
-        throw new Error('Manager ID is required');
-      }
       if (!projectData.start_date) {
         throw new Error('Start date is required');
       }
@@ -747,17 +838,58 @@ const Projects = () => {
       const response = await projectService.updateProject(editingProject.id, projectData);
       
       if (response.success) {
-        const updatedProjects = projects.map(project => 
-          project.id === editingProject.id ? response.data : project
-        );
-        setProjects(updatedProjects);
+        // Update the projects state
+        setProjectsState(prev => ({
+          ...prev,
+          projects: prev.projects.map(project => 
+            project.id === editingProject.id ? response.data : project
+          )
+        }));
+        
+        // Also update kanban column data if needed
+        setProjectsState(prev => {
+          // Check if kanbanColumnData exists and has the status column
+          if (prev.kanbanColumnData && prev.kanbanColumnData[response.data.status] && prev.kanbanColumnData[response.data.status].projects) {
+            return {
+              ...prev,
+              kanbanColumnData: {
+                ...prev.kanbanColumnData,
+                [response.data.status]: {
+                  ...prev.kanbanColumnData[response.data.status],
+                  projects: prev.kanbanColumnData[response.data.status].projects.map(project => 
+                    project.id === editingProject.id ? response.data : project
+                  )
+                }
+              }
+            };
+          }
+          // If the status doesn't exist in kanban data, just return the previous state
+          // This can happen if the status is not one of the kanban columns
+          return prev;
+        });
+        
         setEditProjectDialog(false);
         setEditingProject(null);
+        
+        // Show success message
+        setSnackbar({
+          open: true,
+          message: 'Projet modifié avec succès !',
+          severity: 'success'
+        });
       } else {
-        setError(response.error || 'Failed to update project');
+        setSnackbar({
+          open: true,
+          message: `Erreur lors de la modification: ${response.error || 'Failed to update project'}`,
+          severity: 'error'
+        });
       }
     } catch (error) {
-      setError('Error updating project');
+      setSnackbar({
+        open: true,
+        message: `Erreur lors de la modification: ${error.message}`,
+        severity: 'error'
+      });
       console.error('Error updating project:', error);
     }
   };
@@ -941,7 +1073,7 @@ const Projects = () => {
           {editingCell === params.id ? (
             <FormControl size="small" sx={{ minWidth: 120 }}>
               <Select
-                value={params.value || 'planning'}
+                value={params.value || 'Planification'}
                 onChange={(e) => handleStatusChange(params.id, e.target.value)}
                 onBlur={() => setEditingCell(null)}
                 autoFocus
@@ -1343,8 +1475,10 @@ const Projects = () => {
         
         if (response.success) {
           // Supprimer le projet de la liste
-          const updatedProjects = projects.filter(project => project.id !== projectToDelete.id);
-          setProjects(updatedProjects);
+          setProjectsState(prev => ({
+            ...prev,
+            projects: prev.projects.filter(project => project.id !== projectToDelete.id)
+          }));
           
           // Afficher un message de succès
           setSnackbar({
@@ -1353,15 +1487,13 @@ const Projects = () => {
             severity: 'success'
           });
         } else {
-          setError(response.error || 'Failed to delete project');
           setSnackbar({
             open: true,
-            message: `Erreur lors de la suppression: ${response.error}`,
+            message: `Erreur lors de la suppression: ${response.error || 'Failed to delete project'}`,
             severity: 'error'
           });
         }
       } catch (error) {
-        setError('Error deleting project');
         setSnackbar({
           open: true,
           message: `Erreur lors de la suppression: ${error.message}`,
@@ -1392,8 +1524,11 @@ const Projects = () => {
       description: '', 
       startDate: '',
       deadline: '', 
-            priority: 'Moyen',
+      priority: 'Moyen',
+      category: 'Web',
+      budget: '',
       projectManager: '',
+      projectManagerFunction: '',
       filiales: []
     });
     setSelectedEmployee(null);
@@ -1414,17 +1549,8 @@ const Projects = () => {
   const handleCloseEditDialog = () => {
     setEditProjectDialog(false);
     setEditingProject(null);
-    setEditProject({
-      name: '',
-      description: '',
-      startDate: '',
-      deadline: '',
-      priority: 'Moyen',
-      category: 'Web',
-      budget: '',
-      projectManager: '',
-      filiales: []
-    });
+    // Don't reset the form immediately to avoid controlled/uncontrolled warnings
+    // The form will be properly initialized when the dialog opens again
     setEditSelectedEmployee(null);
     setEditFieldErrors({
       name: false,
@@ -1527,6 +1653,7 @@ const Projects = () => {
       startDate: false,
       deadline: false,
       projectManager: false,
+      status: false,
       priority: false,
       category: false,
       budget: false,
@@ -1566,15 +1693,17 @@ const Projects = () => {
       hasErrors = true;
     }
     
+    if (!editProject.status) {
+      newFieldErrors.status = true;
+      hasErrors = true;
+    }
+    
     if (!editProject.category) {
       newFieldErrors.category = true;
       hasErrors = true;
     }
     
-    if (!editProject.filiales || editProject.filiales.length === 0) {
-      newFieldErrors.filiales = true;
-      hasErrors = true;
-    }
+    // Filiales are optional, so no validation needed
     
     if (editProject.startDate && editProject.deadline) {
       const startDate = new Date(editProject.startDate + 'T00:00:00');
@@ -1603,18 +1732,8 @@ const Projects = () => {
       return;
     }
     
-    const projectData = {
-      ...editProject,
-      projectManagerName: editSelectedEmployee.name,
-      projectManagerFunction: editSelectedEmployee.function
-    };
-    
-    setSnackbar({
-      open: true,
-      message: `Projet modifié avec succès ! Chef de projet: ${editSelectedEmployee.name}`,
-      severity: 'success'
-    });
-    handleCloseEditDialog();
+    // Call the actual update function
+    handleUpdateProject();
   };
 
   const handleSnackbarClose = () => {
@@ -1723,6 +1842,7 @@ const Projects = () => {
   };
 
   const handleBudgetChange = (e) => {
+    console.log('💰 Budget change:', e.target.value);
     setNewProject({ ...newProject, budget: e.target.value });
     if (fieldErrors.budget) {
       setFieldErrors({ ...fieldErrors, budget: false });
@@ -1768,9 +1888,19 @@ const Projects = () => {
     handleCloseEmployeeDialog();
   };
 
+  const handleSelectEditEmployee = (employee) => {
+    setEditSelectedEmployee(employee);
+    setEditProject({ ...editProject, projectManager: employee.id });
+    if (editFieldErrors.projectManager) {
+      setEditFieldErrors({ ...editFieldErrors, projectManager: false });
+    }
+    handleCloseEmployeeDialog();
+  };
+
   // Fonction de gestion des filiales avec logique spéciale pour "TOUT"
   const handleFilialesChange = (event) => {
     const value = event.target.value;
+    console.log('🏢 Filiales change:', value);
     let newFiliales = typeof value === 'string' ? value.split(',') : (value || []);
     
     // S'assurer que newFiliales est toujours un tableau
@@ -1787,6 +1917,7 @@ const Projects = () => {
       newFiliales = newFiliales.filter(filiale => filiale !== 'TOUT');
     }
     
+    console.log('🏢 New filiales:', newFiliales);
     setNewProject({ ...newProject, filiales: newFiliales });
     if (fieldErrors.filiales) {
       setFieldErrors({ ...fieldErrors, filiales: false });
@@ -1878,6 +2009,13 @@ const Projects = () => {
     }
   };
 
+  const handleEditStatusChange = (e) => {
+    setEditProject({ ...editProject, status: e.target.value });
+    if (editFieldErrors.status) {
+      setEditFieldErrors({ ...editFieldErrors, status: false });
+    }
+  };
+
   const handleEditCategoryChange = (e) => {
     setEditProject({ ...editProject, category: e.target.value });
     if (editFieldErrors.category) {
@@ -1933,7 +2071,12 @@ const Projects = () => {
   };
 
   const handleRowClick = (params) => {
-    handleSelectEmployee(params.row);
+    // Check which dialog is open to use the correct handler
+    if (editProjectDialog) {
+      handleSelectEditEmployee(params.row);
+    } else {
+      handleSelectEmployee(params.row);
+    }
   };
 
   // Colonnes pour le DataGrid des employés
@@ -2009,20 +2152,21 @@ const Projects = () => {
 
   // Grouper les projets par statut pour la vue Kanban (using column-specific data) - memoized for performance
   const groupedProjects = useMemo(() => {
-    // Use column-specific data (10 projects per column)
+    // Use column-specific data (10 projects per column) with safety checks
+    const kanbanData = projectsState.kanbanColumnData || {};
     const grouped = {
-      'En attente': projectsState.kanbanColumnData['En attente'].projects,
-      'En cours': projectsState.kanbanColumnData['En cours'].projects,
-      'En retard': projectsState.kanbanColumnData['En retard'].projects,
-      'Terminé': projectsState.kanbanColumnData['Terminé'].projects,
+      'En attente': kanbanData['En attente']?.projects || [],
+      'En cours': kanbanData['En cours']?.projects || [],
+      'En retard': kanbanData['En retard']?.projects || [],
+      'Terminé': kanbanData['Terminé']?.projects || [],
     };
     
-    console.log('📊 Column projects (10 per column):', {
-      'En attente': grouped['En attente'].length,
-      'En cours': grouped['En cours'].length,
-      'En retard': grouped['En retard'].length,
-      'Terminé': grouped['Terminé'].length,
-    });
+    // console.log('📊 Column projects (10 per column):', {
+    //   'En attente': grouped['En attente'].length,
+    //   'En cours': grouped['En cours'].length,
+    //   'En retard': grouped['En retard'].length,
+    //   'Terminé': grouped['Terminé'].length,
+    // });
     
     return grouped;
   }, [projectsState.kanbanColumnData]);
@@ -2450,6 +2594,17 @@ const Projects = () => {
                               }}>
                                 {project.name}
                               </Typography>
+                              {project.project_number && (
+                                <Typography variant="caption" sx={{ 
+                                  color: theme.palette.primary.main,
+                                  fontWeight: 600,
+                                  fontSize: '0.65rem',
+                                  display: 'block',
+                                  mt: 0.2
+                                }}>
+                                  {project.project_number}
+                                </Typography>
+                              )}
                                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.2 }}>
                                     <Typography variant="caption" color="text.secondary" sx={{ 
                                       fontSize: '0.65rem'
@@ -3217,7 +3372,7 @@ const Projects = () => {
             type="number"
             fullWidth
             variant="outlined"
-            value={newProject.budget}
+            value={newProject.budget || ''}
             onChange={handleBudgetChange}
             error={fieldErrors.budget}
             helperText={fieldErrors.budget ? "Veuillez saisir un budget valide" : ""}
@@ -3550,7 +3705,7 @@ const Projects = () => {
           <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={fr}>
             <TextField
               label="Nom du Projet"
-              value={editProject.name}
+              value={editProject.name || ''}
               onChange={handleEditNameChange}
               margin="dense"
               fullWidth
@@ -3575,7 +3730,7 @@ const Projects = () => {
             
             <TextField
               label="Description"
-              value={editProject.description}
+              value={editProject.description || ''}
               onChange={handleEditDescriptionChange}
               margin="dense"
               fullWidth
@@ -3781,7 +3936,7 @@ const Projects = () => {
             >
               <InputLabel>Priorité</InputLabel>
               <Select
-                value={editProject.priority}
+                value={editProject.priority || 'Moyen'}
                 label="Priorité"
                 error={editFieldErrors.priority}
                 onChange={handleEditPriorityChange}
@@ -3807,6 +3962,49 @@ const Projects = () => {
               fullWidth 
               variant="outlined" 
               required
+              error={editFieldErrors.status}
+              sx={{
+                '& .MuiInputLabel-root': {
+                  color: editFieldErrors.status ? theme.palette.error.main : theme.palette.text.secondary,
+                },
+                '& .MuiOutlinedInput-root': {
+                  '& fieldset': {
+                    borderColor: editFieldErrors.status ? theme.palette.error.main : theme.palette.divider,
+                  },
+                },
+              }}
+            >
+              <InputLabel>Statut</InputLabel>
+              <Select
+                value={editProject.status || 'Planification'}
+                label="Statut"
+                error={editFieldErrors.status}
+                onChange={handleEditStatusChange}
+                sx={{
+                  '& .MuiSelect-select': {
+                    color: theme.palette.text.primary,
+                  },
+                }}
+              >
+                <MenuItem value="Planification">Planification</MenuItem>
+                <MenuItem value="En attente">En attente</MenuItem>
+                <MenuItem value="En cours">En cours</MenuItem>
+                <MenuItem value="En retard">En retard</MenuItem>
+                <MenuItem value="Terminé">Terminé</MenuItem>
+                <MenuItem value="Annulé">Annulé</MenuItem>
+              </Select>
+              {editFieldErrors.status && (
+                <FormHelperText error>
+                  Ce champ est obligatoire
+                </FormHelperText>
+              )}
+            </FormControl>
+
+            <FormControl 
+              margin="dense" 
+              fullWidth 
+              variant="outlined" 
+              required
               error={editFieldErrors.category}
               sx={{
                 '& .MuiInputLabel-root': {
@@ -3821,7 +4019,7 @@ const Projects = () => {
             >
               <InputLabel>Catégorie</InputLabel>
               <Select
-                value={editProject.category}
+                value={editProject.category || 'Web'}
                 label="Catégorie"
                 error={editFieldErrors.category}
                 onChange={handleEditCategoryChange}
@@ -3854,7 +4052,7 @@ const Projects = () => {
               type="number"
               fullWidth
               variant="outlined"
-              value={editProject.budget}
+              value={editProject.budget || ''}
               onChange={handleEditBudgetChange}
               error={editFieldErrors.budget}
               helperText={editFieldErrors.budget ? "Veuillez saisir un budget valide" : ""}

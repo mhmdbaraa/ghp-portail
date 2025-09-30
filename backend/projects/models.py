@@ -4,6 +4,9 @@ from django.utils import timezone
 
 User = get_user_model()
 
+def default_list():
+    return []
+
 
 class Project(models.Model):
     """
@@ -46,6 +49,7 @@ class Project(models.Model):
     
     # Basic information
     name = models.CharField(max_length=200)
+    project_number = models.CharField(max_length=50, unique=True, blank=True)
     description = models.TextField(blank=True, null=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='planning')
     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium')
@@ -68,8 +72,8 @@ class Project(models.Model):
     progress = models.IntegerField(default=0, help_text="Progress percentage (0-100)")
     
     # Additional fields
-    tags = models.JSONField(default=list, blank=True)
-    attachments = models.JSONField(default=list, blank=True)
+    tags = models.JSONField(default=default_list, blank=True)
+    attachments = models.JSONField(default=default_list, blank=True)
     notes = models.TextField(blank=True, null=True)
     
     # Timestamps
@@ -111,6 +115,22 @@ class Project(models.Model):
     def get_completed_tasks_count(self):
         """Get completed tasks count"""
         return self.tasks.filter(status='completed').count()
+    
+    def save(self, *args, **kwargs):
+        """Override save to generate project number"""
+        if not self.project_number:
+            self.project_number = self.generate_project_number()
+        super().save(*args, **kwargs)
+    
+    def generate_project_number(self):
+        """Generate unique project number in format prj-exercice-index"""
+        from django.db.models import Max
+        
+        # Get the highest index for projects
+        max_index = Project.objects.aggregate(Max('id'))['id__max'] or 0
+        next_index = max_index + 1
+        
+        return f"prj-exercice-{next_index:04d}"
 
 
 class ProjectComment(models.Model):
@@ -185,6 +205,7 @@ class Task(models.Model):
     
     # Basic information
     title = models.CharField(max_length=200)
+    task_number = models.CharField(max_length=50, unique=True, blank=True)
     description = models.TextField(blank=True, null=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='not_started')
     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium')
@@ -204,8 +225,8 @@ class Task(models.Model):
     actual_time = models.DecimalField(max_digits=8, decimal_places=2, default=0, help_text="Actual time spent in hours")
     
     # Additional fields
-    tags = models.JSONField(default=list, blank=True)
-    attachments = models.JSONField(default=list, blank=True)
+    tags = models.JSONField(default=default_list, blank=True)
+    attachments = models.JSONField(default=default_list, blank=True)
     notes = models.TextField(blank=True, null=True)
     
     # Timestamps
@@ -248,6 +269,22 @@ class Task(models.Model):
             'cancelled': 0,
         }
         return status_progress.get(self.status, 0)
+    
+    def save(self, *args, **kwargs):
+        """Override save to generate task number"""
+        if not self.task_number:
+            self.task_number = self.generate_task_number()
+        super().save(*args, **kwargs)
+    
+    def generate_task_number(self):
+        """Generate unique task number in format t-exercice-index"""
+        from django.db.models import Max
+        
+        # Get the highest index for tasks
+        max_index = Task.objects.aggregate(Max('id'))['id__max'] or 0
+        next_index = max_index + 1
+        
+        return f"t-exercice-{next_index:04d}"
 
 
 class TaskComment(models.Model):

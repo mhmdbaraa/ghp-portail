@@ -161,7 +161,9 @@ const Tableur = () => {
           <TableHead>
             <TableRow>
               <TableCell>Titre</TableCell>
+              <TableCell>N° Tâche</TableCell>
               <TableCell>Projet</TableCell>
+              <TableCell>N° Projet</TableCell>
               <TableCell>Assigné</TableCell>
               <TableCell>Priorité</TableCell>
               <TableCell>Statut</TableCell>
@@ -172,7 +174,25 @@ const Tableur = () => {
             {tasks.map(t => (
               <TableRow key={t.id} hover>
                 <TableCell>{t.title}</TableCell>
+                <TableCell>
+                  <Typography variant="caption" sx={{ 
+                    color: 'primary.main',
+                    fontWeight: 600,
+                    fontSize: '0.75rem'
+                  }}>
+                    {t.task_number || '—'}
+                  </Typography>
+                </TableCell>
                 <TableCell>{fakeDB.projects.find(p => p.id === t.project)?.name || '—'}</TableCell>
+                <TableCell>
+                  <Typography variant="caption" sx={{ 
+                    color: 'secondary.main',
+                    fontWeight: 600,
+                    fontSize: '0.75rem'
+                  }}>
+                    {fakeDB.projects.find(p => p.id === t.project)?.project_number || '—'}
+                  </Typography>
+                </TableCell>
                 <TableCell>{fakeDB.users.find(u => u.id === t.assignee)?.name || '—'}</TableCell>
                 <TableCell><Chip size="small" color={getPriorityColor(t.priority)} label={t.priority} /></TableCell>
                 <TableCell 

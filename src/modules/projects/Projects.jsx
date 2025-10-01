@@ -1,4 +1,8 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef, startTransition, useTransition, useDeferredValue, memo } from 'react';
+// React imports
+import React, { useState, useEffect, useMemo, useCallback, useTransition, useDeferredValue, memo } from 'react';
+import { Navigate } from 'react-router-dom';
+
+// Material-UI core components
 import {
   Box,
   Typography,
@@ -29,11 +33,10 @@ import {
   FormHelperText,
   Snackbar,
   Alert,
+  CircularProgress,
 } from '@mui/material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { fr } from 'date-fns/locale';
+
+// Material-UI icons
 import {
   Add,
   Visibility,
@@ -47,37 +50,86 @@ import {
   Schedule,
   Warning,
   Search,
+  FileDownload as FileDownloadIcon,
 } from '@mui/icons-material';
+
+// Date picker components
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { fr } from 'date-fns/locale';
+
+// Data grid components
 import { DataGrid, GridToolbar, GridToolbarContainer, GridToolbarQuickFilter } from '@mui/x-data-grid';
-import { FileDownload as FileDownloadIcon } from '@mui/icons-material';
+
+// Services
 import projectService from '../../shared/services/projectService';
-import ProjectDataTransformer from '../../shared/services/projectDataTransformer';
-import { useAuth } from '../../shared/contexts/AuthContext';
 import userService from '../../shared/services/userService';
-import EditableProgressBar from '../../shared/components/ui/EditableProgressBar';
-import ProjectDetails from './ProjectDetails';
 import axiosInstance from '../../shared/services/axiosInstance';
+import ProjectDataTransformer from '../../shared/services/projectDataTransformer';
+
+// Contexts and hooks
+import { useAuth } from '../../shared/contexts/AuthContext';
+
+// Components
+import EditableProgressBar from '../../shared/components/ui/EditableProgressBar';
 import ProjectPermissionGuard, { useProjectPermissions } from '../../shared/components/ui/ProjectPermissionGuard';
 import NoProjectAccess from '../../shared/components/ui/NoProjectAccess';
+import ProjectDetails from './ProjectDetails';
 
-// Options de statut pour les projets (correspondant aux choix Django)
-const PROJECT_STATUS_OPTIONS = [
-  { value: 'Planification', label: 'Planification', color: 'default' },
-  { value: 'En cours', label: 'En cours', color: 'primary' },
-  { value: 'En attente', label: 'En attente', color: 'warning' },
-  { value: 'En retard', label: 'En retard', color: 'error' },
-  { value: 'Terminé', label: 'Terminé', color: 'success' },
-  { value: 'Annulé', label: 'Annulé', color: 'error' },
-];
+// Constants
+import {
+  PROJECT_STATUS_OPTIONS,
+  PRIORITY_OPTIONS,
+  CATEGORY_OPTIONS,
+  KANBAN_COLUMNS,
+  PAGINATION_CONFIG,
+  TASK_STATUS_MAPPING,
+  PRIORITY_MAPPING,
+  CATEGORY_MAPPING,
+  DEFAULT_PROJECT_FORM,
+  DEFAULT_FIELD_ERRORS,
+  DEFAULT_EDIT_FIELD_ERRORS,
+  DATA_GRID_STYLES,
+  ERROR_MESSAGES,
+  SUCCESS_MESSAGES,
+} from './constants';
+
+// Utils
+import { 
+  handleApiError, 
+  showErrorSnackbar, 
+  showSuccessSnackbar, 
+  handleValidationError 
+} from './utils/errorHandler';
+
+// Styles
+import { 
+  projectStyles, 
+  getStatusStyles, 
+  getPriorityStyles, 
+  getHoverStyles,
+  getLoadingStyles 
+} from './styles';
 
 const Projects = () => {
-  // Removed console.log to eliminate perceived "reload" feeling
-  
-  // Removed page reload detection to eliminate perceived "reload" feeling
-  
   const theme = useTheme();
-  const { user } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const { canEdit, canCreate, canDelete, isProjectManager, isProjectUser, canView, userRole } = useProjectPermissions();
+  
+  // Show loading while checking authentication
+  if (isLoading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+  
+  // Redirect to login if not authenticated
+  if (!isAuthenticated || !user) {
+    return <Navigate to="/login" replace />;
+  }
   
   // Block access if user doesn't have required roles
   if (!canView) {
@@ -90,32 +142,29 @@ const Projects = () => {
   const [viewMode, setViewMode] = useState('kanban'); // 'kanban' ou 'tableur' (kanban par défaut)
   const [editingCell, setEditingCell] = useState(null);
   
-  // Combined state to reduce re-renders
-  const [projectsState, setProjectsState] = useState({
-    projects: [],
-    loading: true,
-    error: null,
-    paginationModel: {
-      page: 0,
-      pageSize: 25,
-    },
-    totalProjects: 0,
-    paginationLoading: false, // Separate loading state for pagination
-    kanbanProjects: [], // Projects for kanban view (incremental loading)
-    kanbanLoading: false, // Loading state for kanban
-    kanbanPage: 1, // Current page for kanban loading
-    kanbanHasMore: true, // Whether there are more projects to load
-    kanbanTotalCount: 0, // Total count of projects
-    kanbanColumnData: { // Column-specific data for 10 projects per column
-      'En attente': { projects: [], currentPage: 1, totalPages: 0, hasMore: true, totalCount: 0 },
-      'En cours': { projects: [], currentPage: 1, totalPages: 0, hasMore: true, totalCount: 0 },
-      'En retard': { projects: [], currentPage: 1, totalPages: 0, hasMore: true, totalCount: 0 },
-      'Terminé': { projects: [], currentPage: 1, totalPages: 0, hasMore: true, totalCount: 0 },
-    },
-  });
+  // Core projects state
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   
-  // Use deferred value for ultra-smooth data updates (after projectsState is declared)
-  const deferredProjects = useDeferredValue(projectsState.projects);
+  // Pagination state
+  const [paginationModel, setPaginationModel] = useState({
+    page: 0,
+    pageSize: PAGINATION_CONFIG.defaultPageSize,
+  });
+  const [totalProjects, setTotalProjects] = useState(0);
+  const [paginationLoading, setPaginationLoading] = useState(false);
+  
+  // Kanban state
+  const [kanbanProjects, setKanbanProjects] = useState([]);
+  const [kanbanLoading, setKanbanLoading] = useState(false);
+  const [kanbanPage, setKanbanPage] = useState(1);
+  const [kanbanHasMore, setKanbanHasMore] = useState(true);
+  const [kanbanTotalCount, setKanbanTotalCount] = useState(0);
+  const [kanbanColumnData, setKanbanColumnData] = useState(KANBAN_COLUMNS);
+  
+  // Use deferred value for ultra-smooth data updates
+  const deferredProjects = useDeferredValue(projects);
   
   // Memoized DataGrid component to prevent unnecessary re-renders
   const MemoizedDataGrid = useMemo(() => {
@@ -128,7 +177,7 @@ const Projects = () => {
         onPaginationModelChange={onPaginationModelChange}
         rowCount={rowCount}
         paginationMode="server"
-        pageSizeOptions={[10, 25, 50, 100, 200]}
+        pageSizeOptions={PAGINATION_CONFIG.pageSizeOptions}
         checkboxSelection
         disableSelectionOnClick
         disableColumnReorder
@@ -138,25 +187,154 @@ const Projects = () => {
         columnHeaderHeight={44}
         autoHeight={false}
         loading={loading}
-        sx={{
-          border: 'none',
-          width: '100%',
-          height: '100%',
-          flex: 1,
-          '& .MuiDataGrid-cell': {
-            borderBottom: '1px solid #f0f0f0',
-          },
-          '& .MuiDataGrid-columnHeaders': {
-            backgroundColor: '#fafafa',
-            borderBottom: '2px solid #e0e0e0',
-          },
-          '& .MuiDataGrid-row:hover': {
-            backgroundColor: '#f5f5f5',
-          },
-        }}
+        sx={projectStyles.dataGrid}
       />
     ));
   }, []);
+
+  // Memoized columns for DataGrid to prevent unnecessary re-renders
+  const dataGridColumns = useMemo(() => [
+    {
+      field: 'name',
+      headerName: 'Nom du Projet',
+      width: 200,
+      renderCell: (params) => (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Avatar sx={{ width: 32, height: 32, fontSize: '0.8rem', bgcolor: 'primary.main' }}>
+            {params.value?.charAt(0)}
+          </Avatar>
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+            {params.value}
+          </Typography>
+        </Box>
+      ),
+    },
+    {
+      field: 'status',
+      headerName: 'Statut',
+      width: 120,
+      renderCell: (params) => (
+        <Chip
+          label={params.value}
+          size="small"
+          color={
+            params.value === 'Terminé' ? 'success' :
+            params.value === 'En cours' ? 'primary' :
+            params.value === 'En attente' ? 'warning' : 'default'
+          }
+          sx={{ textTransform: 'capitalize' }}
+        />
+      ),
+    },
+    {
+      field: 'priority',
+      headerName: 'Priorité',
+      width: 100,
+      renderCell: (params) => (
+        <Chip
+          label={params.value}
+          size="small"
+          variant="outlined"
+          color={
+            params.value === 'Élevé' ? 'error' :
+            params.value === 'Moyen' ? 'warning' : 'default'
+          }
+          sx={{ textTransform: 'capitalize' }}
+        />
+      ),
+    },
+    {
+      field: 'progress',
+      headerName: 'Progression',
+      width: 150,
+      renderCell: (params) => (
+        <Box sx={{ width: '100%' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+            <Typography variant="caption">{params.value}%</Typography>
+          </Box>
+          <LinearProgress
+            variant="determinate"
+            value={params.value}
+            sx={{ height: 6, borderRadius: 3 }}
+          />
+        </Box>
+      ),
+    },
+    {
+      field: 'manager_name',
+      headerName: 'Chef de Projet',
+      width: 150,
+      renderCell: (params) => (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Avatar sx={{ width: 24, height: 24, fontSize: '0.7rem', bgcolor: 'primary.main' }}>
+            {params.value?.charAt(0)}
+          </Avatar>
+          <Typography variant="body2">{params.value}</Typography>
+        </Box>
+      ),
+    },
+    {
+      field: 'deadline',
+      headerName: 'Échéance',
+      width: 120,
+      renderCell: (params) => (
+        <Typography variant="body2">
+          {params.value ? new Date(params.value).toLocaleDateString('fr-FR') : 'N/A'}
+        </Typography>
+      ),
+    },
+    {
+      field: 'budget',
+      headerName: 'Budget',
+      width: 120,
+      renderCell: (params) => (
+        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+          {params.value ? `${params.value.toLocaleString('fr-FR')} DZD` : 'N/A'}
+        </Typography>
+      ),
+    },
+    {
+      field: 'actions',
+      headerName: 'Actions',
+      width: 100,
+      sortable: false,
+      filterable: false,
+      renderCell: (params) => (
+        <ActionMenuCell
+          row={params.row}
+          onView={(project) => {
+            setSelectedProject(project);
+            setDetailsDialog(true);
+          }}
+          onEdit={(project) => {
+            setEditingProject(project);
+            setEditProject({
+              name: project.name || '',
+              description: project.description || '',
+              startDate: project.startDate || '',
+              deadline: project.deadline || '',
+              status: project.status || 'Planification',
+              priority: PRIORITY_MAPPING[project.priority] || project.priority || 'Moyen',
+              category: CATEGORY_MAPPING[project.category] || project.category || 'Web',
+              budget: project.budget ? project.budget.replace(/[DZD,\s]/g, '') : '',
+              projectManager: project.manager || '',
+              filiales: project.filiales || []
+            });
+            setEditSelectedEmployee(
+              (project.manager || project.manager_name || project.projectManager)
+                ? { id: String(project.manager || ''), name: project.manager_name || project.projectManager || '', function: project.manager_position || project.projectManagerFunction || 'Chef de Projet' }
+                : null
+            );
+            setEditFieldErrors(DEFAULT_EDIT_FIELD_ERRORS);
+            setEditProjectDialog(true);
+          }}
+          onDelete={handleDeleteProject}
+          canEdit={canEdit}
+          canDelete={canDelete}
+        />
+      ),
+    },
+  ], [canEdit, canDelete]);
   
   // Employés réels depuis le backend
   const [employees, setEmployees] = useState([]);
@@ -195,34 +373,12 @@ const Projects = () => {
   
   // États pour la modale de création de projet
   const [newProjectDialog, setNewProjectDialog] = useState(false);
-  const [newProject, setNewProject] = useState({ 
-    name: '', 
-    description: '', 
-    startDate: '',
-    deadline: '', 
-    priority: 'Moyen',
-    category: 'Web',
-    budget: '',
-    projectManager: '',
-    projectManagerFunction: '',
-    filiales: []
-  });
+  const [newProject, setNewProject] = useState(DEFAULT_PROJECT_FORM);
 
   // États pour la modale d'édition de projet
   const [editProjectDialog, setEditProjectDialog] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
-  const [editProject, setEditProject] = useState({ 
-    name: '', 
-    description: '', 
-    startDate: '',
-    deadline: '', 
-    priority: 'Moyen',
-    category: 'Web',
-    budget: '',
-    projectManager: '',
-    projectManagerFunction: '',
-    filiales: []
-  });
+  const [editProject, setEditProject] = useState(DEFAULT_PROJECT_FORM);
   const [snackbar, setSnackbar] = useState({ 
     open: false, 
     message: '', 
@@ -236,31 +392,10 @@ const Projects = () => {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   
   // États d'erreur pour les champs obligatoires
-  const [fieldErrors, setFieldErrors] = useState({
-    name: false,
-    description: false,
-    startDate: false,
-    deadline: false,
-    projectManager: false,
-    priority: false,
-    category: false,
-    budget: false,
-    filiales: false
-  });
+  const [fieldErrors, setFieldErrors] = useState(DEFAULT_FIELD_ERRORS);
 
   // États d'erreur pour l'édition
-  const [editFieldErrors, setEditFieldErrors] = useState({
-    name: false,
-    description: false,
-    startDate: false,
-    deadline: false,
-    projectManager: false,
-    status: false,
-    priority: false,
-    category: false,
-    budget: false,
-    filiales: false
-  });
+  const [editFieldErrors, setEditFieldErrors] = useState(DEFAULT_EDIT_FIELD_ERRORS);
   
   // État pour contrôler l'ouverture du Select des filiales
   const [filialesSelectOpen, setFilialesSelectOpen] = useState(false);
@@ -290,8 +425,6 @@ const Projects = () => {
       handleClose(); 
     };
     const handleEdit = () => { 
-      console.log('🔧 Datagrid Edit - Project data:', row);
-      
       setEditingProject(row);
       setEditProject({
         name: row.name || '',
@@ -389,8 +522,6 @@ const Projects = () => {
     };
     
     const handleEdit = () => { 
-      console.log('🔧 Kanban Edit - Project data:', project);
-      
       setEditingProject(project);
       setEditProject({
         name: project.name || '',
@@ -484,7 +615,7 @@ const Projects = () => {
   };
 
   // Load projects from API with pagination (legacy function - use loadProjectsForPage instead)
-  const loadProjects = async (page = projectsState.paginationModel.page + 1, pageSize = projectsState.paginationModel.pageSize) => {
+  const loadProjects = async (page = paginationModel.page + 1, pageSize = paginationModel.pageSize) => {
     return loadProjectsForPage(page, pageSize);
   };
 
@@ -492,38 +623,28 @@ const Projects = () => {
   const loadProjectsForPage = async (page, pageSize) => {
     try {
       // Single state update to set loading
-      setProjectsState(prev => ({ ...prev, loading: true, error: null, paginationLoading: false }));
+      setLoading(true);
+      setError(null);
+      setPaginationLoading(false);
       
       const response = await projectService.getProjects({}, page, pageSize);
       
       if (response.success) {
-        console.log('📊 Loaded projects data:', response.data);
-        console.log('📊 First project budget:', response.data[0]?.budget);
-        console.log('📊 First project filiales:', response.data[0]?.filiales);
         // Single state update with all data
-        setProjectsState(prev => ({
-          ...prev,
-          projects: response.data,
-          totalProjects: response.totalCount,
-          loading: false,
-          paginationLoading: false,
-        }));
+        setProjects(response.data);
+        setTotalProjects(response.totalCount);
+        setLoading(false);
+        setPaginationLoading(false);
       } else {
-        setProjectsState(prev => ({
-          ...prev,
-          error: response.error || 'Failed to load projects',
-          loading: false,
-          paginationLoading: false,
-        }));
+        setError(response.error || 'Failed to load projects');
+        setLoading(false);
+        setPaginationLoading(false);
         console.error('❌ Error loading projects:', response.error);
       }
     } catch (error) {
-      setProjectsState(prev => ({
-        ...prev,
-        error: 'Error loading projects',
-        loading: false,
-        paginationLoading: false,
-      }));
+      setError('Error loading projects');
+      setLoading(false);
+      setPaginationLoading(false);
       console.error('❌ Exception loading projects:', error);
     }
   };
@@ -533,15 +654,15 @@ const Projects = () => {
     // Use transition to make this update non-blocking
     startTransition(() => {
       // Update pagination model immediately for responsive UI
-      setProjectsState(prev => ({ ...prev, paginationModel: newModel }));
+      setPaginationModel(newModel);
     });
     
     // Load new data asynchronously with smart loading state
     const loadData = async () => {
       try {
         // Show pagination loading only if we have existing data (not initial load)
-        if (projectsState.projects.length > 0) {
-          setProjectsState(prev => ({ ...prev, paginationLoading: true }));
+        if (projects.length > 0) {
+          setPaginationLoading(true);
         }
         
         const response = await projectService.getProjects({}, newModel.page + 1, newModel.pageSize);
@@ -549,119 +670,73 @@ const Projects = () => {
         if (response.success) {
           // Use transition for smooth data update
           startTransition(() => {
-            setProjectsState(prev => ({
-              ...prev,
-              projects: response.data,
-              totalProjects: response.totalCount,
-              paginationLoading: false,
-            }));
+            setProjects(response.data);
+            setTotalProjects(response.totalCount);
+            setPaginationLoading(false);
           });
         } else {
-          setProjectsState(prev => ({
-            ...prev,
-            error: response.error || 'Failed to load projects',
-            loading: false,
-            paginationLoading: false,
-          }));
+          setError(response.error || 'Failed to load projects');
+          setLoading(false);
+          setPaginationLoading(false);
         }
-      } catch (error) {
-        setProjectsState(prev => ({
-          ...prev,
-          error: 'Error loading projects',
-          loading: false,
-          paginationLoading: false,
-        }));
-      }
+    } catch (error) {
+      const errorInfo = handleApiError(error, 'loading projects');
+      setError(errorInfo.message);
+      setLoading(false);
+      setPaginationLoading(false);
+      showErrorSnackbar(setSnackbar, error, 'loading projects');
+    }
     };
     
     loadData();
-  }, [projectsState.projects.length]);
+  }, [projects.length]);
 
   // Load projects for specific kanban column (10 projects per column)
   const loadKanbanColumnProjects = async (status, page = 1) => {
     try {
-      // console.log(`🔄 Loading ${status} column projects - page ${page}`);
-      setProjectsState(prev => ({ ...prev, kanbanLoading: true }));
+      setKanbanLoading(true);
       
       // Load 10 projects for this specific status/column
       const response = await projectService.getProjects({ status }, page, 10);
       
       if (response.success) {
-        // console.log(`✅ Loaded ${response.data.length} projects for ${status} column, page ${page}`);
         
-        setProjectsState(prev => {
-          // Update the specific column's projects
-          const newColumnProjects = response.data;
-          const totalPages = Math.ceil(response.totalCount / 10);
-          const hasMore = page < totalPages;
-          
-          // console.log(`📈 ${status} column updated:`, {
-          //   projectsOnPage: newColumnProjects.length,
-          //   currentPage: page,
-          //   totalPages: totalPages,
-          //   hasMore: hasMore
-          // });
-          
-          return {
-            ...prev,
-            kanbanColumnData: {
-              ...prev.kanbanColumnData,
-              [status]: {
-                projects: newColumnProjects,
-                currentPage: page,
-                totalPages: totalPages,
-                hasMore: hasMore,
-                totalCount: response.totalCount
-              }
-            },
-            kanbanLoading: false,
-          };
-        });
+        setKanbanColumnData(prev => ({
+          ...prev,
+          [status]: {
+            projects: response.data,
+            currentPage: page,
+            totalPages: Math.ceil(response.totalCount / 10),
+            hasMore: page < Math.ceil(response.totalCount / 10),
+            totalCount: response.totalCount
+          }
+        }));
+        setKanbanLoading(false);
       } else {
         console.error('❌ Failed to load kanban projects:', response.error);
-        setProjectsState(prev => ({
-          ...prev,
-          kanbanLoading: false,
-          error: response.error || 'Failed to load kanban projects',
-        }));
+        setKanbanLoading(false);
+        setError(response.error || 'Failed to load kanban projects');
       }
     } catch (error) {
       console.error('❌ Exception loading kanban projects:', error);
-      setProjectsState(prev => ({
-        ...prev,
-        kanbanLoading: false,
-        error: `Error loading kanban projects: ${error.message}`,
-      }));
+      setKanbanLoading(false);
+      setError(`Error loading kanban projects: ${error.message}`);
     }
   };
 
   // Load next page for specific kanban column
   const loadNextKanbanColumnPage = async (status) => {
-    const columnData = projectsState.kanbanColumnData[status];
-    console.log(`🔄 loadNextKanbanColumnPage called for ${status}`, {
-      kanbanLoading: projectsState.kanbanLoading,
-      hasMore: columnData.hasMore,
-      currentPage: columnData.currentPage,
-      totalPages: columnData.totalPages,
-      totalCount: columnData.totalCount
-    });
+    const columnData = kanbanColumnData[status];
     
-    if (!projectsState.kanbanLoading && columnData.hasMore) {
-      // console.log(`✅ Loading next page for ${status} column...`);
+    if (!kanbanLoading && columnData.hasMore) {
       await loadKanbanColumnProjects(status, columnData.currentPage + 1);
     } else {
-      console.log(`❌ Not loading next page for ${status}:`, {
-        alreadyLoading: projectsState.kanbanLoading,
-        noMorePages: !columnData.hasMore,
-        currentPage: columnData.currentPage,
-        totalPages: columnData.totalPages
-      });
     }
   };
 
   // Load projects on component mount only
   useEffect(() => {
-    loadProjectsForPage(1, projectsState.paginationModel.pageSize);
+    loadProjectsForPage(1, paginationModel.pageSize);
     
     // Load first 10 projects for each kanban column
     const statuses = ['En attente', 'En cours', 'En retard', 'Terminé'];
@@ -727,13 +802,10 @@ const Projects = () => {
         filiales: newProject.filiales || []
       };
       
-      console.log('🔧 React project data before transformation:', reactProjectData);
-      console.log('🔧 NewProject state:', newProject);
       
       
       // Transform to API format
       const transformedData = ProjectDataTransformer.transformProjectForAPI(reactProjectData);
-      console.log('🔧 Transformed data for API:', transformedData);
       
       // Add manager from selected employee (required)
       const managerId = selectedEmployee?.id;
@@ -759,10 +831,9 @@ const Projects = () => {
       const response = await projectService.createProject(projectData);
       
       if (response.success) {
-        console.log('✅ Project created successfully:', response.data);
         // Refresh first page to show the new project
-        setProjectsState(prev => ({ ...prev, paginationModel: { ...prev.paginationModel, page: 0 } }));
-        loadProjectsForPage(1, projectsState.paginationModel.pageSize);
+        setPaginationModel(prev => ({ ...prev, page: 0 }));
+        loadProjectsForPage(1, paginationModel.pageSize);
         // Also refresh kanban data
         // Refresh all kanban columns
         const statuses = ['En attente', 'En cours', 'En retard', 'Terminé'];
@@ -920,14 +991,6 @@ const Projects = () => {
       }
       projectData.manager = managerId;
       
-      // Debug: Log the data being sent (only in development)
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🔧 Update Project Data:', {
-          projectId: editingProject.id,
-          reactData: reactProjectData,
-          apiData: projectData
-        });
-      }
       
       // Ensure we have valid data
       if (!projectData.start_date) {
@@ -941,27 +1004,21 @@ const Projects = () => {
       
       if (response.success) {
         // Update the projects state
-        setProjectsState(prev => ({
-          ...prev,
-          projects: prev.projects.map(project => 
-            project.id === editingProject.id ? response.data : project
-          )
-        }));
+        setProjects(prev => prev.map(project => 
+          project.id === editingProject.id ? response.data : project
+        ));
         
         // Also update kanban column data if needed
-        setProjectsState(prev => {
+        setKanbanColumnData(prev => {
           // Check if kanbanColumnData exists and has the status column
-          if (prev.kanbanColumnData && prev.kanbanColumnData[response.data.status] && prev.kanbanColumnData[response.data.status].projects) {
+          if (prev[response.data.status] && prev[response.data.status].projects) {
             return {
               ...prev,
-              kanbanColumnData: {
-                ...prev.kanbanColumnData,
-                [response.data.status]: {
-                  ...prev.kanbanColumnData[response.data.status],
-                  projects: prev.kanbanColumnData[response.data.status].projects.map(project => 
-                    project.id === editingProject.id ? response.data : project
-                  )
-                }
+              [response.data.status]: {
+                ...prev[response.data.status],
+                projects: prev[response.data.status].projects.map(project => 
+                  project.id === editingProject.id ? response.data : project
+                )
               }
             };
           }
@@ -1001,16 +1058,13 @@ const Projects = () => {
     try {
       
       // Find the current project to get its original status
-      const currentProject = projectsState.projects.find(p => p.id === projectId);
+      const currentProject = projects.find(p => p.id === projectId);
       const originalStatus = currentProject?.status;
       
       // Update local state immediately for better UX
-      setProjectsState(prev => ({
-        ...prev,
-        projects: prev.projects.map(project => 
-          project.id === projectId ? { ...project, status: newStatus } : project
-        )
-      }));
+      setProjects(prev => prev.map(project => 
+        project.id === projectId ? { ...project, status: newStatus } : project
+      ));
 
       // Call API to update the project
       // Convert status to Django format before sending
@@ -1025,7 +1079,7 @@ const Projects = () => {
         });
         // Refresh current page to ensure data consistency
         setTimeout(() => {
-          loadProjectsForPage(projectsState.paginationModel.page + 1, projectsState.paginationModel.pageSize);
+          loadProjectsForPage(paginationModel.page + 1, paginationModel.pageSize);
           // Also refresh kanban data
           // Refresh all kanban columns
         const statuses = ['En attente', 'En cours', 'En retard', 'Terminé'];
@@ -1036,12 +1090,9 @@ const Projects = () => {
       } else {
           console.error('❌ API update failed:', result.error);
           // Revert local state if API call failed
-          setProjectsState(prev => ({
-            ...prev,
-            projects: prev.projects.map(project => 
-              project.id === projectId ? { ...project, status: originalStatus } : project
-            )
-          }));
+          setProjects(prev => prev.map(project => 
+            project.id === projectId ? { ...project, status: originalStatus } : project
+          ));
           
           // Extract error message properly
           let errorMessage = 'Erreur inconnue';
@@ -1069,12 +1120,11 @@ const Projects = () => {
     } catch (error) {
       console.error('❌ Exception during status update:', error);
       // Revert local state
-      setProjectsState(prev => ({
-        ...prev,
-        projects: prev.projects.map(project => 
-          project.id === projectId ? { ...project, status: originalStatus } : project
-        )
-      }));
+      const currentProject = projects.find(p => p.id === projectId);
+      const originalStatus = currentProject?.status;
+      setProjects(prev => prev.map(project => 
+        project.id === projectId ? { ...project, status: originalStatus } : project
+      ));
       setSnackbar({
         open: true,
         message: `Erreur lors de la mise à jour: ${error.message}`,
@@ -1093,16 +1143,13 @@ const Projects = () => {
   const handleProgressUpdate = async (projectId, newProgress) => {
     try {
       // Find the current project to get its original progress
-      const currentProject = projectsState.projects.find(p => p.id === projectId);
+      const currentProject = projects.find(p => p.id === projectId);
       const originalProgress = currentProject?.progress;
       
       // Update local state immediately for better UX
-      setProjectsState(prev => ({
-        ...prev,
-        projects: prev.projects.map(project => 
-          project.id === projectId ? { ...project, progress: newProgress } : project
-        )
-      }));
+      setProjects(prev => prev.map(project => 
+        project.id === projectId ? { ...project, progress: newProgress } : project
+      ));
 
       // Call API to update the project progress
       const result = await projectService.updateProjectProgress(projectId, newProgress);
@@ -1114,7 +1161,7 @@ const Projects = () => {
           severity: 'success'
         });
         // Update with the returned data from API
-        setProjectsState(prev => ({
+        setProjects(prev => ({
           ...prev,
           projects: prev.projects.map(project => 
             project.id === projectId ? result.data : project
@@ -1122,7 +1169,7 @@ const Projects = () => {
         }));
         // Refresh current page to ensure data consistency
         setTimeout(() => {
-          loadProjectsForPage(projectsState.paginationModel.page + 1, projectsState.paginationModel.pageSize);
+          loadProjectsForPage(paginationModel.page + 1, paginationModel.pageSize);
           // Also refresh kanban data
           const statuses = ['En attente', 'En cours', 'En retard', 'Terminé'];
           statuses.forEach(status => {
@@ -1132,7 +1179,7 @@ const Projects = () => {
       } else {
         console.error('❌ API progress update failed:', result.error);
         // Revert local state if API call failed
-        setProjectsState(prev => ({
+        setProjects(prev => ({
           ...prev,
           projects: prev.projects.map(project => 
             project.id === projectId ? { ...project, progress: originalProgress } : project
@@ -1148,10 +1195,10 @@ const Projects = () => {
     } catch (error) {
       console.error('❌ Exception during progress update:', error);
       // Revert local state
-      setProjectsState(prev => ({
+      setProjects(prev => ({
         ...prev,
         projects: prev.projects.map(project => 
-          project.id === projectId ? { ...project, progress: projectsState.projects.find(p => p.id === projectId)?.progress } : project
+          project.id === projectId ? { ...project, progress: projects.find(p => p.id === projectId)?.progress } : project
         )
       }));
       setSnackbar({
@@ -1612,7 +1659,7 @@ const Projects = () => {
     if (draggedProject && draggedProject.status !== targetStatus) {
       
       // Update local state immediately for better UX
-      setProjectsState(prev => ({
+      setProjects(prev => ({
         ...prev,
         projects: prev.projects.map(project => 
           project.id === draggedProject.id 
@@ -1636,7 +1683,7 @@ const Projects = () => {
           });
           // Refresh current page to ensure data consistency
           setTimeout(() => {
-            loadProjectsForPage(projectsState.paginationModel.page + 1, projectsState.paginationModel.pageSize);
+            loadProjectsForPage(paginationModel.page + 1, paginationModel.pageSize);
             // Also refresh kanban data
             // Refresh all kanban columns
         const statuses = ['En attente', 'En cours', 'En retard', 'Terminé'];
@@ -1647,7 +1694,7 @@ const Projects = () => {
         } else {
           console.error('❌ API update failed:', result.error);
           // Revert local state if API call failed
-          setProjectsState(prev => ({
+          setProjects(prev => ({
             ...prev,
             projects: prev.projects.map(project => 
               project.id === draggedProject.id 
@@ -1682,7 +1729,7 @@ const Projects = () => {
       } catch (error) {
         console.error('❌ Exception during drag & drop update:', error);
         // Revert local state
-        setProjectsState(prev => ({
+        setProjects(prev => ({
           ...prev,
           projects: prev.projects.map(project => 
             project.id === draggedProject.id 
@@ -1720,7 +1767,7 @@ const Projects = () => {
         
         if (response.success) {
           // Supprimer le projet de la liste
-          setProjectsState(prev => ({
+          setProjects(prev => ({
             ...prev,
             projects: prev.projects.filter(project => project.id !== projectToDelete.id)
           }));
@@ -2309,10 +2356,46 @@ const Projects = () => {
     },
   ];
 
+  // Memoized Kanban columns to prevent unnecessary re-renders
+  const kanbanColumns = useMemo(() => [
+    {
+      id: 'En attente',
+      title: 'En attente',
+      color: theme.palette.warning.main,
+      projects: kanbanColumnData['En attente']?.projects || [],
+      hasMore: kanbanColumnData['En attente']?.hasMore || false,
+      onLoadMore: () => loadNextKanbanColumnPage('En attente'),
+    },
+    {
+      id: 'En cours',
+      title: 'En cours',
+      color: theme.palette.primary.main,
+      projects: kanbanColumnData['En cours']?.projects || [],
+      hasMore: kanbanColumnData['En cours']?.hasMore || false,
+      onLoadMore: () => loadNextKanbanColumnPage('En cours'),
+    },
+    {
+      id: 'En retard',
+      title: 'En retard',
+      color: theme.palette.error.main,
+      projects: kanbanColumnData['En retard']?.projects || [],
+      hasMore: kanbanColumnData['En retard']?.hasMore || false,
+      onLoadMore: () => loadNextKanbanColumnPage('En retard'),
+    },
+    {
+      id: 'Terminé',
+      title: 'Terminé',
+      color: theme.palette.success.main,
+      projects: kanbanColumnData['Terminé']?.projects || [],
+      hasMore: kanbanColumnData['Terminé']?.hasMore || false,
+      onLoadMore: () => loadNextKanbanColumnPage('Terminé'),
+    },
+  ], [kanbanColumnData, theme.palette]);
+
   // Grouper les projets par statut pour la vue Kanban (using column-specific data) - memoized for performance
   const groupedProjects = useMemo(() => {
     // Use column-specific data (10 projects per column) with safety checks
-    const kanbanData = projectsState.kanbanColumnData || {};
+    const kanbanData = kanbanColumnData || {};
     const grouped = {
       'En attente': kanbanData['En attente']?.projects || [],
       'En cours': kanbanData['En cours']?.projects || [],
@@ -2328,10 +2411,10 @@ const Projects = () => {
     // });
     
     return grouped;
-  }, [projectsState.kanbanColumnData]);
+  }, [kanbanColumnData]);
 
   // Show loading state only for initial load, not for pagination
-  if ((projectsState.loading && projectsState.projects.length === 0) || (viewMode === 'kanban' && projectsState.kanbanLoading && projectsState.projects.length === 0)) {
+  if ((loading && projects.length === 0) || (viewMode === 'kanban' && kanbanLoading && projects.length === 0)) {
     return (
       <Box sx={{ 
         p: { xs: 0.25, sm: 0.5, md: 0.75 }, 
@@ -2349,7 +2432,7 @@ const Projects = () => {
   }
 
   // Show error state
-  if (projectsState.error) {
+  if (error) {
     return (
       <Box sx={{ 
         p: { xs: 0.25, sm: 0.5, md: 0.75 }, 
@@ -2364,11 +2447,11 @@ const Projects = () => {
             Erreur de chargement
           </Typography>
           <Typography variant="body2">
-            {projectsState.error}
+            {error}
           </Typography>
           <Button 
             variant="outlined" 
-            onClick={() => loadProjectsForPage(projectsState.paginationModel.page + 1, projectsState.paginationModel.pageSize)}
+            onClick={() => loadProjectsForPage(paginationModel.page + 1, paginationModel.pageSize)}
             sx={{ mt: 2 }}
           >
             Réessayer
@@ -2632,8 +2715,8 @@ const Projects = () => {
                             clientHeight,
                             threshold,
                             nearBottom: true,
-                            kanbanLoading: projectsState.kanbanLoading,
-                            kanbanHasMore: projectsState.kanbanHasMore
+                            kanbanLoading: kanbanLoading,
+                            kanbanHasMore: kanbanHasMore
                           });
                         }
                         
@@ -2642,14 +2725,14 @@ const Projects = () => {
                         const isVeryClose = scrollTop + clientHeight >= scrollHeight - 50; // Fallback threshold
                         
                         if ((isNearBottom || isVeryClose) && 
-                            !projectsState.kanbanLoading && 
-                            projectsState.kanbanColumnData[status].hasMore) {
+                            !kanbanLoading && 
+                            kanbanColumnData[status].hasMore) {
                           console.log(`🔄 Triggering next page load for ${status} column`, {
                             isNearBottom,
                             isVeryClose,
                             distanceFromBottom: scrollHeight - (scrollTop + clientHeight),
-                            currentPage: projectsState.kanbanColumnData[status].currentPage,
-                            nextPage: projectsState.kanbanColumnData[status].currentPage + 1
+                            currentPage: kanbanColumnData[status].currentPage,
+                            nextPage: kanbanColumnData[status].currentPage + 1
                           });
                           loadNextKanbanColumnPage(status);
                         }
@@ -3020,7 +3103,7 @@ const Projects = () => {
                       ))}
                       
                       {/* Loading indicator for infinite scroll */}
-                      {projectsState.kanbanLoading && (
+                      {kanbanLoading && (
                         <Box sx={{ 
                           display: 'flex', 
                           justifyContent: 'center', 
@@ -3048,7 +3131,7 @@ const Projects = () => {
                       )}
                       
                       {/* Bouton "Charger plus" pour cette colonne spécifique */}
-                      {!projectsState.kanbanLoading && projectsState.kanbanColumnData[status].hasMore && (
+                      {!kanbanLoading && kanbanColumnData[status].hasMore && (
                         <Button
                           variant="contained"
                           size="small"
@@ -3080,7 +3163,7 @@ const Projects = () => {
                             transition: 'all 0.3s ease-in-out',
                           }}
                         >
-                          📥 {status} - Page {projectsState.kanbanColumnData[status].currentPage + 1}/{projectsState.kanbanColumnData[status].totalPages}
+                          📥 {status} - Page {kanbanColumnData[status].currentPage + 1}/{kanbanColumnData[status].totalPages}
                         </Button>
                       )}
                     </Box>
@@ -3114,9 +3197,9 @@ const Projects = () => {
               rows={deferredProjects}
               columns={columns}
               components={{ Toolbar: CustomToolbar }}
-              paginationModel={projectsState.paginationModel}
+              paginationModel={paginationModel}
               onPaginationModelChange={handlePaginationModelChange}
-              rowCount={projectsState.totalProjects}
+              rowCount={totalProjects}
               paginationMode="server"
               pageSizeOptions={[10, 25, 50, 100, 200]}
               checkboxSelection
@@ -3127,7 +3210,7 @@ const Projects = () => {
               rowHeight={56}
               columnHeaderHeight={44}
               autoHeight={false}
-              loading={projectsState.paginationLoading}
+              loading={paginationLoading}
               sx={{
                 border: 'none',
                 width: '100%',

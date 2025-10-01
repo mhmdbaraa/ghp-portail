@@ -1,5 +1,8 @@
-import React, { useState, useEffect } from 'react';
+// React imports
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+
+// Material-UI core components
 import {
   Box,
   Grid,
@@ -18,81 +21,50 @@ import {
   Badge,
   Stack,
   Skeleton,
-  Fab,
   SpeedDial,
   SpeedDialAction,
   SpeedDialIcon,
   Alert,
   AlertTitle,
-  Paper,
-  Divider,
-  Tooltip,
   Fade,
   Zoom,
   Slide,
 } from '@mui/material';
+
+// Material-UI icons
 import {
   Work,
   Assignment,
   TrendingUp,
   TrendingDown,
   Schedule,
-  People,
-  AttachMoney,
   Timer,
   CheckCircle,
   Warning,
-  Error,
-  Info,
-  Event,
   MoreVert,
   Add,
-  Dashboard as DashboardIcon,
   CalendarToday,
   Assessment,
   Settings,
   Refresh,
-  Business,
-  Task,
-  Analytics,
-  Speed,
-  Star,
-  Notifications,
-  FilterList,
-  Search,
-  Download,
-  Share,
-  Edit,
-  Delete,
-  Visibility,
-  TrendingFlat,
-  Timeline,
-  PieChart,
-  BarChart,
-  ShowChart,
 } from '@mui/icons-material';
+
+// Chart components
 import { 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip as RechartsTooltip, 
   ResponsiveContainer, 
   BarChart as RechartsBarChart, 
   Bar, 
   PieChart as RechartsPieChart, 
   Pie, 
   Cell, 
-  Area, 
-  AreaChart,
-  Scatter,
-  ScatterChart,
-  RadialBarChart,
-  RadialBar,
-  ComposedChart,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip as RechartsTooltip,
   Legend
 } from 'recharts';
+
+// Services and contexts
 import djangoApiService from '../../shared/services/djangoApiService';
 import { useAuth } from '../../shared/contexts/AuthContext';
 
@@ -104,7 +76,7 @@ const Dashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [speedDialOpen, setSpeedDialOpen] = useState(false);
-  const [selectedTimeframe, setSelectedTimeframe] = useState('30d');
+  const [selectedTimeframe] = useState('30d');
 
   useEffect(() => {
     loadDashboardData();
@@ -118,19 +90,11 @@ const Dashboard = () => {
         setLoading(true);
       }
       
-      console.log('🔄 Chargement des données du dashboard...');
-      console.log('🔗 URL de l\'API:', 'http://localhost:8000/api/projects/dashboard/');
-      
       const response = await djangoApiService.getDashboard();
       
-      console.log('📊 Réponse de l\'API Dashboard:', response);
-      
       if (response.success) {
-        console.log('✅ Données du dashboard chargées avec succès:', response.data);
         setDashboardData(response.data);
       } else {
-        console.error('❌ Erreur API Dashboard:', response.error);
-        console.log('🔄 Utilisation des données de fallback...');
         setDashboardData({
           user: { full_name: user?.full_name || user?.username, role: 'user' },
           statistics: {
@@ -146,8 +110,6 @@ const Dashboard = () => {
         });
       }
     } catch (error) {
-      console.error('💥 Erreur lors du chargement des données du tableau de bord:', error);
-      console.log('🔄 Utilisation des données de fallback...');
       setDashboardData({
         user: { full_name: user?.full_name || user?.username, role: 'user' },
         statistics: {
@@ -171,8 +133,8 @@ const Dashboard = () => {
     loadDashboardData(true);
   };
 
-  // Composant de métrique compacte
-  const CompactMetricCard = ({ title, value, subtitle, icon, color, trend, trendValue, onClick, delay = 0 }) => (
+  // Composant de métrique compacte (memoized for performance)
+  const CompactMetricCard = useCallback(({ title, value, subtitle, icon, color, trend, trendValue, onClick, delay = 0 }) => (
     <Fade in timeout={200 + delay}>
       <Card 
         onClick={onClick}
@@ -266,10 +228,10 @@ const Dashboard = () => {
         </CardContent>
       </Card>
     </Fade>
-  );
+  ), [theme.palette]);
 
-  // Composant de projet compact
-  const CompactProjectCard = ({ project, index }) => (
+  // Composant de projet compact (memoized for performance)
+  const CompactProjectCard = useCallback(({ project, index }) => (
     <Slide direction="up" in timeout={200 + (index * 50)}>
       <Card sx={{ 
         mb: 2,
@@ -480,10 +442,10 @@ const Dashboard = () => {
         </CardContent>
       </Card>
     </Slide>
-  );
+  ), [theme.palette]);
 
-  // Composant de tâche compacte
-  const CompactTaskItem = ({ task, index }) => (
+  // Composant de tâche compacte (memoized for performance)
+  const CompactTaskItem = useCallback(({ task, index }) => (
     <Zoom in timeout={150 + (index * 30)}>
       <ListItem sx={{ 
         px: 0, 
@@ -564,10 +526,10 @@ const Dashboard = () => {
         </Box>
       </ListItem>
     </Zoom>
-  );
+  ), [theme.palette]);
 
-  // Actions pour le SpeedDial
-  const speedDialActions = [
+  // Actions pour le SpeedDial (memoized for performance)
+  const speedDialActions = useMemo(() => [
     {
       icon: <Add />,
       name: 'Nouveau Projet',
@@ -588,7 +550,7 @@ const Dashboard = () => {
       name: 'Paramètres',
       onClick: () => navigate('/settings')
     }
-  ];
+  ], [navigate]);
 
   if (loading) {
     return (
@@ -740,6 +702,24 @@ const Dashboard = () => {
           </Box>
           <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
             <Button
+              variant="contained"
+              size="medium"
+              startIcon={<Work />}
+              onClick={() => navigate('/projects/list')}
+              sx={{ 
+                borderRadius: 2,
+                textTransform: 'none',
+                fontWeight: 600,
+                fontSize: '0.85rem',
+                backgroundColor: theme.palette.primary.main,
+                '&:hover': {
+                  backgroundColor: theme.palette.primary.dark
+                }
+              }}
+            >
+              Voir tous les projets
+            </Button>
+            <Button
               variant="outlined"
               size="medium"
               startIcon={<Refresh />}
@@ -753,33 +733,6 @@ const Dashboard = () => {
               }}
             >
               {refreshing ? 'Actualisation...' : 'Actualiser'}
-            </Button>
-            <Button
-              variant="contained"
-              size="medium"
-              onClick={async () => {
-                console.log('🧪 Test de connexion Django...');
-                try {
-                  const response = await djangoApiService.getDashboard();
-                  console.log('✅ Test réussi:', response);
-                  alert(`Connexion Django: ${response.success ? 'SUCCÈS' : 'ÉCHEC'}\nMessage: ${response.message}`);
-                } catch (error) {
-                  console.error('❌ Test échoué:', error);
-                  alert(`Connexion Django: ÉCHEC\nErreur: ${error.message}`);
-                }
-              }}
-              sx={{ 
-                borderRadius: 2,
-                textTransform: 'none',
-                fontWeight: 600,
-                fontSize: '0.85rem',
-                backgroundColor: theme.palette.success.main,
-                '&:hover': {
-                  backgroundColor: theme.palette.success.dark
-                }
-              }}
-            >
-              Test Django
             </Button>
           </Box>
         </Box>

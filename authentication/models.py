@@ -2,28 +2,15 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
 from datetime import date
+from .constants import ROLES, PERMISSIONS, ROLE_PERMISSIONS, USER_STATUS_CHOICES, ROLE_CHOICES, has_permission, is_super_user
 
 
 class User(AbstractUser):
     """
     Custom User model extending Django's AbstractUser
     """
-    ROLE_CHOICES = [
-        ('admin', 'Administrator'),
-        ('manager', 'Manager'),
-        ('developer', 'Developer'),
-        ('designer', 'Designer'),
-        ('tester', 'Tester'),
-        ('user', 'User'),
-        ('PROJECT_MANAGER', 'Project Manager'),
-        ('PROJECT_USER', 'Project User'),
-    ]
-    
-    STATUS_CHOICES = [
-        ('active', 'Active'),
-        ('inactive', 'Inactive'),
-        ('suspended', 'Suspended'),
-    ]
+    ROLE_CHOICES = ROLE_CHOICES
+    STATUS_CHOICES = USER_STATUS_CHOICES
     
     # Additional fields
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='user')
@@ -61,45 +48,7 @@ class User(AbstractUser):
     
     def has_permission(self, permission):
         """Check if user has a specific permission"""
-        # Superuser (admin) has ALL permissions - no restrictions
-        if self.role == 'admin' or self.is_superuser or self.is_staff:
-            return True
-        
-        # Define simple role-based permission groups
-        role_permissions = {
-            'admin': [
-                'project:view', 'project:create', 'project:edit', 'project:delete',
-                'task:view', 'task:create', 'task:edit', 'task:delete',
-                'user:view', 'user:create', 'user:edit', 'user:delete', 'user:manage'
-            ],
-            'manager': [
-                'project:view', 'project:create', 'project:edit', 'project:delete',
-                'task:view', 'task:create', 'task:edit', 'task:delete'
-                # Removed user permissions - only superuser can manage users
-            ],
-            'developer': [
-                'project:view', 'task:view', 'task:create', 'task:edit'
-            ],
-            'designer': [
-                'project:view', 'task:view', 'task:create', 'task:edit'
-            ],
-            'tester': [
-                'project:view', 'task:view', 'task:edit'
-            ],
-            'user': [
-                'project:view', 'task:view'
-            ],
-            'PROJECT_MANAGER': [
-                'project:view', 'project:create', 'project:edit', 'project:delete',
-                'task:view', 'task:create', 'task:edit', 'task:delete'
-                # Removed user permissions - only superuser can manage users
-            ],
-            'PROJECT_USER': [
-                'project:view', 'task:view'
-            ]
-        }
-        
-        return permission in role_permissions.get(self.role, [])
+        return has_permission(self, permission)
     
     def save(self, *args, **kwargs):
         """Override save to ensure superuser has admin role"""
@@ -154,46 +103,8 @@ class User(AbstractUser):
     
     def get_permissions(self):
         """Get all permissions for the user"""
-        # Superuser (admin) has ALL permissions
-        if self.role == 'admin' or self.is_superuser or self.is_staff:
-            return [
-                'project:view', 'project:create', 'project:edit', 'project:delete',
-                'task:view', 'task:create', 'task:edit', 'task:delete',
-                'user:view', 'user:create', 'user:edit', 'user:delete', 'user:manage',
-                'team:view', 'team:manage',
-                'system:admin'  # Special permission for system administration
-            ]
-        
-        # Simple role-based permission groups
-        role_permissions = {
-            'manager': [
-                'project:view', 'project:create', 'project:edit', 'project:delete',
-                'task:view', 'task:create', 'task:edit', 'task:delete',
-                'user:view', 'user:create', 'user:edit'
-            ],
-            'developer': [
-                'project:view', 'task:view', 'task:create', 'task:edit'
-            ],
-            'designer': [
-                'project:view', 'task:view', 'task:create', 'task:edit'
-            ],
-            'tester': [
-                'project:view', 'task:view', 'task:edit'
-            ],
-            'user': [
-                'project:view', 'task:view'
-            ],
-            'PROJECT_MANAGER': [
-                'project:view', 'project:create', 'project:edit', 'project:delete',
-                'task:view', 'task:create', 'task:edit', 'task:delete',
-                'user:view', 'user:create', 'user:edit'
-            ],
-            'PROJECT_USER': [
-                'project:view', 'task:view'
-            ]
-        }
-        
-        return role_permissions.get(self.role, [])
+        from .constants import get_role_permissions
+        return get_role_permissions(self.role)
 
 
 class Permission(models.Model):
@@ -201,12 +112,18 @@ class Permission(models.Model):
     Custom Permission model for fine-grained access control
     """
     CATEGORY_CHOICES = [
-        ('users', 'Users'),
-        ('projects', 'Projects'),
-        ('tasks', 'Tasks'),
-        ('teams', 'Teams'),
-        ('reports', 'Reports'),
-        ('settings', 'Settings'),
+        ('users', 'Utilisateurs'),
+        ('projects', 'Projets'),
+        ('tasks', 'Tâches'),
+        ('teams', 'Équipes'),
+        ('calendar', 'Calendrier'),
+        ('reports', 'Rapports'),
+        ('settings', 'Paramètres'),
+        ('finance', 'Finance'),
+        ('hr', 'Ressources Humaines'),
+        ('inventory', 'Inventaire'),
+        ('sales', 'Ventes'),
+        ('marketing', 'Marketing'),
     ]
     
     name = models.CharField(max_length=255, unique=True)

@@ -1,4 +1,8 @@
-import React, { useState, useEffect } from 'react';
+// React imports
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+// Material-UI core components
 import {
   Box,
   Card,
@@ -34,6 +38,8 @@ import {
   Switch,
   FormControlLabel,
 } from '@mui/material';
+
+// Material-UI icons
 import {
   Search,
   Add,
@@ -47,14 +53,54 @@ import {
   Refresh,
   PersonAdd,
 } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+// Services and contexts
 import { useUserNavigation } from './useUserNavigation';
+import { useAuth } from '../../shared/contexts/AuthContext';
 import UserForm from './UserForm';
 import userService from '../../shared/services/userService';
+
+// Constants
+import { USER_STATUS_OPTIONS, ROLE_OPTIONS } from '../../shared/constants/authConstants';
+
+// Utils
+import { 
+  getRoleBadgeProps, 
+  getStatusBadgeProps, 
+  isProtectedUser, 
+  canPerformAction,
+  getAvailableUserActions 
+} from '../../shared/utils/roleUtils';
 
 const UserList = () => {
   const theme = useTheme();
   const navigate = useNavigate();
+  const { user, isAuthenticated, isLoading } = useAuth();
+  
+  // Show loading while checking authentication
+  if (isLoading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <Typography>Chargement...</Typography>
+      </Box>
+    );
+  }
+  
+  // Redirect to login if not authenticated
+  if (!isAuthenticated || !user) {
+    navigate('/login', { replace: true });
+    return null;
+  }
+  
+  // Check if user has permission to manage users
+  if (!user.is_superuser && user.role !== 'admin') {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Alert severity="error">
+          Vous n'avez pas les permissions nécessaires pour accéder à cette page.
+        </Alert>
+      </Box>
+    );
+  }
   
   // Utiliser le hook de navigation pour définir le menu du module
   useUserNavigation();
@@ -98,34 +144,32 @@ const UserList = () => {
         setUsers(result.data.results || result.data);
         setTotalUsers(result.data.count || result.data.length);
       } else {
-        console.error('Error loading users:', result.error);
         showSnackbar(result.message || 'Erreur lors du chargement des utilisateurs', 'error');
       }
     } catch (error) {
-      console.error('Error loading users:', error);
       showSnackbar('Erreur lors du chargement des utilisateurs', 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  const showSnackbar = (message, severity = 'success') => {
+  const showSnackbar = useCallback((message, severity = 'success') => {
     setSnackbar({ open: true, message, severity });
-  };
+  }, []);
 
-  const handleMenuOpen = (event, user) => {
+  const handleMenuOpen = useCallback((event, user) => {
     setAnchorEl(event.currentTarget);
     setSelectedUser(user);
-  };
+  }, []);
 
-  const handleMenuClose = () => {
+  const handleMenuClose = useCallback(() => {
     setAnchorEl(null);
     setSelectedUser(null);
-  };
+  }, []);
 
   const handleEditUser = (user) => {
     // Check if user is protected (superuser)
-    if (user.is_superuser || user.role === 'admin') {
+    if (isProtectedUser(user)) {
       showSnackbar('Cannot edit protected user (superuser)', 'error');
       handleMenuClose();
       return;

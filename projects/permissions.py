@@ -1,6 +1,45 @@
 from rest_framework import permissions
 
 
+class CanViewCalendar(permissions.BasePermission):
+    """
+    Permission that allows all authenticated users to view calendar data
+    """
+    
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        
+        # All authenticated users can view calendar data
+        return True
+
+
+class CanModifyCalendar(permissions.BasePermission):
+    """
+    Permission that allows only PROJECT_MANAGER, admin, manager roles to modify calendar
+    """
+    
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        
+        # Admins/superusers always allowed
+        if getattr(request.user, 'is_superuser', False) or getattr(request.user, 'is_staff', False) or getattr(request.user, 'role', None) == 'admin':
+            return True
+
+        user_role = getattr(request.user, 'role', None)
+        
+        # Allow all authenticated users to read calendar data
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        
+        # Only allow modifications for specific roles
+        if request.method not in permissions.SAFE_METHODS:
+            return user_role in ['PROJECT_MANAGER', 'manager', 'admin']
+        
+        return True
+
+
 class IsProjectManagerOrReadOnly(permissions.BasePermission):
     """
     Custom permission to allow:

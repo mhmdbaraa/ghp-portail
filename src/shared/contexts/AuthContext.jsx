@@ -1,6 +1,20 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import useJwt from '../jwt/useJwt'
-import axiosInstance from '../services/axiosInstance'
+// React imports
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+
+// Services
+import useJwt from '../jwt/useJwt';
+import axiosInstance from '../services/axiosInstance';
+
+// Constants
+import {
+  ROLES,
+  PERMISSIONS,
+  STORAGE_KEYS,
+  ROLE_PERMISSIONS,
+  getRolePermissions,
+  hasPermission as checkPermission,
+  isSuperUser,
+} from '../constants/authConstants';
 
 const AuthContext = createContext();
 
@@ -12,43 +26,8 @@ export const useAuth = () => {
   return context;
 };
 
-// Rôles et permissions
-export const ROLES = {
-  ADMIN: 'admin',
-  MANAGER: 'manager',
-  USER: 'user'
-};
-
-export const PERMISSIONS = {
-  PROJECT_VIEW: 'project:view',
-  PROJECT_CREATE: 'project:create',
-  PROJECT_EDIT: 'project:edit',
-  PROJECT_DELETE: 'project:delete',
-  TASK_VIEW: 'task:view',
-  TASK_CREATE: 'task:create',
-  TASK_EDIT: 'task:edit',
-  TASK_DELETE: 'task:delete',
-  USER_VIEW: 'user:view',
-  USER_ADD: 'user:add',
-  USER_CHANGE: 'user:change',
-  USER_DELETE: 'user:delete',
-  USER_MANAGE: 'user:manage',
-  PERMISSION_VIEW: 'permission:view',
-  PERMISSION_CHANGE: 'permission:change',
-  ROLE_VIEW: 'role:view',
-  ROLE_CHANGE: 'role:change'
-};
-
-// Clés pour le localStorage (alignées avec axiosInstance)
-const STORAGE_KEYS = {
-  USER: 'userData',
-  ACCESS: 'accessToken',
-  REFRESH: 'refreshToken',
-  LAST_LOGIN: 'ghpportail_last_login',
-  REMEMBER_ME: 'ghpportail_remember_me',
-  USER_PREFERENCES: 'ghpportail_user_preferences',
-  SESSION_TIMEOUT: 'ghpportail_session_timeout',
-};
+// Re-export constants for backward compatibility
+export { ROLES, PERMISSIONS };
 
 export const AuthProvider = ({ children }) => {
   const { jwt } = useJwt();
@@ -132,65 +111,31 @@ export const AuthProvider = ({ children }) => {
     window.location.href = '/login';
   };
 
-  // Fonctions de vérification des permissions et rôles
-  const hasPermission = (permission) => {
-    if (!user) {
-      return false;
-    }
-    
-    // Superuser (admin) has ALL permissions - NO RESTRICTIONS
-    if (user.role === 'admin' || user.is_superuser || user.is_staff) {
-      return true;
-    }
-    
-    // Simple role-based permission groups
-    const rolePermissions = {
-      'admin': [
-        'project:view', 'project:create', 'project:edit', 'project:delete',
-        'task:view', 'task:create', 'task:edit', 'task:delete',
-        'user:view', 'user:create', 'user:edit', 'user:delete', 'user:manage'
-      ],
-      'manager': [
-        'project:view', 'project:create', 'project:edit', 'project:delete',
-        'task:view', 'task:create', 'task:edit', 'task:delete'
-        // Removed user permissions - only superuser can manage users
-      ],
-      'developer': [
-        'project:view', 'task:view', 'task:create', 'task:edit'
-      ],
-      'designer': [
-        'project:view', 'task:view', 'task:create', 'task:edit'
-      ],
-      'tester': [
-        'project:view', 'task:view', 'task:edit'
-      ],
-      'user': [
-        'project:view', 'task:view'
-      ],
-      'PROJECT_MANAGER': [
-        'project:view', 'project:create', 'project:edit', 'project:delete',
-        'task:view', 'task:create', 'task:edit', 'task:delete'
-        // Removed user permissions - only superuser can manage users
-      ],
-      'PROJECT_USER': [
-        'project:view', 'task:view'
-      ]
-    };
-    
-    const userRole = user.role || '';
-    const permissions = rolePermissions[userRole] || [];
-    return permissions.includes(permission);
-  };
+  // Memoized user permissions for performance
+  const userPermissions = useMemo(() => {
+    if (!user) return [];
+    return getRolePermissions(user.role);
+  }, [user?.role]);
 
-  const hasRole = (role) => {
+  // Optimized permission checking functions
+  const hasPermission = useCallback((permission) => {
+    if (!user) return false;
+    
+    // Superuser has all permissions
+    if (isSuperUser(user)) return true;
+    
+    return checkPermission(userPermissions, permission);
+  }, [user, userPermissions]);
+
+  const hasRole = useCallback((role) => {
     if (!user) return false;
     return user.role === role;
-  };
+  }, [user]);
 
-  const hasAnyRole = (roles) => {
+  const hasAnyRole = useCallback((roles) => {
     if (!user) return false;
     return roles.includes(user.role);
-  };
+  }, [user]);
 
   const value = {
     user,

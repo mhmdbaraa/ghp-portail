@@ -1,0 +1,255 @@
+[
+  {
+    "model": "authentication.permission",
+    "pk": 1,
+    "fields": {
+      "name": "Voir les utilisateurs",
+      "codename": "user:view",
+      "description": "Permet de voir la liste des utilisateurs",
+      "category": "users",
+      "is_active": true
+    }
+  },
+  {
+    "model": "authentication.permission",
+    "pk": 2,
+    "fields": {
+      "name": "Créer des utilisateurs",
+      "codename": "user:create",
+      "description": "Permet de créer de nouveaux utilisateurs",
+      "category": "users",
+      "is_active": true
+    }
+  },
+  {
+    "model": "authentication.permission",
+    "pk": 3,
+    "fields": {
+      "name": "Modifier les utilisateurs",
+      "codename": "user:edit",
+      "description": "Permet de modifier les informations des utilisateurs",
+      "category": "users",
+      "is_active": true
+    }
+  },
+  {
+    "model": "authentication.permission",
+    "pk": 4,
+    "fields": {
+      "name": "Supprimer les utilisateurs",
+      "codename": "user:delete",
+      "description": "Permet de supprimer des utilisateurs",
+      "category": "users",
+      "is_active": true
+    }
+  },
+  {
+    "model": "authentication.permission",
+    "pk": 5,
+    "fields": {
+      "name": "Gérer les utilisateurs",
+      "codename": "user:manage",
+      "description": "Permet de gérer complètement les utilisateurs",
+      "category": "users",
+      "is_active": true
+    }
+  },
+  {
+    "model": "authentication.permission",
+    "pk": 6,
+    "fields": {
+      "name": "Voir les projets",
+      "codename": "project:view",
+      "description": "Permet de voir la liste des projets",
+      "category": "projects",
+      "is_active": true
+    }
+  },
+  {
+    "model": "authentication.permission",
+    "pk": 7,
+    "fields": {
+      "name": "Créer des projets",
+      "codename": "project:create",
+      "description": "Permet de créer de nouveaux projets",
+      "category": "projects",
+      "is_active": true
+    }
+  },
+  {
+    "model": "authentication.permission",
+    "pk": 8,
+    "fields": {
+      "name": "Modifier les projets",
+      "codename": "project:edit",
+      "description": "Permet de modifier les projets",
+      "category": "projects",
+      "is_active": true
+    }
+  },
+  {
+    "model": "authentication.permission",
+    "pk": 9,
+    "fields": {
+      "name": "Supprimer les projets",
+      "codename": "project:delete",
+      "description": "Permet de supprimer des projets",
+      "category": "projects",
+      "is_active": true
+    }
+  },
+  {
+    "model": "authentication.permission",
+    "pk": 10,
+    "fields": {
+      "name": "Voir les tâches",
+      "codename": "task:view",
+      "description": "Permet de voir la liste des tâches",
+      "category": "tasks",
+      "is_active": true
+    }
+  },
+  {
+    "model": "authentication.permission",
+    "pk": 11,
+    "fields": {
+      "name": "Créer des tâches",
+      "codename": "task:create",
+      "description": "Permet de créer de nouvelles tâches",
+      "category": "tasks",
+      "is_active": true
+    }
+  },
+  {
+    "model": "authentication.permission",
+    "pk": 12,
+    "fields": {
+      "name": "Modifier les tâches",
+      "codename": "task:edit",
+      "description": "Permet de modifier les tâches",
+      "category": "tasks",
+      "is_active": true
+    }
+  },
+  {
+    "model": "authentication.permission",
+    "pk": 13,
+    "fields": {
+      "name": "Supprimer les tâches",
+      "codename": "task:delete",
+      "description": "Permet de supprimer des tâches",
+      "category": "tasks",
+      "is_active": true
+    }
+  },
+  {
+    "model": "authentication.permission",
+    "pk": 14,
+    "fields": {
+      "name": "Voir le calendrier",
+      "codename": "calendar:view",
+      "description": "Permet de voir le calendrier",
+      "category": "calendar",
+      "is_active": true
+    }
+  },
+  {
+    "model": "authentication.permission",
+    "pk": 15,
+    "fields": {
+      "name": "Créer des événements",
+      "codename": "calendar:create",
+      "description": "Permet de créer des événements dans le calendrier",
+      "category": "calendar",
+      "is_active": true
+    }
+  },
+  {
+    "model": "authentication.permission",
+    "pk": 16,
+    "fields": {
+      "name": "Modifier les événements",
+      "codename": "calendar:edit",
+      "description": "Permet de modifier les événements du calendrier",
+      "category": "calendar",
+      "is_active": true
+    }
+  },
+  {
+    "model": "authentication.permission",
+    "pk": 17,
+    "fields": {
+      "name": "Supprimer les événements",
+      "codename": "calendar:delete",
+      "description": "Permet de supprimer des événements du calendrier",
+      "category": "calendar",
+      "is_active": true
+    }
+  },
+  {
+    "model": "authentication.permission",
+    "pk": 18,
+    "fields": {
+      "name": "Exporter le calendrier",
+      "codename": "calendar:export",
+      "description": "Permet d'exporter le calendrier",
+      "category": "calendar",
+      "is_active": true
+    }
+  },
+  {
+    "model": "authentication.permission",
+    "pk": 19,
+    "fields": {
+      "name": "Voir les équipes",
+      "codename": "team:view",
+      "description": "Permet de voir la liste des équipes",
+      "category": "teams",
+      "is_active": true
+    }
+  },
+  {
+    "model": "authentication.permission",
+    "pk": 20,
+    "fields": {
+      "name": "Gérer les équipes",
+      "codename": "team:manage",
+      "description": "Permet de gérer les équipes",
+      "category": "teams",
+      "is_active": true
+    }
+  },
+  {
+    "model": "authentication.permission",
+    "pk": 21,
+    "fields": {
+      "name": "Voir les rapports",
+      "codename": "report:view",
+      "description": "Permet de voir les rapports",
+      "category": "reports",
+      "is_active": true
+    }
+  },
+  {
+    "model": "authentication.permission",
+    "pk": 22,
+    "fields": {
+      "name": "Gérer les paramètres",
+      "codename": "settings:manage",
+      "description": "Permet de gérer les paramètres du système",
+      "category": "settings",
+      "is_active": true
+    }
+  },
+  {
+    "model": "authentication.permission",
+    "pk": 23,
+    "fields": {
+      "name": "Administration système",
+      "codename": "system:admin",
+      "description": "Accès total au système",
+      "category": "settings",
+      "is_active": true
+    }
+  }
+]

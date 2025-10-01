@@ -1,4 +1,8 @@
-import React, { useState, useEffect } from 'react';
+// React imports
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Navigate } from 'react-router-dom';
+
+// Material-UI core components
 import {
   Box,
   Typography,
@@ -27,11 +31,8 @@ import {
   DialogContentText,
   useTheme,
 } from '@mui/material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { fr } from 'date-fns/locale';
-import { DataGrid } from '@mui/x-data-grid';
+
+// Material-UI icons
 import {
   Add,
   Visibility,
@@ -44,12 +45,53 @@ import {
   Close,
   Search,
 } from '@mui/icons-material';
+
+// Date picker components
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { fr } from 'date-fns/locale';
+
+// Data grid components
+import { DataGrid } from '@mui/x-data-grid';
+
+// Services and contexts
 import taskService from '../../shared/services/taskService';
 import { useAuth } from '../../shared/contexts/AuthContext';
 
+// Constants
+import {
+  TASK_STATUS_OPTIONS,
+  TASK_PRIORITY_OPTIONS,
+  TASK_TYPE_OPTIONS,
+  STATUS_MAPPING,
+  PRIORITY_MAPPING,
+  TASK_TYPE_MAPPING,
+  DEFAULT_TASK_FORM,
+  DEFAULT_FIELD_ERRORS,
+  ERROR_MESSAGES,
+  SUCCESS_MESSAGES,
+  getStatusColor,
+  getPriorityColor,
+} from './tasksConstants';
+
 const Tasks = () => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, isLoading } = useAuth();
   const theme = useTheme();
+  
+  // Show loading while checking authentication
+  if (isLoading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+  
+  // Redirect to login if not authenticated
+  if (!isAuthenticated || !user) {
+    return <Navigate to="/login" replace />;
+  }
   const [tasks, setTasks] = useState([]);
   const [projects, setProjects] = useState([]);
   const [users, setUsers] = useState([]);
@@ -74,18 +116,7 @@ const Tasks = () => {
   const [filteredUsers, setFilteredUsers] = useState([]);
   
   // Form states
-  const [taskForm, setTaskForm] = useState({
-    title: '',
-    description: '',
-    status: 'not_started',
-      priority: 'medium',
-    task_type: 'task',
-    project: '',
-    assignee: '',
-    due_date: '',
-    estimated_time: 0,
-    notes: ''
-  });
+  const [taskForm, setTaskForm] = useState(DEFAULT_TASK_FORM);
 
   // Load tasks and projects from API
   useEffect(() => {
@@ -95,34 +126,7 @@ const Tasks = () => {
   }, []);
 
 
-  const getPriorityColor = (priority) => {
-    switch (priority) {
-      case 'high':
-      case 'critical':
-        return 'error';
-      case 'medium':
-        return 'warning';
-      case 'low':
-        return 'success';
-      default:
-        return 'default';
-    }
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'completed':
-        return 'success';
-      case 'in_progress':
-        return 'primary';
-      case 'on_hold':
-        return 'warning';
-      case 'cancelled':
-        return 'error';
-      default:
-        return 'default';
-    }
-  };
+  // Color functions are now imported from constants
 
   const getProjectName = (projectId) => {
     if (!projectId) return 'Projet non assigné';
@@ -137,25 +141,8 @@ const Tasks = () => {
     return assignee ? `${assignee.first_name || ''} ${assignee.last_name || ''}`.trim() || assignee.username : `Utilisateur ${assigneeId}`;
   };
 
-  const getTaskTypeLabel = (type) => {
-    const types = {
-      'task': 'Tâche',
-      'bug': 'Bug',
-      'feature': 'Fonctionnalité',
-      'improvement': 'Amélioration'
-    };
-    return types[type] || type;
-  };
-
-  const getPriorityLabel = (priority) => {
-    const priorities = {
-      'low': 'Basse',
-      'medium': 'Moyenne',
-      'high': 'Haute',
-      'urgent': 'Urgente'
-    };
-    return priorities[priority] || priority;
-  };
+  const getTaskTypeLabel = (type) => TASK_TYPE_MAPPING[type] || type;
+  const getPriorityLabel = (priority) => PRIORITY_MAPPING[priority] || priority;
 
   const openAssigneeDialog = () => {
     setAssigneeDialogOpen(true);
@@ -191,16 +178,7 @@ const Tasks = () => {
     closeAssigneeDialog();
   };
 
-  const getStatusLabel = (status) => {
-    const statusMap = {
-      'not_started': 'Non démarré',
-      'in_progress': 'En cours',
-      'completed': 'Terminé',
-      'on_hold': 'En attente',
-      'cancelled': 'Annulé',
-    };
-    return statusMap[status] || status;
-  };
+  const getStatusLabel = (status) => STATUS_MAPPING[status] || status;
 
   const getPriorityText = (priority) => {
     switch (priority) {

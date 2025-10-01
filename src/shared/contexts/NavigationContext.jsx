@@ -35,7 +35,7 @@ export const NavigationProvider = ({ children }) => {
       resetToDefault();
     }
     // Si on n'est plus dans le module projets, réinitialiser
-    else if (!pathname.startsWith('/projects/') && !pathname.startsWith('/tasks/') && 
+    else if (!pathname.startsWith('/projects') && !pathname.startsWith('/tasks/') && 
              !pathname.startsWith('/tableur/') && !pathname.startsWith('/calendar/') && 
              !pathname.startsWith('/dashboard') && currentModule === 'projects') {
       resetToDefault();

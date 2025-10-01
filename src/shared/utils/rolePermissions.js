@@ -24,7 +24,8 @@ export const ROLE_PERMISSIONS = {
     permissions: [
       'project:view', 'project:create', 'project:edit', 'project:delete',
       'task:view', 'task:create', 'task:edit', 'task:delete',
-      'user:view', 'user:create', 'user:edit'
+      'user:view', 'user:create', 'user:edit',
+      'calendar:view', 'calendar:create', 'calendar:edit', 'calendar:delete', 'calendar:export'
     ],
     color: '#6366f1',
     icon: 'manage_accounts'
@@ -36,7 +37,8 @@ export const ROLE_PERMISSIONS = {
     permissions: [
       'project:view', 'project:create', 'project:edit', 'project:delete',
       'task:view', 'task:create', 'task:edit', 'task:delete',
-      'user:view', 'user:create', 'user:edit'
+      'user:view', 'user:create', 'user:edit',
+      'calendar:view', 'calendar:create', 'calendar:edit', 'calendar:delete', 'calendar:export'
     ],
     color: '#6366f1',
     icon: 'manage_accounts'
@@ -48,7 +50,8 @@ export const ROLE_PERMISSIONS = {
     description: 'Développement et maintenance',
     permissions: [
       'project:view',
-      'task:view', 'task:create', 'task:edit'
+      'task:view', 'task:create', 'task:edit',
+      'calendar:view'
     ],
     color: '#10b981',
     icon: 'code'
@@ -59,7 +62,8 @@ export const ROLE_PERMISSIONS = {
     description: 'Design et interface utilisateur',
     permissions: [
       'project:view',
-      'task:view', 'task:create', 'task:edit'
+      'task:view', 'task:create', 'task:edit',
+      'calendar:view'
     ],
     color: '#f59e0b',
     icon: 'palette'
@@ -71,7 +75,8 @@ export const ROLE_PERMISSIONS = {
     description: 'Tests et validation',
     permissions: [
       'project:view',
-      'task:view', 'task:edit'
+      'task:view', 'task:edit',
+      'calendar:view'
     ],
     color: '#8b5cf6',
     icon: 'bug_report'
@@ -83,7 +88,8 @@ export const ROLE_PERMISSIONS = {
     description: 'Consultation des projets',
     permissions: [
       'project:view',
-      'task:view'
+      'task:view',
+      'calendar:view'
     ],
     color: '#6b7280',
     icon: 'person'
@@ -94,7 +100,8 @@ export const ROLE_PERMISSIONS = {
     description: 'Consultation des projets',
     permissions: [
       'project:view',
-      'task:view'
+      'task:view',
+      'calendar:view'
     ],
     color: '#6b7280',
     icon: 'person'
@@ -121,6 +128,13 @@ export const AVAILABLE_PERMISSIONS = {
   'user:edit': 'Modifier les utilisateurs',
   'user:delete': 'Supprimer les utilisateurs',
   'user:manage': 'Gérer les utilisateurs',
+  
+  // Calendrier
+  'calendar:view': 'Voir le calendrier',
+  'calendar:create': 'Créer des événements',
+  'calendar:edit': 'Modifier les événements',
+  'calendar:delete': 'Supprimer les événements',
+  'calendar:export': 'Exporter le calendrier',
   
   // Équipes
   'team:view': 'Voir les équipes',

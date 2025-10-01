@@ -130,6 +130,62 @@ class PermissionService {
     }
   }
 
+  // Get all permissions grouped by category
+  async getPermissionsByCategory() {
+    try {
+      const response = await djangoApiService.get(`${this.baseURL}by-category/`);
+      return {
+        success: true,
+        data: response.data,
+        message: 'Permissions by category retrieved successfully'
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || error.message,
+        message: 'Failed to retrieve permissions by category'
+      };
+    }
+  }
+
+  // Get permission categories
+  async getPermissionCategories() {
+    try {
+      const response = await djangoApiService.get(`${this.baseURL}categories/`);
+      return {
+        success: true,
+        data: response.data,
+        message: 'Permission categories retrieved successfully'
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || error.message,
+        message: 'Failed to retrieve permission categories'
+      };
+    }
+  }
+
+  // Bulk create permissions
+  async bulkCreatePermissions(permissionsData) {
+    try {
+      const response = await djangoApiService.post(`${this.baseURL}bulk-create/`, {
+        permissions: permissionsData
+      });
+      return {
+        success: true,
+        data: response.data,
+        message: 'Permissions created successfully'
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || error.message,
+        message: 'Failed to create permissions'
+      };
+    }
+  }
+
   // Get permission statistics
   async getPermissionStats() {
     try {

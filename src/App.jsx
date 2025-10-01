@@ -63,6 +63,14 @@ function App() {
               </ProtectedRoute>
             } />
             
+            <Route path="/dashboard" element={
+              <ProtectedRoute requiredPermission={PERMISSIONS.PROJECT_VIEW}>
+                <Layout>
+                  <Dashboard />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            
             <Route path="/tasks" element={
               <ProtectedRoute requiredPermission={PERMISSIONS.TASK_VIEW}>
                 <Layout>
@@ -158,6 +166,7 @@ function App() {
                 </SuperuserOnlyGuard>
               </ProtectedRoute>
             } />
+            
             
             {/* Debug routes - temporaires */}
             <Route path="/debug/auth" element={<AuthDebug />} />

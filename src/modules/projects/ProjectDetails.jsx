@@ -1,4 +1,7 @@
+// React imports
 import React, { useState, useEffect, useRef } from 'react';
+
+// Material-UI core components
 import {
   Dialog,
   DialogContent,
@@ -26,6 +29,8 @@ import {
   Button,
   CircularProgress,
 } from '@mui/material';
+
+// Material-UI icons
 import {
   Close as CloseIcon,
   CalendarToday,
@@ -45,6 +50,8 @@ import {
   FavoriteBorder,
   Favorite,
 } from '@mui/icons-material';
+
+// Services and contexts
 import djangoApiService from '../../shared/services/djangoApiService';
 import { useAuth } from '../../shared/contexts/AuthContext';
 

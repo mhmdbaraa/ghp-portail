@@ -14,23 +14,31 @@ class CanViewCalendar(BasePermission):
         if not request.user or not request.user.is_authenticated:
             return False
         
+        # Admins/superusers always allowed
+        if getattr(request.user, 'is_superuser', False) or getattr(request.user, 'is_staff', False):
+            return True
+        
         # Vérifier le rôle de l'utilisateur
         user_role = getattr(request.user, 'role', 'user')
         
-        # Permettre l'accès aux admins, managers et utilisateurs avec permissions
-        allowed_roles = ['admin', 'manager', 'user']
+        # Permettre l'accès aux admins, managers, project managers, project users et utilisateurs avec permissions
+        allowed_roles = ['admin', 'manager', 'PROJECT_MANAGER', 'PROJECT_USER', 'user', 'developer', 'designer', 'tester']
         return user_role in allowed_roles
 
 class CanViewAllCalendarData(BasePermission):
     """
-    Permission pour voir toutes les données du calendrier (admin/manager).
+    Permission pour voir toutes les données du calendrier (admin/manager/project_manager).
     """
     def has_permission(self, request, view):
         if not request.user or not request.user.is_authenticated:
             return False
         
+        # Admins/superusers always allowed
+        if getattr(request.user, 'is_superuser', False) or getattr(request.user, 'is_staff', False):
+            return True
+        
         user_role = getattr(request.user, 'role', 'user')
-        return user_role in ['admin', 'manager']
+        return user_role in ['admin', 'manager', 'PROJECT_MANAGER']
 
 class CanViewOwnCalendarData(BasePermission):
     """
@@ -40,19 +48,27 @@ class CanViewOwnCalendarData(BasePermission):
         if not request.user or not request.user.is_authenticated:
             return False
         
+        # Admins/superusers always allowed
+        if getattr(request.user, 'is_superuser', False) or getattr(request.user, 'is_staff', False):
+            return True
+        
         user_role = getattr(request.user, 'role', 'user')
-        return user_role in ['admin', 'manager', 'user']
+        return user_role in ['admin', 'manager', 'PROJECT_MANAGER', 'PROJECT_USER', 'user', 'developer', 'designer', 'tester']
 
 class CanModifyCalendarData(BasePermission):
     """
-    Permission pour modifier les données du calendrier (admin/manager seulement).
+    Permission pour modifier les données du calendrier (admin/manager/project_manager seulement).
     """
     def has_permission(self, request, view):
         if not request.user or not request.user.is_authenticated:
             return False
         
+        # Admins/superusers always allowed
+        if getattr(request.user, 'is_superuser', False) or getattr(request.user, 'is_staff', False):
+            return True
+        
         user_role = getattr(request.user, 'role', 'user')
-        return user_role in ['admin', 'manager']
+        return user_role in ['admin', 'manager', 'PROJECT_MANAGER']
 
 class CanModifyProject(BasePermission):
     """
@@ -1025,10 +1041,39 @@ def calendar_data(request):
     user = request.user
     
     try:
+        # Check if user has calendar view permission
+        from authentication.models import Permission
+        calendar_view_permission = Permission.objects.filter(codename='calendar:view').first()
+        
+        if not calendar_view_permission:
+            return Response({
+                'success': False,
+                'message': 'Calendar view permission not found'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        # Check if user has the permission through their roles
+        user_has_permission = False
+        for role in user.roles.all():
+            if role.permissions.filter(codename='calendar:view').exists():
+                user_has_permission = True
+                break
+        
+        # Also check built-in role permissions
+        if not user_has_permission:
+            user_role = getattr(user, 'role', 'user')
+            if user_role in ['admin', 'manager', 'PROJECT_MANAGER', 'PROJECT_USER', 'user', 'developer', 'designer', 'tester']:
+                user_has_permission = True
+        
+        if not user_has_permission:
+            return Response({
+                'success': False,
+                'message': 'You do not have permission to view calendar data'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
         # Filter data based on user permissions and roles
         user_role = getattr(user, 'role', 'user')
         
-        if user_role == 'admin':
+        if user_role == 'admin' or user.is_superuser:
             # Admin: accès complet à tous les projets et tâches
             projects = Project.objects.all()
             tasks = Task.objects.all()
@@ -1038,7 +1083,7 @@ def calendar_data(request):
                 Q(manager=user) | Q(team=user)
             ).distinct()
             tasks = Task.objects.all()
-        elif user_role == 'user':
+        elif user_role in ['PROJECT_MANAGER', 'PROJECT_USER', 'user', 'developer', 'designer', 'tester']:
             # Utilisateur standard: accès en lecture seule à tous les projets et tâches
             projects = Project.objects.all()
             tasks = Task.objects.all()

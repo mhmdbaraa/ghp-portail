@@ -1,134 +1,72 @@
 [
   {
-    "model": "authentication.permission",
+    "model": "authentication.role",
     "pk": 1,
     "fields": {
-      "name": "View Projects",
-      "codename": "view_project",
-      "description": "Can view projects and project details",
-      "category": "projects",
-      "is_active": true
+      "name": "Administrateur",
+      "description": "Accès total au système",
+      "is_active": true,
+      "is_system": true
     }
   },
   {
-    "model": "authentication.permission",
+    "model": "authentication.role",
     "pk": 2,
     "fields": {
-      "name": "Create Projects",
-      "codename": "add_project",
-      "description": "Can create new projects",
-      "category": "projects",
-      "is_active": true
+      "name": "Manager",
+      "description": "Gestion des modules et équipes",
+      "is_active": true,
+      "is_system": true
     }
   },
   {
-    "model": "authentication.permission",
+    "model": "authentication.role",
     "pk": 3,
     "fields": {
-      "name": "Edit Projects",
-      "codename": "change_project",
-      "description": "Can edit existing projects",
-      "category": "projects",
-      "is_active": true
+      "name": "Gestionnaire de Projet",
+      "description": "Gestion complète des projets",
+      "is_active": true,
+      "is_system": true
     }
   },
   {
-    "model": "authentication.permission",
+    "model": "authentication.role",
     "pk": 4,
     "fields": {
-      "name": "Delete Projects",
-      "codename": "delete_project",
-      "description": "Can delete projects",
-      "category": "projects",
-      "is_active": true
+      "name": "Développeur",
+      "description": "Développement et maintenance",
+      "is_active": true,
+      "is_system": true
     }
   },
   {
-    "model": "authentication.permission",
+    "model": "authentication.role",
     "pk": 5,
     "fields": {
-      "name": "View Tasks",
-      "codename": "view_task",
-      "description": "Can view tasks and task details",
-      "category": "tasks",
-      "is_active": true
+      "name": "Designer",
+      "description": "Design et interface utilisateur",
+      "is_active": true,
+      "is_system": true
     }
   },
   {
-    "model": "authentication.permission",
+    "model": "authentication.role",
     "pk": 6,
     "fields": {
-      "name": "Create Tasks",
-      "codename": "add_task",
-      "description": "Can create new tasks",
-      "category": "tasks",
-      "is_active": true
+      "name": "Testeur",
+      "description": "Tests et validation",
+      "is_active": true,
+      "is_system": true
     }
   },
   {
-    "model": "authentication.permission",
+    "model": "authentication.role",
     "pk": 7,
     "fields": {
-      "name": "Edit Tasks",
-      "codename": "change_task",
-      "description": "Can edit existing tasks",
-      "category": "tasks",
-      "is_active": true
-    }
-  },
-  {
-    "model": "authentication.permission",
-    "pk": 8,
-    "fields": {
-      "name": "Delete Tasks",
-      "codename": "delete_task",
-      "description": "Can delete tasks",
-      "category": "tasks",
-      "is_active": true
-    }
-  },
-  {
-    "model": "authentication.permission",
-    "pk": 9,
-    "fields": {
-      "name": "View Calendar",
-      "codename": "view_calendar",
-      "description": "Can view project calendar",
-      "category": "projects",
-      "is_active": true
-    }
-  },
-  {
-    "model": "authentication.permission",
-    "pk": 10,
-    "fields": {
-      "name": "Manage Calendar",
-      "codename": "manage_calendar",
-      "description": "Can manage calendar events and scheduling",
-      "category": "projects",
-      "is_active": true
-    }
-  },
-  {
-    "model": "authentication.role",
-    "pk": 1,
-    "fields": {
-      "name": "PROJECT_MANAGER",
-      "description": "Full access to projects, tasks, and calendar management",
+      "name": "Utilisateur",
+      "description": "Consultation des projets",
       "is_active": true,
-      "is_system": true,
-      "permissions": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-    }
-  },
-  {
-    "model": "authentication.role",
-    "pk": 2,
-    "fields": {
-      "name": "PROJECT_USER",
-      "description": "View-only access to projects and tasks",
-      "is_active": true,
-      "is_system": true,
-      "permissions": [1, 5, 9]
+      "is_system": true
     }
   }
 ]

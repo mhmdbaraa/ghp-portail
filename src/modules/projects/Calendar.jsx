@@ -1,4 +1,8 @@
-import React, { useState, useEffect } from 'react';
+// React imports
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Navigate } from 'react-router-dom';
+
+// Material-UI core components
 import {
   Box,
   Typography,
@@ -17,7 +21,10 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  useTheme,
 } from '@mui/material';
+
+// Material-UI icons
 import {
   Today,
   Event,
@@ -30,13 +37,42 @@ import {
   Assignment,
   Business,
 } from '@mui/icons-material';
+
+// Services and contexts
 import axiosInstance from '../../shared/services/axiosInstance';
+import { useAuth } from '../../shared/contexts/AuthContext';
+
+// Constants
+import {
+  DATE_RANGE_OPTIONS,
+  EVENT_TYPE_CONFIG,
+  DEFAULT_DATE_RANGE,
+  ERROR_MESSAGES,
+  CALENDAR_STYLES,
+} from './calendarConstants';
 
 const Calendar = () => {
+  const { isAuthenticated, user, isLoading } = useAuth();
+  const theme = useTheme();
+  
+  // Show loading while checking authentication
+  if (isLoading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+  
+  // Redirect to login if not authenticated
+  if (!isAuthenticated || !user) {
+    return <Navigate to="/login" replace />;
+  }
+
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [dateRange, setDateRange] = useState('30'); // days
+  const [dateRange, setDateRange] = useState(DEFAULT_DATE_RANGE);
   const [eventsByDate, setEventsByDate] = useState({});
   const [summary, setSummary] = useState({});
 
@@ -70,67 +106,44 @@ const Calendar = () => {
         const allEvents = Object.values(events_by_date).flat();
         setEvents(allEvents);
       } else {
-        setError('Erreur lors du chargement des données du calendrier');
+        setError(ERROR_MESSAGES.LOAD_CALENDAR);
       }
     } catch (err) {
-      console.error('Error fetching calendar data:', err);
-      setError('Erreur de connexion au serveur');
+      setError(ERROR_MESSAGES.CONNECTION_ERROR);
     } finally {
       setLoading(false);
     }
   };
 
-  const getEventTypeColor = (type) => {
-    switch (type) {
-      case 'project_deadline':
-        return 'primary';
-      case 'task_deadline':
-        return 'warning';
-      case 'overdue_project':
-        return 'error';
-      case 'overdue_task':
-        return 'error';
-      default:
-        return 'default';
-    }
-  };
+  // Memoized helper functions for better performance
+  const getEventTypeColor = useCallback((type) => {
+    return EVENT_TYPE_CONFIG[type]?.color || 'default';
+  }, []);
 
-  const getEventTypeText = (type) => {
-    switch (type) {
-      case 'project_deadline':
-        return 'Échéance Projet';
-      case 'task_deadline':
-        return 'Échéance Tâche';
-      case 'overdue_project':
-        return 'Projet en Retard';
-      case 'overdue_task':
-        return 'Tâche en Retard';
-      default:
-        return 'Événement';
-    }
-  };
+  const getEventTypeText = useCallback((type) => {
+    return EVENT_TYPE_CONFIG[type]?.text || 'Événement';
+  }, []);
 
-  const getEventTypeIcon = (type) => {
-    switch (type) {
-      case 'project_deadline':
+  const getEventTypeIcon = useCallback((type) => {
+    const iconType = EVENT_TYPE_CONFIG[type]?.icon;
+    switch (iconType) {
+      case 'Business':
         return <Business />;
-      case 'task_deadline':
+      case 'Assignment':
         return <Assignment />;
-      case 'overdue_project':
-        return <Warning />;
-      case 'overdue_task':
+      case 'Warning':
         return <Warning />;
       default:
         return <Event />;
     }
-  };
+  }, []);
 
-  // Get sorted dates from eventsByDate state
-  const sortedDates = Object.keys(eventsByDate).sort();
+  // Get sorted dates from eventsByDate state (memoized for performance)
+  const sortedDates = useMemo(() => Object.keys(eventsByDate).sort(), [eventsByDate]);
 
   if (loading) {
     return (
-      <Box sx={{ p: 3, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+      <Box sx={CALENDAR_STYLES.loadingContainer}>
         <CircularProgress />
       </Box>
     );
@@ -138,7 +151,7 @@ const Calendar = () => {
 
   if (error) {
     return (
-      <Box sx={{ p: 3 }}>
+      <Box sx={CALENDAR_STYLES.errorContainer}>
         <Alert severity="error" sx={{ mb: 2 }}>
           {error}
         </Alert>

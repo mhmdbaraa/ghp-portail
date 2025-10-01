@@ -126,7 +126,7 @@ const Register = () => {
   const benefits = [
     {
       icon: <Business sx={{ fontSize: 24, color: 'primary.main' }} />,
-      title: 'Gestion de Projets Avancée',
+      title: 'Modules d\'Entreprise Avancés',
       description: 'Planifiez, suivez et gérez vos projets avec des outils professionnels',
     },
     {
@@ -168,7 +168,7 @@ const Register = () => {
               Créer un compte
             </Typography>
             <Typography variant="body1" color="text.secondary">
-              Rejoignez ProjectTracker et gérez vos projets avec excellence
+              Rejoignez GHP Portail et gérez vos projets avec excellence
             </Typography>
           </Box>
 
@@ -459,7 +459,7 @@ const Register = () => {
             Commencez votre succès
           </Typography>
           <Typography variant="h6" sx={{ mb: 6, opacity: 0.9 }}>
-            Rejoignez des milliers de professionnels qui utilisent ProjectTracker pour transformer leur gestion de projets.
+            Rejoignez des milliers de professionnels qui utilisent GHP Portail pour transformer leur gestion d'entreprise.
           </Typography>
 
           <Grid container spacing={3} sx={{ mb: 6 }}>

@@ -221,7 +221,7 @@ const UserList = () => {
       case 'designer': return 'Designer';
       case 'tester': return 'Testeur';
       case 'user': return 'Utilisateur';
-      case 'PROJECT_MANAGER': return 'Gestionnaire de Projet';
+      case 'PROJECT_MANAGER': return 'Gestionnaire de Module';
       case 'PROJECT_USER': return 'Utilisateur de Projet';
       default: return role;
     }
@@ -329,7 +329,7 @@ const UserList = () => {
                     <MenuItem value="all">Tous les rôles</MenuItem>
                     <MenuItem value="admin">Administrateur</MenuItem>
                     <MenuItem value="manager">Manager</MenuItem>
-                    <MenuItem value="PROJECT_MANAGER">Gestionnaire de Projet</MenuItem>
+                    <MenuItem value="PROJECT_MANAGER">Gestionnaire de Module</MenuItem>
                     <MenuItem value="developer">Développeur</MenuItem>
                     <MenuItem value="designer">Designer</MenuItem>
                     <MenuItem value="tester">Testeur</MenuItem>

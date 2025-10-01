@@ -1,7 +1,92 @@
 from rest_framework import viewsets, status, permissions, filters
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
+from rest_framework.permissions import BasePermission
 from django_filters.rest_framework import DjangoFilterBackend
+
+# Permissions personnalisées pour le calendrier
+class CanViewCalendar(BasePermission):
+    """
+    Permission pour accéder au calendrier.
+    Permet l'accès aux utilisateurs authentifiés avec les rôles appropriés.
+    """
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        
+        # Vérifier le rôle de l'utilisateur
+        user_role = getattr(request.user, 'role', 'user')
+        
+        # Permettre l'accès aux admins, managers et utilisateurs avec permissions
+        allowed_roles = ['admin', 'manager', 'user']
+        return user_role in allowed_roles
+
+class CanViewAllCalendarData(BasePermission):
+    """
+    Permission pour voir toutes les données du calendrier (admin/manager).
+    """
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        
+        user_role = getattr(request.user, 'role', 'user')
+        return user_role in ['admin', 'manager']
+
+class CanViewOwnCalendarData(BasePermission):
+    """
+    Permission pour voir ses propres données du calendrier (utilisateur standard).
+    """
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        
+        user_role = getattr(request.user, 'role', 'user')
+        return user_role in ['admin', 'manager', 'user']
+
+class CanModifyCalendarData(BasePermission):
+    """
+    Permission pour modifier les données du calendrier (admin/manager seulement).
+    """
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        
+        user_role = getattr(request.user, 'role', 'user')
+        return user_role in ['admin', 'manager']
+
+class CanModifyProject(BasePermission):
+    """
+    Permission pour modifier les projets (admin/manager seulement).
+    """
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        
+        user_role = getattr(request.user, 'role', 'user')
+        
+        # Permissions de lecture pour tous les utilisateurs authentifiés
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        
+        # Permissions d'écriture pour admin et manager
+        return user_role in ['admin', 'manager']
+
+class CanModifyTask(BasePermission):
+    """
+    Permission pour modifier les tâches (admin/manager seulement).
+    """
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        
+        user_role = getattr(request.user, 'role', 'user')
+        
+        # Permissions de lecture pour tous les utilisateurs authentifiés
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        
+        # Permissions d'écriture pour admin et manager
+        return user_role in ['admin', 'manager']
 from django.db.models import Q, Count, Avg, Sum
 from django.utils import timezone
 from django.contrib.auth import get_user_model
@@ -425,7 +510,7 @@ class TaskViewSet(viewsets.ModelViewSet):
     - PROJECT_MANAGER, manager, admin: Full access (CRUD)
     """
     queryset = Task.objects.all()
-    permission_classes = [permissions.IsAuthenticated, CanModifyProject]
+    permission_classes = [permissions.IsAuthenticated, CanModifyTask]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = TaskFilter
     search_fields = ['title', 'description', 'tags']
@@ -704,9 +789,15 @@ def dashboard_data(request):
         
         # Project statistics
         total_projects = projects.count()
-        active_projects = projects.filter(status='in_progress').count()
-        completed_projects = projects.filter(status='completed').count()
-        planning_projects = projects.filter(status='planning').count()
+        active_projects = projects.filter(
+            Q(status='in_progress') | Q(status='En cours')
+        ).count()
+        completed_projects = projects.filter(
+            Q(status='completed') | Q(status='Terminé')
+        ).count()
+        planning_projects = projects.filter(
+            Q(status='planning') | Q(status='En attente')
+        ).count()
         
         # Task statistics
         total_tasks = tasks.count()
@@ -717,6 +808,7 @@ def dashboard_data(request):
             due_date__lt=timezone.now(),
             status__in=['not_started', 'in_progress']
         ).count()
+        
         
         # Recent projects (last 3)
         recent_projects = projects.order_by('-created_at')[:3]
@@ -922,6 +1014,309 @@ class ProjectNoteViewSet(viewsets.ModelViewSet):
                 'success': False,
                 'error': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([CanViewCalendar])
+def calendar_data(request):
+    """
+    Get calendar data with upcoming deadlines for tasks and projects
+    """
+    user = request.user
+    
+    try:
+        # Filter data based on user permissions and roles
+        user_role = getattr(user, 'role', 'user')
+        
+        if user_role == 'admin':
+            # Admin: accès complet à tous les projets et tâches
+            projects = Project.objects.all()
+            tasks = Task.objects.all()
+        elif user_role == 'manager':
+            # Manager: projets gérés + toutes les tâches (pour visibilité complète)
+            projects = Project.objects.filter(
+                Q(manager=user) | Q(team=user)
+            ).distinct()
+            tasks = Task.objects.all()
+        elif user_role == 'user':
+            # Utilisateur standard: accès en lecture seule à tous les projets et tâches
+            projects = Project.objects.all()
+            tasks = Task.objects.all()
+        else:
+            # Rôles non reconnus: accès limité
+            projects = Project.objects.none()
+            tasks = Task.objects.none()
+        
+        # Get date range (next 30 days by default)
+        from_date = request.GET.get('from_date', timezone.now().date())
+        to_date = request.GET.get('to_date', timezone.now().date() + timezone.timedelta(days=30))
+        
+        # Convert string dates to date objects if needed
+        if isinstance(from_date, str):
+            from_date = timezone.datetime.strptime(from_date, '%Y-%m-%d').date()
+        if isinstance(to_date, str):
+            to_date = timezone.datetime.strptime(to_date, '%Y-%m-%d').date()
+        
+        # Convert to timezone-aware datetimes for database queries
+        from_datetime = timezone.make_aware(timezone.datetime.combine(from_date, timezone.datetime.min.time()))
+        to_datetime = timezone.make_aware(timezone.datetime.combine(to_date, timezone.datetime.max.time()))
+        
+        # Get upcoming project deadlines
+        upcoming_projects = projects.filter(
+            deadline__gte=from_date,
+            deadline__lte=to_date,
+            status__in=['En cours', 'En attente', 'planning', 'in_progress']
+        ).order_by('deadline')
+        
+        # Get upcoming task deadlines
+        upcoming_tasks = tasks.filter(
+            due_date__date__gte=from_date,
+            due_date__date__lte=to_date,
+            status__in=['not_started', 'in_progress', 'completed']
+        ).order_by('due_date')
+        
+        # Get overdue items
+        overdue_projects = projects.filter(
+            deadline__lt=timezone.now().date(),
+            status__in=['En cours', 'En attente', 'planning', 'in_progress']
+        ).order_by('deadline')
+        
+        overdue_tasks = tasks.filter(
+            due_date__date__lt=timezone.now().date(),
+            status__in=['not_started', 'in_progress', 'completed']
+        ).order_by('due_date')
+        
+        # Format project data
+        projects_data = []
+        for project in upcoming_projects:
+            days_remaining = (project.deadline - timezone.now().date()).days
+            projects_data.append({
+                'id': project.id,
+                'title': project.name,
+                'date': project.deadline.strftime('%Y-%m-%d'),
+                'time': '17:00',  # Default time for project deadlines
+                'type': 'project_deadline',
+                'priority': project.priority,
+                'status': project.status,
+                'progress': project.progress,
+                'manager_name': project.manager.full_name if project.manager else 'Non assigné',
+                'team_count': project.team.count(),
+                'description': f'Échéance du projet {project.name}',
+                'days_remaining': days_remaining,
+                'is_overdue': days_remaining < 0,
+                'project_number': project.project_number,
+                'category': project.get_category_display(),
+                'budget': float(project.budget),
+                'spent': float(project.spent)
+            })
+        
+        # Format task data
+        tasks_data = []
+        for task in upcoming_tasks:
+            days_remaining = (task.due_date.date() - timezone.now().date()).days
+            tasks_data.append({
+                'id': task.id,
+                'title': task.title,
+                'date': task.due_date.date().strftime('%Y-%m-%d'),
+                'time': '17:00',  # Default time for task deadlines
+                'type': 'task_deadline',
+                'priority': task.priority,
+                'status': task.status,
+                'assignee_name': task.assignee.full_name if task.assignee else 'Non assigné',
+                'project_name': task.project.name if task.project else 'Projet supprimé',
+                'project_id': task.project.id if task.project else None,
+                'description': f'Échéance de la tâche {task.title}',
+                'days_remaining': days_remaining,
+                'is_overdue': days_remaining < 0,
+                'task_number': task.task_number,
+                'estimated_time': float(task.estimated_time or 0),
+                'actual_time': float(task.actual_time or 0)
+            })
+        
+        # Format overdue data
+        overdue_projects_data = []
+        for project in overdue_projects:
+            days_overdue = (timezone.now().date() - project.deadline).days
+            overdue_projects_data.append({
+                'id': project.id,
+                'title': project.name,
+                'date': project.deadline.strftime('%Y-%m-%d'),
+                'time': '17:00',
+                'type': 'overdue_project',
+                'priority': project.priority,
+                'status': project.status,
+                'progress': project.progress,
+                'manager_name': project.manager.full_name if project.manager else 'Non assigné',
+                'description': f'Projet en retard: {project.name}',
+                'days_overdue': days_overdue,
+                'project_number': project.project_number
+            })
+        
+        overdue_tasks_data = []
+        for task in overdue_tasks:
+            days_overdue = (timezone.now().date() - task.due_date.date()).days
+            overdue_tasks_data.append({
+                'id': task.id,
+                'title': task.title,
+                'date': task.due_date.date().strftime('%Y-%m-%d'),
+                'time': '17:00',
+                'type': 'overdue_task',
+                'priority': task.priority,
+                'status': task.status,
+                'assignee_name': task.assignee.full_name if task.assignee else 'Non assigné',
+                'project_name': task.project.name if task.project else 'Projet supprimé',
+                'description': f'Tâche en retard: {task.title}',
+                'days_overdue': days_overdue,
+                'task_number': task.task_number
+            })
+        
+        # Combine all events
+        all_events = projects_data + tasks_data + overdue_projects_data + overdue_tasks_data
+        
+        # Group events by date
+        events_by_date = {}
+        for event in all_events:
+            date_str = event['date']  # Already formatted as string
+            if date_str not in events_by_date:
+                events_by_date[date_str] = []
+            events_by_date[date_str].append(event)
+        
+        # Sort events within each date by priority and time
+        for date_str in events_by_date:
+            events_by_date[date_str].sort(key=lambda x: (
+                x.get('priority', 'medium'),
+                x.get('time', '17:00')
+            ))
+        
+        calendar_data = {
+            'events_by_date': events_by_date,
+            'summary': {
+                'upcoming_projects': len(projects_data),
+                'upcoming_tasks': len(tasks_data),
+                'overdue_projects': len(overdue_projects_data),
+                'overdue_tasks': len(overdue_tasks_data),
+                'total_events': len(all_events)
+            },
+            'date_range': {
+                'from': from_date.strftime('%Y-%m-%d') if hasattr(from_date, 'strftime') else str(from_date),
+                'to': to_date.strftime('%Y-%m-%d') if hasattr(to_date, 'strftime') else str(to_date)
+            }
+        }
+        
+        return Response({
+            'success': True,
+            'data': calendar_data
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        return Response({
+            'success': False,
+            'error': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([CanModifyCalendarData])
+def export_calendar_excel(request):
+    """
+    Export calendar data to Excel file
+    - Admin/Manager only: Can export calendar data
+    """
+    try:
+        # Get calendar data
+        from_date = request.GET.get('from_date', timezone.now().date())
+        to_date = request.GET.get('to_date', timezone.now().date() + timezone.timedelta(days=30))
+        
+        # Convert string dates to date objects if needed
+        if isinstance(from_date, str):
+            from_date = timezone.datetime.strptime(from_date, '%Y-%m-%d').date()
+        if isinstance(to_date, str):
+            to_date = timezone.datetime.strptime(to_date, '%Y-%m-%d').date()
+        
+        # Get projects and tasks in date range
+        projects = Project.objects.filter(
+            deadline__gte=from_date,
+            deadline__lte=to_date
+        ).order_by('deadline')
+        
+        tasks = Task.objects.filter(
+            due_date__date__gte=from_date,
+            due_date__date__lte=to_date
+        ).order_by('due_date')
+        
+        # Create Excel workbook
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Calendrier"
+        
+        # Headers
+        headers = [
+            'Type', 'Titre', 'Date d\'échéance', 'Statut', 'Priorité', 
+            'Responsable', 'Projet', 'Jours restants', 'Description'
+        ]
+        
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col, value=header)
+            cell.font = Font(bold=True)
+            cell.fill = PatternFill(start_color="CCCCCC", end_color="CCCCCC", fill_type="solid")
+        
+        row = 2
+        
+        # Add projects
+        for project in projects:
+            days_remaining = (project.deadline - timezone.now().date()).days
+            ws.cell(row=row, column=1, value="Projet")
+            ws.cell(row=row, column=2, value=project.name)
+            ws.cell(row=row, column=3, value=project.deadline.strftime('%Y-%m-%d'))
+            ws.cell(row=row, column=4, value=project.status)
+            ws.cell(row=row, column=5, value=project.priority)
+            ws.cell(row=row, column=6, value=project.manager.full_name if project.manager else 'Non assigné')
+            ws.cell(row=row, column=7, value=project.name)
+            ws.cell(row=row, column=8, value=days_remaining)
+            ws.cell(row=row, column=9, value=f'Échéance du projet {project.name}')
+            row += 1
+        
+        # Add tasks
+        for task in tasks:
+            days_remaining = (task.due_date.date() - timezone.now().date()).days
+            ws.cell(row=row, column=1, value="Tâche")
+            ws.cell(row=row, column=2, value=task.title)
+            ws.cell(row=row, column=3, value=task.due_date.date().strftime('%Y-%m-%d'))
+            ws.cell(row=row, column=4, value=task.status)
+            ws.cell(row=row, column=5, value=task.priority)
+            ws.cell(row=row, column=6, value=task.assignee.full_name if task.assignee else 'Non assigné')
+            ws.cell(row=row, column=7, value=task.project.name if task.project else 'Aucun projet')
+            ws.cell(row=row, column=8, value=days_remaining)
+            ws.cell(row=row, column=9, value=f'Échéance de la tâche {task.title}')
+            row += 1
+        
+        # Auto-adjust column widths
+        for column in ws.columns:
+            max_length = 0
+            column_letter = get_column_letter(column[0].column)
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = min(max_length + 2, 50)
+            ws.column_dimensions[column_letter].width = adjusted_width
+        
+        # Create response
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename="calendrier_{from_date}_{to_date}.xlsx"'
+        
+        wb.save(response)
+        return response
+        
+    except Exception as e:
+        return Response({
+            'success': False,
+            'error': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['GET'])

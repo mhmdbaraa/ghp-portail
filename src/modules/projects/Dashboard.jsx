@@ -6,26 +6,30 @@ import {
   Card,
   CardContent,
   Typography,
-  Paper,
   Avatar,
   Chip,
   IconButton,
   Button,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
   useTheme,
-  Divider,
   List,
   ListItem,
-  ListItemText,
   ListItemAvatar,
   LinearProgress,
-  Tooltip,
   Badge,
   Stack,
   Skeleton,
+  Fab,
+  SpeedDial,
+  SpeedDialAction,
+  SpeedDialIcon,
+  Alert,
+  AlertTitle,
+  Paper,
+  Divider,
+  Tooltip,
+  Fade,
+  Zoom,
+  Slide,
 } from '@mui/material';
 import {
   Work,
@@ -43,8 +47,52 @@ import {
   Event,
   MoreVert,
   Add,
+  Dashboard as DashboardIcon,
+  CalendarToday,
+  Assessment,
+  Settings,
+  Refresh,
+  Business,
+  Task,
+  Analytics,
+  Speed,
+  Star,
+  Notifications,
+  FilterList,
+  Search,
+  Download,
+  Share,
+  Edit,
+  Delete,
+  Visibility,
+  TrendingFlat,
+  Timeline,
+  PieChart,
+  BarChart,
+  ShowChart,
 } from '@mui/icons-material';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, Area, AreaChart } from 'recharts';
+import { 
+  LineChart, 
+  Line, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip as RechartsTooltip, 
+  ResponsiveContainer, 
+  BarChart as RechartsBarChart, 
+  Bar, 
+  PieChart as RechartsPieChart, 
+  Pie, 
+  Cell, 
+  Area, 
+  AreaChart,
+  Scatter,
+  ScatterChart,
+  RadialBarChart,
+  RadialBar,
+  ComposedChart,
+  Legend
+} from 'recharts';
 import djangoApiService from '../../shared/services/djangoApiService';
 import { useAuth } from '../../shared/contexts/AuthContext';
 
@@ -54,22 +102,37 @@ const Dashboard = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [speedDialOpen, setSpeedDialOpen] = useState(false);
+  const [selectedTimeframe, setSelectedTimeframe] = useState('30d');
 
   useEffect(() => {
     loadDashboardData();
-  }, []);
+  }, [selectedTimeframe]);
 
-  const loadDashboardData = async () => {
+  const loadDashboardData = async (isRefresh = false) => {
     try {
-      setLoading(true);
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+      
+      console.log('🔄 Chargement des données du dashboard...');
+      console.log('🔗 URL de l\'API:', 'http://localhost:8000/api/projects/dashboard/');
+      
       const response = await djangoApiService.getDashboard();
       
+      console.log('📊 Réponse de l\'API Dashboard:', response);
+      
       if (response.success) {
+        console.log('✅ Données du dashboard chargées avec succès:', response.data);
         setDashboardData(response.data);
       } else {
-        console.error('Erreur API Dashboard:', response.error);
-        // Set empty data structure to avoid crashes
+        console.error('❌ Erreur API Dashboard:', response.error);
+        console.log('🔄 Utilisation des données de fallback...');
         setDashboardData({
+          user: { full_name: user?.full_name || user?.username, role: 'user' },
           statistics: {
             projects: { total: 0, active: 0, completed: 0, planning: 0, completion_rate: 0 },
             tasks: { total: 0, completed: 0, in_progress: 0, not_started: 0, overdue: 0, completion_rate: 0 },
@@ -83,9 +146,10 @@ const Dashboard = () => {
         });
       }
     } catch (error) {
-      console.error('Erreur lors du chargement des données du tableau de bord:', error);
-      // Set empty data structure to avoid crashes
+      console.error('💥 Erreur lors du chargement des données du tableau de bord:', error);
+      console.log('🔄 Utilisation des données de fallback...');
       setDashboardData({
+        user: { full_name: user?.full_name || user?.username, role: 'user' },
         statistics: {
           projects: { total: 0, active: 0, completed: 0, planning: 0, completion_rate: 0 },
           tasks: { total: 0, completed: 0, in_progress: 0, not_started: 0, overdue: 0, completion_rate: 0 },
@@ -99,434 +163,432 @@ const Dashboard = () => {
       });
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
-  const StatCard = ({ title, value, subtitle, icon, color, trend, trendValue }) => (
-    <Card 
-      role="region"
-      aria-label={`${title}: ${value}`}
-      sx={{ 
-        height: '100%',
-        borderRadius: 4,
-        boxShadow: theme.palette.mode === 'dark' 
-          ? '0 8px 32px rgba(0,0,0,0.4)' 
-          : '0 8px 32px rgba(0,0,0,0.06)',
+  const handleRefresh = () => {
+    loadDashboardData(true);
+  };
+
+  // Composant de métrique compacte
+  const CompactMetricCard = ({ title, value, subtitle, icon, color, trend, trendValue, onClick, delay = 0 }) => (
+    <Fade in timeout={200 + delay}>
+      <Card 
+        onClick={onClick}
+        sx={{ 
+          height: '100%',
+          borderRadius: 2,
+          background: `linear-gradient(135deg, ${color}06, ${color}02)`,
+          border: `1px solid ${color}15`,
+          boxShadow: `0 4px 16px ${color}10`,
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          cursor: 'pointer',
+          position: 'relative',
+          overflow: 'hidden',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 3,
+            background: `linear-gradient(90deg, ${color}, ${color}80)`,
+          },
+          '&:hover': {
+            transform: 'translateY(-4px) scale(1.01)',
+            boxShadow: `0 8px 24px ${color}20`,
+            border: `1px solid ${color}30`,
+          }
+        }}
+      >
+        <CardContent sx={{ p: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+            <Box sx={{ 
+              width: 40, 
+              height: 40, 
+              borderRadius: 2, 
+              background: `linear-gradient(135deg, ${color}15, ${color}08)`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: `1px solid ${color}25`,
+              boxShadow: `0 4px 12px ${color}15`
+            }}>
+              {React.cloneElement(icon, { 
+                sx: { color, fontSize: 20 } 
+              })}
+            </Box>
+            {trend && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                {trend === 'up' ? (
+                  <TrendingUp sx={{ color: theme.palette.success.main, fontSize: 16 }} />
+                ) : (
+                  <TrendingDown sx={{ color: theme.palette.error.main, fontSize: 16 }} />
+                )}
+                <Typography variant="caption" sx={{ 
+                  color: trend === 'up' ? theme.palette.success.main : theme.palette.error.main,
+                  fontWeight: 600,
+                  fontSize: '0.7rem'
+                }}>
+                  {trendValue}
+                </Typography>
+              </Box>
+            )}
+          </Box>
+          <Typography variant="h4" sx={{ 
+            fontWeight: 700, 
+            mb: 0.5, 
+            color: theme.palette.text.primary,
+            fontSize: '1.8rem',
+            letterSpacing: '-0.01em',
+            lineHeight: 1.1
+          }}>
+            {value}
+          </Typography>
+          <Typography variant="body1" sx={{ 
+            color: theme.palette.text.primary, 
+            fontWeight: 600,
+            mb: 0.5,
+            fontSize: '0.9rem',
+            letterSpacing: '0.01em'
+          }}>
+            {title}
+          </Typography>
+          <Typography variant="caption" sx={{ 
+            color: theme.palette.text.secondary,
+            fontSize: '0.75rem',
+            fontWeight: 500,
+            opacity: 0.8
+          }}>
+            {subtitle}
+          </Typography>
+        </CardContent>
+      </Card>
+    </Fade>
+  );
+
+  // Composant de projet compact
+  const CompactProjectCard = ({ project, index }) => (
+    <Slide direction="up" in timeout={200 + (index * 50)}>
+      <Card sx={{ 
+        mb: 2,
+        borderRadius: 2,
+        background: `linear-gradient(135deg, ${theme.palette.background.paper}, ${theme.palette.background.default})`,
         border: `1px solid ${theme.palette.divider}`,
-        backgroundColor: theme.palette.background.paper,
-        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+        boxShadow: theme.palette.mode === 'dark' 
+          ? '0 4px 16px rgba(0,0,0,0.3)' 
+          : '0 4px 16px rgba(0,0,0,0.06)',
+        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
         position: 'relative',
         overflow: 'hidden',
+        cursor: 'pointer',
         '&::before': {
           content: '""',
           position: 'absolute',
           top: 0,
           left: 0,
           right: 0,
-          height: 4,
-          background: `linear-gradient(90deg, ${color}, ${color}80)`,
+          height: 2,
+          background: project.status === 'completed' 
+            ? `linear-gradient(90deg, ${theme.palette.success.main}, ${theme.palette.success.light})`
+            : project.status === 'in_progress' 
+              ? `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.primary.light})`
+              : project.status === 'planning'
+                ? `linear-gradient(90deg, ${theme.palette.warning.main}, ${theme.palette.warning.light})`
+                : `linear-gradient(90deg, ${theme.palette.grey[500]}, ${theme.palette.grey[400]})`,
         },
         '&:hover': {
-          transform: 'translateY(-8px)',
+          transform: 'translateY(-2px)',
           boxShadow: theme.palette.mode === 'dark' 
-            ? '0 16px 48px rgba(0,0,0,0.5)' 
-            : '0 16px 48px rgba(0,0,0,0.15)',
+            ? '0 8px 24px rgba(0,0,0,0.4)' 
+            : '0 8px 24px rgba(0,0,0,0.12)',
         }
-      }}
-    >
-      <CardContent sx={{ p: { xs: 3, sm: 4 } }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-          <Box sx={{ 
-            width: { xs: 56, sm: 64 }, 
-            height: { xs: 56, sm: 64 }, 
-            borderRadius: 4, 
-            background: `linear-gradient(135deg, ${color}20, ${color}10)`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            border: `2px solid ${color}25`,
-            boxShadow: `0 4px 16px ${color}20`
-          }}>
-            {React.cloneElement(icon, { 
-              sx: { color, fontSize: { xs: 28, sm: 32 } } 
-            })}
+      }}>
+        <CardContent sx={{ p: 2 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+            <Box sx={{ flex: 1 }}>
+              <Typography variant="subtitle1" sx={{ 
+                fontWeight: 600, 
+                color: theme.palette.text.primary,
+                mb: 0.5,
+                fontSize: '1rem',
+                letterSpacing: '-0.01em',
+                lineHeight: 1.3,
+                display: '-webkit-box',
+                WebkitLineClamp: 1,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden'
+              }}>
+                {project.name}
+              </Typography>
+              <Typography variant="body2" sx={{ 
+                color: theme.palette.text.secondary,
+                mb: 1.5,
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+                fontSize: '0.8rem',
+                lineHeight: 1.4,
+                opacity: 0.9
+              }}>
+                {project.description}
+              </Typography>
+            </Box>
+            <IconButton 
+              size="small"
+              sx={{
+                color: theme.palette.text.secondary,
+                '&:hover': {
+                  backgroundColor: theme.palette.action.hover,
+                  color: theme.palette.text.primary
+                }
+              }}
+            >
+              <MoreVert sx={{ fontSize: 16 }} />
+            </IconButton>
           </Box>
-          {trend && (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              {trend === 'up' ? (
-                <TrendingUp sx={{ color: theme.palette.success.main, fontSize: 18 }} />
-              ) : (
-                <TrendingDown sx={{ color: theme.palette.error.main, fontSize: 18 }} />
-              )}
+          
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, flexWrap: 'wrap' }}>
+            <Chip 
+              label={project.status} 
+              size="small"
+              color={
+                project.status === 'completed' ? 'success' :
+                project.status === 'in_progress' ? 'primary' :
+                project.status === 'planning' ? 'warning' : 'default'
+              }
+              sx={{ 
+                fontSize: '0.7rem', 
+                height: 24,
+                fontWeight: 600,
+                textTransform: 'capitalize'
+              }}
+            />
+            <Chip 
+              label={project.priority} 
+              size="small"
+              variant="outlined"
+              color={
+                project.priority === 'high' ? 'error' :
+                project.priority === 'medium' ? 'warning' : 'default'
+              }
+              sx={{ 
+                fontSize: '0.7rem', 
+                height: 24,
+                fontWeight: 600,
+                textTransform: 'capitalize'
+              }}
+            />
+            {project.tasks_count > 0 && (
+              <Chip 
+                label={`${project.completed_tasks_count}/${project.tasks_count}`}
+                size="small"
+                variant="outlined"
+                sx={{ 
+                  fontSize: '0.65rem', 
+                  height: 22,
+                  fontWeight: 500,
+                  color: theme.palette.text.secondary,
+                  borderColor: theme.palette.divider
+                }}
+              />
+            )}
+          </Box>
+
+          <Box sx={{ mb: 2 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
               <Typography variant="caption" sx={{ 
-                color: trend === 'up' ? theme.palette.success.main : theme.palette.error.main,
+                color: theme.palette.text.secondary,
                 fontWeight: 600,
                 fontSize: '0.75rem'
               }}>
-                {trendValue}
-              </Typography>
-            </Box>
-          )}
-        </Box>
-        <Typography variant="h3" sx={{ 
-          fontWeight: 800, 
-          mb: 1, 
-          color: theme.palette.text.primary,
-          fontSize: { xs: '2rem', sm: '2.5rem' },
-          letterSpacing: '-0.02em',
-          lineHeight: 1.1
-        }}>
-          {value}
-        </Typography>
-        <Typography variant="h6" sx={{ 
-          color: theme.palette.text.primary, 
-          fontWeight: 600,
-          mb: 1,
-          fontSize: { xs: '0.875rem', sm: '1rem' },
-          letterSpacing: '0.01em'
-        }}>
-          {title}
-        </Typography>
-        <Typography variant="body2" sx={{ 
-          color: theme.palette.text.secondary,
-          fontSize: { xs: '0.75rem', sm: '0.875rem' },
-          fontWeight: 500,
-          opacity: 0.8
-        }}>
-          {subtitle}
-        </Typography>
-      </CardContent>
-    </Card>
-  );
-
-  const ProjectCard = ({ project }) => (
-    <Card sx={{ 
-      mb: 3,
-      borderRadius: 4,
-      boxShadow: theme.palette.mode === 'dark' 
-        ? '0 4px 20px rgba(0,0,0,0.3)' 
-        : '0 4px 20px rgba(0,0,0,0.06)',
-      border: `1px solid ${theme.palette.divider}`,
-      backgroundColor: theme.palette.background.paper,
-      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-      position: 'relative',
-      overflow: 'hidden',
-      '&::before': {
-        content: '""',
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        height: 3,
-        background: project.status === 'completed' 
-          ? `linear-gradient(90deg, ${theme.palette.success.main}, ${theme.palette.success.main}80)`
-          : project.status === 'in_progress' 
-            ? `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.primary.main}80)`
-            : project.status === 'planning'
-              ? `linear-gradient(90deg, ${theme.palette.warning.main}, ${theme.palette.warning.main}80)`
-              : `linear-gradient(90deg, ${theme.palette.grey[500]}, ${theme.palette.grey[500]}80)`,
-      },
-      '&:hover': {
-        transform: 'translateY(-4px)',
-        boxShadow: theme.palette.mode === 'dark' 
-          ? '0 8px 32px rgba(0,0,0,0.4)' 
-          : '0 8px 32px rgba(0,0,0,0.12)',
-      }
-    }}>
-      <CardContent sx={{ p: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
-          <Box sx={{ flex: 1 }}>
-            <Typography variant="h6" sx={{ 
-              fontWeight: 700, 
-              color: theme.palette.text.primary,
-              mb: 1,
-              fontSize: { xs: '1rem', sm: '1.1rem' },
-              letterSpacing: '-0.01em',
-              lineHeight: 1.3
-            }}>
-              {project.name}
-            </Typography>
-            <Typography variant="body2" sx={{ 
-              color: theme.palette.text.secondary,
-              mb: 2,
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden',
-              fontSize: { xs: '0.8rem', sm: '0.875rem' },
-              lineHeight: 1.4,
-              opacity: 0.9
-            }}>
-              {project.description}
-            </Typography>
-          </Box>
-          <IconButton 
-            size="small"
-            sx={{
-              color: theme.palette.text.secondary,
-              '&:hover': {
-                backgroundColor: theme.palette.action.hover,
-                color: theme.palette.text.primary
-              }
-            }}
-          >
-            <MoreVert sx={{ fontSize: 20 }} />
-          </IconButton>
-        </Box>
-        
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3, flexWrap: 'wrap' }}>
-          <Chip 
-            label={project.status} 
-            size="small"
-            color={
-              project.status === 'completed' ? 'success' :
-              project.status === 'in_progress' ? 'primary' :
-              project.status === 'planning' ? 'warning' : 'default'
-            }
-            sx={{ 
-              fontSize: '0.75rem', 
-              height: 28,
-              fontWeight: 600,
-              textTransform: 'capitalize'
-            }}
-          />
-          <Chip 
-            label={project.priority} 
-            size="small"
-            variant="outlined"
-            color={
-              project.priority === 'high' ? 'error' :
-              project.priority === 'medium' ? 'warning' : 'default'
-            }
-            sx={{ 
-              fontSize: '0.75rem', 
-              height: 28,
-              fontWeight: 600,
-              textTransform: 'capitalize'
-            }}
-          />
-          {project.tasks_count > 0 && (
-            <Chip 
-              label={`${project.completed_tasks_count}/${project.tasks_count} tâches`}
-              size="small"
-              variant="outlined"
-              sx={{ 
-                fontSize: '0.7rem', 
-                height: 26,
-                fontWeight: 500,
-                color: theme.palette.text.secondary,
-                borderColor: theme.palette.divider
-              }}
-            />
-          )}
-        </Box>
-
-        <Box sx={{ mb: 3 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-            <Typography variant="body2" sx={{ 
-              color: theme.palette.text.secondary,
-              fontWeight: 600,
-              fontSize: '0.8rem'
-            }}>
-              Progression
-            </Typography>
-            <Typography variant="body2" sx={{ 
-              color: theme.palette.text.primary,
-              fontWeight: 700,
-              fontSize: '0.9rem'
-            }}>
-              {project.progress}%
-            </Typography>
-          </Box>
-          <LinearProgress 
-            variant="determinate" 
-            value={project.progress} 
-            sx={{ 
-              height: 8, 
-              borderRadius: 4,
-              backgroundColor: theme.palette.action.hover,
-              '& .MuiLinearProgress-bar': {
-                borderRadius: 4,
-                background: project.status === 'completed' 
-                  ? `linear-gradient(90deg, ${theme.palette.success.main}, ${theme.palette.success.light})`
-                  : project.status === 'in_progress' 
-                    ? `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.primary.light})`
-                    : project.status === 'planning'
-                      ? `linear-gradient(90deg, ${theme.palette.warning.main}, ${theme.palette.warning.light})`
-                      : `linear-gradient(90deg, ${theme.palette.grey[500]}, ${theme.palette.grey[400]})`,
-              }
-            }}
-          />
-        </Box>
-
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Avatar sx={{ 
-              width: 32, 
-              height: 32, 
-              fontSize: '0.8rem',
-              fontWeight: 600,
-              backgroundColor: theme.palette.primary.main,
-              color: theme.palette.primary.contrastText
-            }}>
-              {project.manager_name?.charAt(0)?.toUpperCase()}
-            </Avatar>
-            <Box>
-              <Typography variant="body2" sx={{ 
-                color: theme.palette.text.primary,
-                fontWeight: 600,
-                fontSize: '0.8rem',
-                lineHeight: 1.2
-              }}>
-                {project.manager_name}
+                Progression
               </Typography>
               <Typography variant="caption" sx={{ 
-                color: theme.palette.text.secondary,
-                fontSize: '0.7rem'
+                color: theme.palette.text.primary,
+                fontWeight: 700,
+                fontSize: '0.8rem'
               }}>
-                Chef de projet
+                {project.progress}%
               </Typography>
             </Box>
+            <LinearProgress 
+              variant="determinate" 
+              value={project.progress} 
+              sx={{ 
+                height: 6, 
+                borderRadius: 3,
+                backgroundColor: theme.palette.action.hover,
+                '& .MuiLinearProgress-bar': {
+                  borderRadius: 3,
+                  background: project.status === 'completed' 
+                    ? `linear-gradient(90deg, ${theme.palette.success.main}, ${theme.palette.success.light})`
+                    : project.status === 'in_progress' 
+                      ? `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.primary.light})`
+                      : project.status === 'planning'
+                        ? `linear-gradient(90deg, ${theme.palette.warning.main}, ${theme.palette.warning.light})`
+                        : `linear-gradient(90deg, ${theme.palette.grey[500]}, ${theme.palette.grey[400]})`,
+                }
+              }}
+            />
           </Box>
-          <Box sx={{ textAlign: 'right' }}>
-            <Typography variant="caption" sx={{ 
-              color: theme.palette.text.secondary,
-              fontSize: '0.7rem',
-              display: 'block'
-            }}>
-              Créé le
-            </Typography>
-            <Typography variant="caption" sx={{ 
-              color: theme.palette.text.primary,
-              fontWeight: 600,
-              fontSize: '0.75rem'
-            }}>
-              {new Date(project.created_at).toLocaleDateString('fr-FR')}
-            </Typography>
-            {project.budget > 0 && (
-              <>
+
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Avatar sx={{ 
+                width: 28, 
+                height: 28, 
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                backgroundColor: theme.palette.primary.main,
+                color: theme.palette.primary.contrastText
+              }}>
+                {project.manager_name?.charAt(0)?.toUpperCase()}
+              </Avatar>
+              <Box>
                 <Typography variant="caption" sx={{ 
-                  color: theme.palette.text.secondary,
-                  fontSize: '0.7rem',
-                  display: 'block',
-                  mt: 0.5
+                  color: theme.palette.text.primary,
+                  fontWeight: 600,
+                  fontSize: '0.8rem',
+                  lineHeight: 1.2
                 }}>
-                  Budget
+                  {project.manager_name}
                 </Typography>
+              </Box>
+            </Box>
+            <Box sx={{ textAlign: 'right' }}>
+              <Typography variant="caption" sx={{ 
+                color: theme.palette.text.secondary,
+                fontSize: '0.7rem',
+                display: 'block'
+              }}>
+                {new Date(project.created_at).toLocaleDateString('fr-FR')}
+              </Typography>
+              {project.budget > 0 && (
                 <Typography variant="caption" sx={{ 
                   color: theme.palette.success.main,
                   fontWeight: 600,
-                  fontSize: '0.75rem'
+                  fontSize: '0.7rem'
                 }}>
-                  {project.budget.toLocaleString('fr-FR')} €
+                  {project.budget.toLocaleString('fr-FR')} DZD
                 </Typography>
-              </>
-            )}
+              )}
+            </Box>
           </Box>
-        </Box>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </Slide>
   );
 
-  const TaskItem = ({ task }) => (
-    <ListItem sx={{ 
-      px: 0, 
-      py: 1.5,
-      borderRadius: 2,
-      mb: 1,
-      backgroundColor: theme.palette.background.default,
-      border: `1px solid ${theme.palette.divider}`,
-      transition: 'all 0.2s ease',
-      '&:hover': {
-        backgroundColor: theme.palette.action.hover,
-        transform: 'translateX(4px)',
-      }
-    }}>
-      <ListItemAvatar>
-        <Avatar sx={{ 
-          width: 40, 
-          height: 40, 
-          backgroundColor: 
-            task.status === 'completed' ? theme.palette.success.main :
-            task.status === 'in_progress' ? theme.palette.primary.main :
-            task.status === 'overdue' ? theme.palette.error.main :
-            theme.palette.grey[500],
-          fontSize: '0.8rem',
-          fontWeight: 600
-        }}>
-          {task.status === 'completed' ? <CheckCircle /> :
-           task.status === 'in_progress' ? <Timer /> :
-           task.status === 'overdue' ? <Warning /> : <Schedule />}
-        </Avatar>
-      </ListItemAvatar>
-      <ListItemText
-        primary={
+  // Composant de tâche compacte
+  const CompactTaskItem = ({ task, index }) => (
+    <Zoom in timeout={150 + (index * 30)}>
+      <ListItem sx={{ 
+        px: 0, 
+        py: 1,
+        borderRadius: 1.5,
+        mb: 0.5,
+        background: `linear-gradient(135deg, ${theme.palette.background.default}, ${theme.palette.background.paper})`,
+        border: `1px solid ${theme.palette.divider}`,
+        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+        '&:hover': {
+          backgroundColor: theme.palette.action.hover,
+          transform: 'translateX(4px)',
+          boxShadow: theme.palette.mode === 'dark' 
+            ? '0 2px 8px rgba(0,0,0,0.3)' 
+            : '0 2px 8px rgba(0,0,0,0.1)',
+        }
+      }}>
+        <ListItemAvatar>
+          <Avatar sx={{ 
+            width: 32, 
+            height: 32, 
+            backgroundColor: 
+              task.status === 'completed' ? theme.palette.success.main :
+              task.status === 'in_progress' ? theme.palette.primary.main :
+              task.status === 'overdue' ? theme.palette.error.main :
+              theme.palette.grey[500],
+            fontSize: '0.8rem',
+            fontWeight: 600
+          }}>
+            {task.status === 'completed' ? <CheckCircle /> :
+             task.status === 'in_progress' ? <Timer /> :
+             task.status === 'overdue' ? <Warning /> : <Schedule />}
+          </Avatar>
+        </ListItemAvatar>
+        <Box sx={{ flex: 1, ml: 1.5 }}>
           <Typography variant="body2" sx={{ 
             fontWeight: 600, 
             color: theme.palette.text.primary,
             lineHeight: 1.3,
-            mb: 0.5
+            mb: 0.5,
+            fontSize: '0.85rem',
+            display: '-webkit-box',
+            WebkitLineClamp: 1,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden'
           }}>
             {task.title}
           </Typography>
-        }
-        secondary={
-          <Box>
-            <Typography variant="caption" sx={{ 
-              color: theme.palette.text.secondary, 
-              display: 'block',
-              fontWeight: 500,
-              mb: 0.5
-            }}>
-              {task.project_name}
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Chip 
-                label={task.status} 
-                size="small"
-                color={
-                  task.status === 'completed' ? 'success' :
-                  task.status === 'in_progress' ? 'primary' :
-                  task.status === 'overdue' ? 'error' : 'default'
-                }
-                sx={{ fontSize: '0.65rem', height: 20 }}
-              />
-              {task.due_date && (
-                <Typography variant="caption" sx={{ 
-                  color: theme.palette.text.disabled,
-                  fontSize: '0.7rem'
-                }}>
-                  {new Date(task.due_date).toLocaleDateString('fr-FR')}
-                </Typography>
-              )}
-            </Box>
+          <Typography variant="caption" sx={{ 
+            color: theme.palette.text.secondary, 
+            fontWeight: 500,
+            mb: 0.5,
+            fontSize: '0.75rem',
+            display: 'block'
+          }}>
+            {task.project_name}
+          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <Chip 
+              label={task.status} 
+              size="small"
+              color={
+                task.status === 'completed' ? 'success' :
+                task.status === 'in_progress' ? 'primary' :
+                task.status === 'overdue' ? 'error' : 'default'
+              }
+              sx={{ fontSize: '0.65rem', height: 18 }}
+            />
+            {task.due_date && (
+              <Typography variant="caption" sx={{ 
+                color: theme.palette.text.disabled,
+                fontSize: '0.7rem'
+              }}>
+                {new Date(task.due_date).toLocaleDateString('fr-FR')}
+              </Typography>
+            )}
           </Box>
-        }
-      />
-    </ListItem>
+        </Box>
+      </ListItem>
+    </Zoom>
   );
 
-  const SkeletonCard = () => (
-    <Card sx={{ 
-      height: '100%',
-      borderRadius: 3,
-      boxShadow: theme.palette.mode === 'dark' 
-        ? '0 4px 20px rgba(0,0,0,0.3)' 
-        : '0 4px 20px rgba(0,0,0,0.08)',
-      border: `1px solid ${theme.palette.divider}`,
-      backgroundColor: theme.palette.background.paper,
-    }}>
-      <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-          <Skeleton variant="circular" width={56} height={56} />
-          <Skeleton variant="text" width={60} height={20} />
-        </Box>
-        <Skeleton variant="text" width="80%" height={40} sx={{ mb: 1 }} />
-        <Skeleton variant="text" width="60%" height={20} sx={{ mb: 0.5 }} />
-        <Skeleton variant="text" width="40%" height={16} />
-      </CardContent>
-    </Card>
-  );
+  // Actions pour le SpeedDial
+  const speedDialActions = [
+    {
+      icon: <Add />,
+      name: 'Nouveau Projet',
+      onClick: () => navigate('/projects/new')
+    },
+    {
+      icon: <CalendarToday />,
+      name: 'Calendrier',
+      onClick: () => navigate('/calendar')
+    },
+    {
+      icon: <Assessment />,
+      name: 'Rapports',
+      onClick: () => navigate('/reports')
+    },
+    {
+      icon: <Settings />,
+      name: 'Paramètres',
+      onClick: () => navigate('/settings')
+    }
+  ];
 
   if (loading) {
     return (
@@ -536,57 +598,45 @@ const Dashboard = () => {
         minHeight: '100vh',
         maxWidth: '100%'
       }}>
-        {/* Welcome Header Skeleton */}
-        <Box sx={{ mb: { xs: 3, sm: 4 } }}>
-          <Skeleton variant="text" width="60%" height={40} sx={{ mb: 1 }} />
+        {/* Header Skeleton */}
+        <Box sx={{ mb: 4 }}>
+          <Skeleton variant="text" width="60%" height={48} sx={{ mb: 1 }} />
           <Skeleton variant="text" width="40%" height={24} />
         </Box>
 
         {/* Statistics Cards Skeleton */}
-        <Grid container spacing={2} sx={{ mb: 4 }}>
+        <Grid container spacing={3} sx={{ mb: 4 }}>
           {[1, 2, 3, 4].map((item) => (
             <Grid item xs={12} sm={6} lg={3} key={item}>
-              <SkeletonCard />
+              <Card sx={{ height: 200, borderRadius: 3 }}>
+                <CardContent sx={{ p: 3 }}>
+                  <Skeleton variant="circular" width={56} height={56} sx={{ mb: 3 }} />
+                  <Skeleton variant="text" width="80%" height={40} sx={{ mb: 1 }} />
+                  <Skeleton variant="text" width="60%" height={24} sx={{ mb: 0.5 }} />
+                  <Skeleton variant="text" width="40%" height={16} />
+                </CardContent>
+              </Card>
             </Grid>
           ))}
         </Grid>
 
         <Grid container spacing={3}>
-          {/* Main Content Skeleton */}
           <Grid item xs={12} lg={8}>
-            <Card sx={{ 
-              borderRadius: 3,
-              boxShadow: theme.palette.mode === 'dark' 
-                ? '0 4px 20px rgba(0,0,0,0.3)' 
-                : '0 4px 20px rgba(0,0,0,0.08)',
-              border: `1px solid ${theme.palette.divider}`,
-              backgroundColor: theme.palette.background.paper,
-            }}>
+            <Card sx={{ borderRadius: 3, mb: 3 }}>
               <CardContent sx={{ p: 3 }}>
                 <Skeleton variant="text" width="40%" height={32} sx={{ mb: 3 }} />
                 <Skeleton variant="rectangular" width="100%" height={300} />
               </CardContent>
             </Card>
           </Grid>
-
-          {/* Sidebar Skeleton */}
           <Grid item xs={12} lg={4}>
             <Stack spacing={3}>
               {[1, 2].map((item) => (
-                <Card key={item} sx={{ 
-                  borderRadius: 3,
-                  boxShadow: theme.palette.mode === 'dark' 
-                    ? '0 4px 20px rgba(0,0,0,0.3)' 
-                    : '0 4px 20px rgba(0,0,0,0.08)',
-                  border: `1px solid ${theme.palette.divider}`,
-                  backgroundColor: theme.palette.background.paper,
-                }}>
+                <Card key={item} sx={{ borderRadius: 3 }}>
                   <CardContent sx={{ p: 3 }}>
                     <Skeleton variant="text" width="50%" height={24} sx={{ mb: 2 }} />
                     {[1, 2, 3].map((task) => (
-                      <Box key={task} sx={{ mb: 2 }}>
-                        <Skeleton variant="rectangular" width="100%" height={60} />
-                      </Box>
+                      <Skeleton key={task} variant="rectangular" width="100%" height={60} sx={{ mb: 1 }} />
                     ))}
                   </CardContent>
                 </Card>
@@ -606,29 +656,28 @@ const Dashboard = () => {
         alignItems: 'center', 
         height: '100vh',
         flexDirection: 'column',
-        gap: 2
+        gap: 3
       }}>
-        <Error sx={{ fontSize: 48, color: theme.palette.error.main }} />
-        <Typography variant="h6" sx={{ color: theme.palette.text.secondary }}>
+        <Error sx={{ fontSize: 64, color: theme.palette.error.main }} />
+        <Typography variant="h4" sx={{ color: theme.palette.text.secondary, fontWeight: 600 }}>
           Erreur lors du chargement des données
         </Typography>
-        <Button variant="contained" onClick={loadDashboardData}>
+        <Button variant="contained" size="large" onClick={loadDashboardData} startIcon={<Refresh />}>
           Réessayer
         </Button>
       </Box>
     );
   }
 
-  const { statistics, recent_projects, upcoming_tasks, my_tasks } = dashboardData;
+  const { user: userData, statistics, recent_projects, upcoming_tasks, my_tasks } = dashboardData;
 
-  // Chart data for project status distribution
+  // Données pour les graphiques
   const projectStatusData = [
     { name: 'En cours', value: statistics.projects.active, color: theme.palette.primary.main },
     { name: 'Terminés', value: statistics.projects.completed, color: theme.palette.success.main },
-    { name: 'Planification', value: statistics.projects.planning, color: theme.palette.warning.main },
+    { name: 'En attente', value: statistics.projects.planning, color: theme.palette.warning.main },
   ];
 
-  // Chart data for task status distribution
   const taskStatusData = [
     { name: 'Terminées', value: statistics.tasks.completed, color: theme.palette.success.main },
     { name: 'En cours', value: statistics.tasks.in_progress, color: theme.palette.primary.main },
@@ -639,7 +688,7 @@ const Dashboard = () => {
   return (
     <Box 
       role="main"
-      aria-label="Tableau de bord principal"
+      aria-label="Tableau de bord professionnel"
       sx={{ 
         p: { xs: 2, sm: 3 }, 
         backgroundColor: theme.palette.background.default, 
@@ -647,15 +696,15 @@ const Dashboard = () => {
         maxWidth: '100%'
       }}
     >
-      {/* Welcome Header */}
+      {/* Header Compact */}
       <Box sx={{ 
-        mb: { xs: 4, sm: 5 },
-        p: { xs: 3, sm: 4 },
-        borderRadius: 4,
+        mb: 3,
+        p: 3,
+        borderRadius: 3,
         background: theme.palette.mode === 'dark' 
-          ? 'linear-gradient(135deg, rgba(25, 118, 210, 0.1), rgba(25, 118, 210, 0.05))'
-          : 'linear-gradient(135deg, rgba(25, 118, 210, 0.08), rgba(25, 118, 210, 0.03))',
-        border: `1px solid ${theme.palette.primary.main}20`,
+          ? 'linear-gradient(135deg, rgba(25, 118, 210, 0.08), rgba(25, 118, 210, 0.04))'
+          : 'linear-gradient(135deg, rgba(25, 118, 210, 0.06), rgba(25, 118, 210, 0.02))',
+        border: `1px solid ${theme.palette.primary.main}15`,
         position: 'relative',
         overflow: 'hidden',
         '&::before': {
@@ -668,30 +717,94 @@ const Dashboard = () => {
           background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
         }
       }}>
-        <Typography variant="h3" sx={{ 
-          fontWeight: 800, 
-          color: theme.palette.text.primary,
-          mb: 1.5,
-          fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
-          letterSpacing: '-0.02em',
-          lineHeight: 1.1
-        }}>
-          Bonjour, {user?.full_name || user?.username} 👋
-        </Typography>
-        <Typography variant="h6" sx={{ 
-          color: theme.palette.text.secondary,
-          fontSize: { xs: '1rem', sm: '1.25rem' },
-          fontWeight: 500,
-          opacity: 0.9
-        }}>
-          Voici un aperçu de vos projets et tâches
-        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+          <Box>
+            <Typography variant="h4" sx={{ 
+              fontWeight: 700, 
+              color: theme.palette.text.primary,
+              mb: 0.5,
+              fontSize: { xs: '1.5rem', sm: '2rem' },
+              letterSpacing: '-0.01em',
+              lineHeight: 1.2
+            }}>
+              Bonjour, {userData?.full_name || userData?.username} 👋
+            </Typography>
+            <Typography variant="body1" sx={{ 
+              color: theme.palette.text.secondary,
+              fontSize: '0.9rem',
+              fontWeight: 500,
+              opacity: 0.8
+            }}>
+              Vue d'ensemble de vos projets et tâches
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+            <Button
+              variant="outlined"
+              size="medium"
+              startIcon={<Refresh />}
+              onClick={handleRefresh}
+              disabled={refreshing}
+              sx={{ 
+                borderRadius: 2,
+                textTransform: 'none',
+                fontWeight: 600,
+                fontSize: '0.85rem'
+              }}
+            >
+              {refreshing ? 'Actualisation...' : 'Actualiser'}
+            </Button>
+            <Button
+              variant="contained"
+              size="medium"
+              onClick={async () => {
+                console.log('🧪 Test de connexion Django...');
+                try {
+                  const response = await djangoApiService.getDashboard();
+                  console.log('✅ Test réussi:', response);
+                  alert(`Connexion Django: ${response.success ? 'SUCCÈS' : 'ÉCHEC'}\nMessage: ${response.message}`);
+                } catch (error) {
+                  console.error('❌ Test échoué:', error);
+                  alert(`Connexion Django: ÉCHEC\nErreur: ${error.message}`);
+                }
+              }}
+              sx={{ 
+                borderRadius: 2,
+                textTransform: 'none',
+                fontWeight: 600,
+                fontSize: '0.85rem',
+                backgroundColor: theme.palette.success.main,
+                '&:hover': {
+                  backgroundColor: theme.palette.success.dark
+                }
+              }}
+            >
+              Test Django
+            </Button>
+          </Box>
+        </Box>
       </Box>
 
-      {/* Main Statistics Cards */}
-      <Grid container spacing={3} sx={{ mb: 5 }}>
+      {/* Alertes importantes */}
+      {statistics.tasks.overdue > 0 && (
+        <Alert 
+          severity="warning" 
+          sx={{ mb: 4, borderRadius: 3 }}
+          action={
+            <Button color="inherit" size="large" onClick={() => navigate('/tasks?status=overdue')}>
+              Voir les tâches
+            </Button>
+          }
+        >
+          <AlertTitle sx={{ fontWeight: 700 }}>Attention requise</AlertTitle>
+          Vous avez {statistics.tasks.overdue} tâche(s) en retard nécessitant votre attention immédiate.
+        </Alert>
+      )}
+
+      {/* Métriques Compactes */}
+      <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={6} lg={3}>
-          <StatCard
+          <CompactMetricCard
             title="Projets Actifs"
             value={statistics.projects.active}
             subtitle={`${statistics.projects.total} projets au total`}
@@ -699,10 +812,12 @@ const Dashboard = () => {
             color={theme.palette.primary.main}
             trend="up"
             trendValue={`${statistics.projects.completion_rate}%`}
+            onClick={() => navigate('/projects')}
+            delay={0}
           />
         </Grid>
         <Grid item xs={12} sm={6} lg={3}>
-          <StatCard
+          <CompactMetricCard
             title="Tâches En Cours"
             value={statistics.tasks.in_progress}
             subtitle={`${statistics.tasks.total} tâches au total`}
@@ -710,21 +825,25 @@ const Dashboard = () => {
             color={theme.palette.info.main}
             trend="up"
             trendValue={`${statistics.tasks.completion_rate}%`}
+            onClick={() => navigate('/tasks')}
+            delay={50}
           />
         </Grid>
         <Grid item xs={12} sm={6} lg={3}>
-          <StatCard
+          <CompactMetricCard
             title="Tâches En Retard"
             value={statistics.tasks.overdue}
-            subtitle="Nécessitent une attention"
+            subtitle="Nécessitent attention"
             icon={<Warning />}
             color={theme.palette.error.main}
             trend={statistics.tasks.overdue > 0 ? "down" : "up"}
             trendValue={statistics.tasks.overdue > 0 ? "Attention" : "Parfait"}
+            onClick={() => navigate('/tasks?status=overdue')}
+            delay={100}
           />
         </Grid>
         <Grid item xs={12} sm={6} lg={3}>
-          <StatCard
+          <CompactMetricCard
             title="Efficacité Temps"
             value={`${statistics.time_tracking.efficiency}%`}
             subtitle="Temps estimé vs réel"
@@ -732,51 +851,53 @@ const Dashboard = () => {
             color={theme.palette.success.main}
             trend={statistics.time_tracking.efficiency > 100 ? "up" : "down"}
             trendValue={statistics.time_tracking.efficiency > 100 ? "Excellent" : "À améliorer"}
+            onClick={() => navigate('/reports')}
+            delay={150}
           />
         </Grid>
       </Grid>
 
       <Grid container spacing={4}>
-        {/* Left Column - Charts and Recent Projects */}
+        {/* Colonne Principale */}
         <Grid item xs={12} lg={8}>
-          {/* Charts Row */}
-          <Grid container spacing={3} sx={{ mb: 4 }}>
+          {/* Graphiques Compacts */}
+          <Grid container spacing={2} sx={{ mb: 3 }}>
             <Grid item xs={12} md={6}>
               <Card sx={{ 
-                borderRadius: 4,
+                borderRadius: 3,
                 boxShadow: theme.palette.mode === 'dark' 
-                  ? '0 8px 32px rgba(0,0,0,0.4)' 
-                  : '0 8px 32px rgba(0,0,0,0.06)',
+                  ? '0 4px 16px rgba(0,0,0,0.3)' 
+                  : '0 4px 16px rgba(0,0,0,0.06)',
                 border: `1px solid ${theme.palette.divider}`,
                 backgroundColor: theme.palette.background.paper,
-                transition: 'all 0.3s ease',
+                transition: 'all 0.2s ease',
                 '&:hover': {
                   transform: 'translateY(-2px)',
                   boxShadow: theme.palette.mode === 'dark' 
-                    ? '0 12px 40px rgba(0,0,0,0.5)' 
-                    : '0 12px 40px rgba(0,0,0,0.1)',
+                    ? '0 8px 24px rgba(0,0,0,0.4)' 
+                    : '0 8px 24px rgba(0,0,0,0.1)',
                 }
               }}>
-                <CardContent sx={{ p: 4 }}>
-                  <Typography variant="h5" sx={{ 
-                    fontWeight: 700, 
+                <CardContent sx={{ p: 2.5 }}>
+                  <Typography variant="h6" sx={{ 
+                    fontWeight: 600, 
                     color: theme.palette.text.primary,
-                    mb: 4,
-                    fontSize: { xs: '1.1rem', sm: '1.25rem' },
+                    mb: 2,
+                    fontSize: '1.1rem',
                     letterSpacing: '-0.01em'
                   }}>
                     Répartition des Projets
                   </Typography>
-                  <Box sx={{ height: 250 }}>
+                  <Box sx={{ height: 200 }}>
                     <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
+                      <RechartsPieChart>
                         <Pie
                           data={projectStatusData}
                           cx="50%"
                           cy="50%"
-                          innerRadius={60}
-                          outerRadius={100}
-                          paddingAngle={5}
+                          innerRadius={40}
+                          outerRadius={80}
+                          paddingAngle={3}
                           dataKey="value"
                         >
                           {projectStatusData.map((entry, index) => (
@@ -787,11 +908,13 @@ const Dashboard = () => {
                           contentStyle={{
                             backgroundColor: theme.palette.background.paper,
                             border: `1px solid ${theme.palette.divider}`,
-                            borderRadius: 8,
-                            color: theme.palette.text.primary
+                            borderRadius: 6,
+                            color: theme.palette.text.primary,
+                            fontSize: '0.8rem'
                           }}
                         />
-                      </PieChart>
+                        <Legend />
+                      </RechartsPieChart>
                     </ResponsiveContainer>
                   </Box>
                 </CardContent>
@@ -799,54 +922,55 @@ const Dashboard = () => {
             </Grid>
             <Grid item xs={12} md={6}>
               <Card sx={{ 
-                borderRadius: 4,
+                borderRadius: 3,
                 boxShadow: theme.palette.mode === 'dark' 
-                  ? '0 8px 32px rgba(0,0,0,0.4)' 
-                  : '0 8px 32px rgba(0,0,0,0.06)',
+                  ? '0 4px 16px rgba(0,0,0,0.3)' 
+                  : '0 4px 16px rgba(0,0,0,0.06)',
                 border: `1px solid ${theme.palette.divider}`,
                 backgroundColor: theme.palette.background.paper,
-                transition: 'all 0.3s ease',
+                transition: 'all 0.2s ease',
                 '&:hover': {
                   transform: 'translateY(-2px)',
                   boxShadow: theme.palette.mode === 'dark' 
-                    ? '0 12px 40px rgba(0,0,0,0.5)' 
-                    : '0 12px 40px rgba(0,0,0,0.1)',
+                    ? '0 8px 24px rgba(0,0,0,0.4)' 
+                    : '0 8px 24px rgba(0,0,0,0.1)',
                 }
               }}>
-                <CardContent sx={{ p: 4 }}>
-                  <Typography variant="h5" sx={{ 
-                    fontWeight: 700, 
+                <CardContent sx={{ p: 2.5 }}>
+                  <Typography variant="h6" sx={{ 
+                    fontWeight: 600, 
                     color: theme.palette.text.primary,
-                    mb: 4,
-                    fontSize: { xs: '1.1rem', sm: '1.25rem' },
+                    mb: 2,
+                    fontSize: '1.1rem',
                     letterSpacing: '-0.01em'
                   }}>
-                    Statut des Tâches
+                    Répartition des Tâches
                   </Typography>
-                  <Box sx={{ height: 250 }}>
+                  <Box sx={{ height: 200 }}>
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={taskStatusData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
+                      <RechartsBarChart data={taskStatusData}>
+                        <CartesianGrid strokeDasharray="2 2" stroke={theme.palette.divider} />
                         <XAxis 
                           dataKey="name" 
                           stroke={theme.palette.text.secondary}
-                          fontSize={12}
+                          fontSize={10}
                         />
-                        <YAxis stroke={theme.palette.text.secondary} />
+                        <YAxis stroke={theme.palette.text.secondary} fontSize={10} />
                         <RechartsTooltip 
                           contentStyle={{
                             backgroundColor: theme.palette.background.paper,
                             border: `1px solid ${theme.palette.divider}`,
-                            borderRadius: 8,
-                            color: theme.palette.text.primary
+                            borderRadius: 6,
+                            color: theme.palette.text.primary,
+                            fontSize: '0.8rem'
                           }}
                         />
-                        <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                        <Bar dataKey="value" radius={[2, 2, 0, 0]}>
                           {taskStatusData.map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={entry.color} />
                           ))}
                         </Bar>
-                      </BarChart>
+                      </RechartsBarChart>
                     </ResponsiveContainer>
                   </Box>
                 </CardContent>
@@ -854,44 +978,50 @@ const Dashboard = () => {
             </Grid>
           </Grid>
 
-          {/* Recent Projects */}
+          {/* Projets Récents Compacts */}
           <Card sx={{ 
-            borderRadius: 4,
+            borderRadius: 3,
             boxShadow: theme.palette.mode === 'dark' 
-              ? '0 8px 32px rgba(0,0,0,0.4)' 
-              : '0 8px 32px rgba(0,0,0,0.06)',
+              ? '0 4px 16px rgba(0,0,0,0.3)' 
+              : '0 4px 16px rgba(0,0,0,0.06)',
             border: `1px solid ${theme.palette.divider}`,
             backgroundColor: theme.palette.background.paper,
-            transition: 'all 0.3s ease',
+            transition: 'all 0.2s ease',
             '&:hover': {
-              transform: 'translateY(-2px)',
+              transform: 'translateY(-1px)',
               boxShadow: theme.palette.mode === 'dark' 
-                ? '0 12px 40px rgba(0,0,0,0.5)' 
-                : '0 12px 40px rgba(0,0,0,0.1)',
+                ? '0 8px 24px rgba(0,0,0,0.4)' 
+                : '0 8px 24px rgba(0,0,0,0.1)',
             }
           }}>
-            <CardContent sx={{ p: 4 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-                <Typography variant="h5" sx={{ 
-                  fontWeight: 700, 
+            <CardContent sx={{ p: 2.5 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h6" sx={{ 
+                  fontWeight: 600, 
                   color: theme.palette.text.primary,
-                  fontSize: { xs: '1.1rem', sm: '1.25rem' },
+                  fontSize: '1.1rem',
                   letterSpacing: '-0.01em'
                 }}>
-                  Derniers Projets
+                  Projets Récents
                 </Typography>
                 <Button 
                   variant="outlined" 
                   size="small"
                   startIcon={<Add />}
                   onClick={() => navigate('/projects')}
+                  sx={{ 
+                    borderRadius: 2,
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    fontSize: '0.8rem'
+                  }}
                 >
                   Voir tous
                 </Button>
               </Box>
               <Box sx={{ maxHeight: 400, overflowY: 'auto' }}>
-                {recent_projects?.slice(0, 3).map((project) => (
-                  <ProjectCard key={project.id} project={project} />
+                {recent_projects?.slice(0, 4).map((project, index) => (
+                  <CompactProjectCard key={project.id} project={project} index={index} />
                 ))}
                 {(!recent_projects || recent_projects.length === 0) && (
                   <Box sx={{ 
@@ -899,9 +1029,12 @@ const Dashboard = () => {
                     py: 4,
                     color: theme.palette.text.secondary
                   }}>
-                    <Typography variant="body2">
+                    <Typography variant="body1" sx={{ mb: 2 }}>
                       Aucun projet récent trouvé
                     </Typography>
+                    <Button variant="contained" size="small" onClick={() => navigate('/projects/new')}>
+                      Créer un nouveau projet
+                    </Button>
                   </Box>
                 )}
               </Box>
@@ -909,84 +1042,83 @@ const Dashboard = () => {
           </Card>
         </Grid>
 
-        {/* Right Column - Tasks */}
+        {/* Colonne Latérale */}
         <Grid item xs={12} lg={4}>
-          <Stack spacing={4}>
-
-            {/* My Tasks */}
+          <Stack spacing={2}>
+            {/* Mes Tâches Compactes */}
             <Card sx={{ 
-              borderRadius: 4,
+              borderRadius: 3,
               boxShadow: theme.palette.mode === 'dark' 
-                ? '0 8px 32px rgba(0,0,0,0.4)' 
-                : '0 8px 32px rgba(0,0,0,0.06)',
+                ? '0 4px 16px rgba(0,0,0,0.3)' 
+                : '0 4px 16px rgba(0,0,0,0.06)',
               border: `1px solid ${theme.palette.divider}`,
               backgroundColor: theme.palette.background.paper,
-              transition: 'all 0.3s ease',
+              transition: 'all 0.2s ease',
               '&:hover': {
-                transform: 'translateY(-2px)',
+                transform: 'translateY(-1px)',
                 boxShadow: theme.palette.mode === 'dark' 
-                  ? '0 12px 40px rgba(0,0,0,0.5)' 
-                  : '0 12px 40px rgba(0,0,0,0.1)',
+                  ? '0 8px 24px rgba(0,0,0,0.4)' 
+                  : '0 8px 24px rgba(0,0,0,0.1)',
               }
             }}>
-              <CardContent sx={{ p: 4 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-                  <Typography variant="h5" sx={{ 
-                    fontWeight: 700, 
+              <CardContent sx={{ p: 2.5 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="h6" sx={{ 
+                    fontWeight: 600, 
                     color: theme.palette.text.primary,
-                    fontSize: { xs: '1.1rem', sm: '1.25rem' },
+                    fontSize: '1.1rem',
                     letterSpacing: '-0.01em'
                   }}>
                     Mes Tâches
                   </Typography>
-                  <Badge badgeContent={my_tasks?.length || 0} color="primary">
-                    <Assignment sx={{ color: theme.palette.primary.main }} />
+                  <Badge badgeContent={my_tasks?.length || 0} color="primary" sx={{ '& .MuiBadge-badge': { fontSize: '0.7rem' } }}>
+                    <Assignment sx={{ color: theme.palette.primary.main, fontSize: 20 }} />
                   </Badge>
                 </Box>
                 <Box sx={{ maxHeight: 300, overflowY: 'auto' }}>
                   <List sx={{ p: 0 }}>
-                    {my_tasks?.slice(0, 5).map((task) => (
-                      <TaskItem key={task.id} task={task} />
+                    {my_tasks?.slice(0, 4).map((task, index) => (
+                      <CompactTaskItem key={task.id} task={task} index={index} />
                     ))}
                   </List>
                 </Box>
               </CardContent>
             </Card>
 
-            {/* Upcoming Tasks */}
+            {/* Tâches à Venir Compactes */}
             <Card sx={{ 
-              borderRadius: 4,
+              borderRadius: 3,
               boxShadow: theme.palette.mode === 'dark' 
-                ? '0 8px 32px rgba(0,0,0,0.4)' 
-                : '0 8px 32px rgba(0,0,0,0.06)',
+                ? '0 4px 16px rgba(0,0,0,0.3)' 
+                : '0 4px 16px rgba(0,0,0,0.06)',
               border: `1px solid ${theme.palette.divider}`,
               backgroundColor: theme.palette.background.paper,
-              transition: 'all 0.3s ease',
+              transition: 'all 0.2s ease',
               '&:hover': {
-                transform: 'translateY(-2px)',
+                transform: 'translateY(-1px)',
                 boxShadow: theme.palette.mode === 'dark' 
-                  ? '0 12px 40px rgba(0,0,0,0.5)' 
-                  : '0 12px 40px rgba(0,0,0,0.1)',
+                  ? '0 8px 24px rgba(0,0,0,0.4)' 
+                  : '0 8px 24px rgba(0,0,0,0.1)',
               }
             }}>
-              <CardContent sx={{ p: 4 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-                  <Typography variant="h5" sx={{ 
-                    fontWeight: 700, 
+              <CardContent sx={{ p: 2.5 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="h6" sx={{ 
+                    fontWeight: 600, 
                     color: theme.palette.text.primary,
-                    fontSize: { xs: '1.1rem', sm: '1.25rem' },
+                    fontSize: '1.1rem',
                     letterSpacing: '-0.01em'
                   }}>
                     Tâches à Venir
                   </Typography>
-                  <Badge badgeContent={upcoming_tasks?.length || 0} color="warning">
-                    <Schedule sx={{ color: theme.palette.warning.main }} />
+                  <Badge badgeContent={upcoming_tasks?.length || 0} color="warning" sx={{ '& .MuiBadge-badge': { fontSize: '0.7rem' } }}>
+                    <Schedule sx={{ color: theme.palette.warning.main, fontSize: 20 }} />
                   </Badge>
                 </Box>
                 <Box sx={{ maxHeight: 300, overflowY: 'auto' }}>
                   <List sx={{ p: 0 }}>
-                    {upcoming_tasks?.slice(0, 5).map((task) => (
-                      <TaskItem key={task.id} task={task} />
+                    {upcoming_tasks?.slice(0, 4).map((task, index) => (
+                      <CompactTaskItem key={task.id} task={task} index={index} />
                     ))}
                   </List>
                 </Box>
@@ -995,6 +1127,25 @@ const Dashboard = () => {
           </Stack>
         </Grid>
       </Grid>
+
+      {/* SpeedDial pour Actions Rapides */}
+      <SpeedDial
+        ariaLabel="Actions rapides"
+        sx={{ position: 'fixed', bottom: 24, right: 24 }}
+        icon={<SpeedDialIcon />}
+        onClose={() => setSpeedDialOpen(false)}
+        onOpen={() => setSpeedDialOpen(true)}
+        open={speedDialOpen}
+      >
+        {speedDialActions.map((action) => (
+          <SpeedDialAction
+            key={action.name}
+            icon={action.icon}
+            tooltipTitle={action.name}
+            onClick={action.onClick}
+          />
+        ))}
+      </SpeedDial>
     </Box>
   );
 };

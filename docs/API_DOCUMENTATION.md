@@ -1,10 +1,10 @@
-# Documentation API Project Tracker
+# Documentation API GHP Portail
 
 ## Vue d'ensemble
 
-Cette documentation décrit l'API REST du système Project Tracker. L'API permet de gérer les projets, tâches, utilisateurs, équipes et notifications.
+Cette documentation décrit l'API REST du système GHP Portail. L'API permet de gérer tous les modules d'entreprise, utilisateurs, équipes et notifications.
 
-**Base URL:** `https://api.projecttracker.com/v1`
+**Base URL:** `https://api.ghpportail.com/v1`
 
 **Authentification:** JWT Bearer Token
 
@@ -32,7 +32,7 @@ Authentifie un utilisateur et retourne un token JWT.
     "user": {
       "id": 1,
       "username": "admin",
-      "email": "admin@projecttracker.com",
+      "email": "admin@ghpportail.com",
       "name": "Admin Principal",
       "role": "admin",
       "avatar": "https://i.pravatar.cc/150?img=1",
@@ -694,7 +694,7 @@ L'API supporte les webhooks pour les événements en temps réel :
 
 Pour toute question concernant l'API :
 
-- **Documentation**: https://docs.projecttracker.com
-- **Support**: api-support@projecttracker.com
-- **Statut API**: https://status.projecttracker.com
+- **Documentation**: https://docs.ghpportail.com
+- **Support**: api-support@ghpportail.com
+- **Statut API**: https://status.ghpportail.com
 

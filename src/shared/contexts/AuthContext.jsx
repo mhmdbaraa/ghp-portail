@@ -44,10 +44,10 @@ const STORAGE_KEYS = {
   USER: 'userData',
   ACCESS: 'accessToken',
   REFRESH: 'refreshToken',
-  LAST_LOGIN: 'projecttracker_last_login',
-  REMEMBER_ME: 'projecttracker_remember_me',
-  USER_PREFERENCES: 'projecttracker_user_preferences',
-  SESSION_TIMEOUT: 'projecttracker_session_timeout',
+  LAST_LOGIN: 'ghpportail_last_login',
+  REMEMBER_ME: 'ghpportail_remember_me',
+  USER_PREFERENCES: 'ghpportail_user_preferences',
+  SESSION_TIMEOUT: 'ghpportail_session_timeout',
 };
 
 export const AuthProvider = ({ children }) => {

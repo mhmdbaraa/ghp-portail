@@ -1,7 +1,7 @@
 {
-  "name": "Project Tracker",
-  "short_name": "ProjectTracker",
-  "description": "Gestion de projets et tâches",
+  "name": "GHP Portail",
+  "short_name": "GHP Portail",
+  "description": "Plateforme d'entreprise avec modules intégrés",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

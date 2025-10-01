@@ -367,7 +367,7 @@ const ProjectDetails = ({ open, onClose, project }) => {
                       <CardContent sx={{ textAlign: 'center', py: 2 }}>
                         <AttachMoney sx={{ fontSize: 32, color: 'success.main', mb: 1 }} />
                         <Typography variant="h6" fontWeight={700}>
-                          {project.budget || '€0'}
+                          {project.budget || '0 DZD'}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
                           Budget

@@ -2,11 +2,7 @@ import axios from 'axios'
 
 // Dynamic API URL based on environment
 const getApiBaseUrl = () => {
-  // If we're in development and accessing from network, use the current host
-  if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-    return `http://${window.location.hostname}:8000/api`
-  }
-  // Default to localhost for local development
+  // For development, always use localhost
   return 'http://localhost:8000/api'
 }
 

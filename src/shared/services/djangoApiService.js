@@ -144,13 +144,26 @@ class DjangoApiService {
   // Dashboard methods
   async getDashboard() {
     try {
+      console.log('🌐 Appel API Dashboard vers:', '/projects/dashboard/');
       const response = await axiosInstance.get('/projects/dashboard/');
+      console.log('📡 Réponse brute du serveur:', response);
+      console.log('📊 Données extraites:', response.data);
+      
       return {
         success: true,
         data: response.data.data,
         message: 'Dashboard data retrieved'
       };
     } catch (error) {
+      console.error('💥 Erreur API Dashboard:', error);
+      console.error('📋 Détails de l\'erreur:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        config: error.config
+      });
+      
       return {
         success: false,
         error: error.response?.data?.error || error.message,

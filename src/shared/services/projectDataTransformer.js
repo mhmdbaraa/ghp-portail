@@ -186,12 +186,12 @@ class ProjectDataTransformer {
    * Format budget for display
    */
   static formatBudget(amount) {
-    if (!amount) return '€0';
+    if (!amount) return '0 DZD';
     try {
       const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
-      return `€${numAmount.toLocaleString('fr-FR')}`;
+      return `${numAmount.toLocaleString('fr-FR')} DZD`;
     } catch (error) {
-      return `€${amount}`;
+      return `${amount} DZD`;
     }
   }
 
@@ -258,7 +258,7 @@ class ProjectDataTransformer {
     console.log('💰 Parsing budget:', budgetString);
     if (!budgetString) return 0;
     try {
-      const cleanString = budgetString.replace(/[€,\s]/g, '');
+      const cleanString = budgetString.replace(/[DZD,\s]/g, '');
       const parsed = parseFloat(cleanString) || 0;
       console.log('💰 Parsed budget:', parsed);
       return parsed;

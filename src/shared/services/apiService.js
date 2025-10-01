@@ -5,7 +5,7 @@ import { fakeDB, generateId, getCurrentTimestamp } from '../../data/fakeDB';
 
 // Configuration de l'API
 const API_CONFIG = {
-  baseURL: 'https://api.projecttracker.com/v1',
+  baseURL: 'https://api.ghpportail.com/v1',
   timeout: 10000,
   retryAttempts: 3,
   retryDelay: 1000

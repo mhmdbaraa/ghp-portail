@@ -1,20 +1,20 @@
 {
-  "name": "project-tracker",
+  "name": "ghp-portail",
   "private": true,
   "version": "2.0.0",
   "type": "module",
-  "description": "Application moderne de gestion de projets avec interface intuitive et API simulée",
+  "description": "GHP Portail - Plateforme d'entreprise moderne avec modules intégrés et interface intuitive",
   "keywords": [
     "react",
-    "project-management",
-    "task-tracking",
+    "enterprise-portal",
+    "business-modules",
     "team-collaboration",
     "dashboard",
     "material-ui",
     "scss",
     "fake-api"
   ],
-  "author": "Project Tracker Team",
+  "author": "GHP Portail Team",
   "license": "MIT",
   "scripts": {
     "dev": "vite",
@@ -110,10 +110,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/project-tracker.git"
+    "url": "https://github.com/yourusername/ghp-portail.git"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/project-tracker/issues"
+    "url": "https://github.com/yourusername/ghp-portail/issues"
   },
-  "homepage": "https://github.com/yourusername/project-tracker#readme"
+  "homepage": "https://github.com/yourusername/ghp-portail#readme"
 }

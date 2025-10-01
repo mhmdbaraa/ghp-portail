@@ -7,7 +7,7 @@ export const fakeDB = {
     {
       id: 1,
       username: 'admin',
-      email: 'admin@projecttracker.com',
+      email: 'admin@ghpportail.com',
       name: 'Admin Principal',
       role: 'admin',
       avatar: 'https://i.pravatar.cc/150?img=1',
@@ -32,7 +32,7 @@ export const fakeDB = {
     {
       id: 2,
       username: 'sarah.martin',
-      email: 'sarah.martin@projecttracker.com',
+      email: 'sarah.martin@ghpportail.com',
       name: 'Sarah Martin',
       role: 'project_manager',
       avatar: 'https://i.pravatar.cc/150?img=2',
@@ -57,7 +57,7 @@ export const fakeDB = {
     {
       id: 3,
       username: 'john.doe',
-      email: 'john.doe@projecttracker.com',
+      email: 'john.doe@ghpportail.com',
       name: 'John Doe',
       role: 'developer',
       avatar: 'https://i.pravatar.cc/150?img=3',
@@ -82,7 +82,7 @@ export const fakeDB = {
     {
       id: 4,
       username: 'emma.wilson',
-      email: 'emma.wilson@projecttracker.com',
+      email: 'emma.wilson@ghpportail.com',
       name: 'Emma Wilson',
       role: 'designer',
       avatar: 'https://i.pravatar.cc/150?img=4',
@@ -107,7 +107,7 @@ export const fakeDB = {
     {
       id: 5,
       username: 'mike.chen',
-      email: 'mike.chen@projecttracker.com',
+      email: 'mike.chen@ghpportail.com',
       name: 'Mike Chen',
       role: 'qa_engineer',
       avatar: 'https://i.pravatar.cc/150?img=5',

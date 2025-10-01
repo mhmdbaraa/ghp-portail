@@ -20,7 +20,7 @@ export const ROLE_PERMISSIONS = {
   // Gestionnaires - GESTION COMPLÈTE
   manager: {
     name: 'Manager',
-    description: 'Gestion des projets et équipes',
+    description: 'Gestion des modules et équipes',
     permissions: [
       'project:view', 'project:create', 'project:edit', 'project:delete',
       'task:view', 'task:create', 'task:edit', 'task:delete',
@@ -31,8 +31,8 @@ export const ROLE_PERMISSIONS = {
   },
   
   PROJECT_MANAGER: {
-    name: 'Gestionnaire de Projet',
-    description: 'Gestion complète des projets',
+    name: 'Gestionnaire de Module',
+    description: 'Gestion complète des modules',
     permissions: [
       'project:view', 'project:create', 'project:edit', 'project:delete',
       'task:view', 'task:create', 'task:edit', 'task:delete',

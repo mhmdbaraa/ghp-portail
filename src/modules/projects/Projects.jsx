@@ -301,7 +301,7 @@ const Projects = () => {
         status: row.status || 'Planification',
         priority: row.priority === 'haute' || row.priority === 'Haute' ? 'Élevé' : row.priority === 'moyenne' || row.priority === 'Moyenne' ? 'Moyen' : row.priority === 'faible' || row.priority === 'Faible' ? 'Faible' : 'Moyen',
         category: row.category === 'développement' || row.category === 'Développement' ? 'Web' : row.category || 'Web',
-        budget: row.budget ? row.budget.replace(/[€,\s]/g, '') : '',
+        budget: row.budget ? row.budget.replace(/[DZD,\s]/g, '') : '',
         projectManager: row.manager || '',
         filiales: row.filiales || []
       });
@@ -400,7 +400,7 @@ const Projects = () => {
         status: project.status || 'Planification',
         priority: project.priority === 'haute' || project.priority === 'Haute' ? 'Élevé' : project.priority === 'moyenne' || project.priority === 'Moyenne' ? 'Moyen' : project.priority === 'faible' || project.priority === 'Faible' ? 'Faible' : 'Moyen',
         category: project.category === 'développement' || project.category === 'Développement' ? 'Web' : project.category || 'Web',
-        budget: project.budget ? project.budget.replace(/[€,\s]/g, '') : '',
+        budget: project.budget ? project.budget.replace(/[DZD,\s]/g, '') : '',
         projectManager: project.manager || project.manager_id || '',
         filiales: project.filiales || project.tags || []
       });
@@ -1757,7 +1757,7 @@ const Projects = () => {
     setProjectToDelete(null);
   };
 
-  // Gestionnaires pour la modale de création de projet
+  // Gestionnaires pour la modale de création de module
   const handleNewProject = () => {
     setNewProjectDialog(true);
   };
@@ -3529,7 +3529,7 @@ const Projects = () => {
           {/* Champ Budget */}
           <TextField
             margin="dense"
-            label="Budget (€)"
+            label="Budget (DZD)"
             type="number"
             fullWidth
             variant="outlined"
@@ -4209,7 +4209,7 @@ const Projects = () => {
             {/* Champ Budget */}
             <TextField
               margin="dense"
-              label="Budget (€)"
+              label="Budget (DZD)"
               type="number"
               fullWidth
               variant="outlined"

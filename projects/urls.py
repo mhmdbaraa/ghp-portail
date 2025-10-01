@@ -19,6 +19,8 @@ urlpatterns = [
     
     # Other specific paths
     path('dashboard/', views.dashboard_data, name='dashboard_data'),
+    path('calendar/', views.calendar_data, name='calendar_data'),
+    path('calendar/export/', views.export_calendar_excel, name='export_calendar_excel'),
     path('export/excel/', views.export_projects_excel, name='export_projects_excel'),
     path('<int:project_id>/comments/', views.ProjectCommentListCreateView.as_view({'get': 'list', 'post': 'create'}), name='project_comments'),
     path('<int:project_id>/attachments/', views.ProjectAttachmentListCreateView.as_view({'get': 'list', 'post': 'create'}), name='project_attachments'),

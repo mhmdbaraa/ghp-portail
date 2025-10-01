@@ -203,7 +203,7 @@ const Layout = ({ children }) => {
               to="/"
             >
 {currentModule === 'users' ? 'Gestion Utilisateurs' : 
- currentModule === 'projects' ? 'Gestion Projets' : 'GHP Portail'}
+ currentModule === 'projects' ? 'Module Projets' : 'GHP Portail'}
             </Typography>
           )}
         </Box>
@@ -483,7 +483,7 @@ const Layout = ({ children }) => {
                         case 'designer': return 'Designer';
                         case 'tester': return 'Testeur';
                         case 'user': return 'Utilisateur';
-                        case 'PROJECT_MANAGER': return 'Gestionnaire de Projet';
+                        case 'PROJECT_MANAGER': return 'Gestionnaire de Module';
                         case 'PROJECT_USER': return 'Utilisateur de Projet';
                         default: return user.role || 'Utilisateur';
                       }

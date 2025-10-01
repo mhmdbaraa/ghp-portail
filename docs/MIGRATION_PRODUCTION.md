@@ -2,7 +2,7 @@
 
 ## Vue d'ensemble
 
-Ce document décrit le processus de migration du système Project Tracker depuis l'API simulée (fake) vers une vraie API de production.
+Ce document décrit le processus de migration du portail d'entreprise GHP Portail depuis l'API simulée (fake) vers une vraie API de production.
 
 ## Architecture Actuelle vs Production
 
@@ -36,7 +36,7 @@ REACT_APP_REFRESH_TOKEN_SECRET=your_refresh_token_secret
 # Database
 REACT_APP_DB_HOST=your_db_host
 REACT_APP_DB_PORT=5432
-REACT_APP_DB_NAME=projecttracker
+REACT_APP_DB_NAME=ghpportail
 REACT_APP_DB_USER=your_db_user
 REACT_APP_DB_PASSWORD=your_db_password
 
@@ -351,7 +351,7 @@ import apiService from '../src/services/apiService';
 describe('Migration Tests', () => {
   test('Authentification fonctionne avec la nouvelle API', async () => {
     const credentials = {
-      email: 'admin@projecttracker.com',
+      email: 'admin@ghpportail.com',
       password: 'password123'
     };
     

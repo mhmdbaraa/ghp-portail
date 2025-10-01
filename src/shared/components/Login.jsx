@@ -97,16 +97,16 @@ const Login = () => {
         {/* Section de présentation */}
         <Box sx={{ flex: 1, display: { xs: 'none', md: 'flex' }, flexDirection: 'column', justifyContent: 'center', color: 'white' }}>
           <Typography variant="h3" fontWeight={800} sx={{ mb: 3 }}>
-            ProjectTracker
+            GHP Portail
           </Typography>
           <Typography variant="h5" sx={{ mb: 4, opacity: 0.9 }}>
-            Gestion de projets nouvelle génération
+            Plateforme d'entreprise nouvelle génération
           </Typography>
           
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <Business sx={{ fontSize: 32, color: 'rgba(255,255,255,0.8)' }} />
-              <Typography variant="h6">Gestion complète des projets</Typography>
+              <Typography variant="h6">Modules intégrés complets</Typography>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <Security sx={{ fontSize: 32, color: 'rgba(255,255,255,0.8)' }} />

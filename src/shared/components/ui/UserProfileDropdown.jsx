@@ -106,7 +106,7 @@ const UserProfileDropdown = () => {
       case 'designer': return 'Designer';
       case 'tester': return 'Testeur';
       case 'user': return 'Utilisateur';
-      case 'PROJECT_MANAGER': return 'Gestionnaire de Projet';
+      case 'PROJECT_MANAGER': return 'Gestionnaire de Module';
       case 'PROJECT_USER': return 'Utilisateur de Projet';
       default: return role || 'Utilisateur';
     }

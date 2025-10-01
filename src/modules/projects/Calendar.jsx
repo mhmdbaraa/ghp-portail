@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -10,6 +10,13 @@ import {
   Avatar,
   IconButton,
   Tooltip,
+  CircularProgress,
+  Alert,
+  Button,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import {
   Today,
@@ -19,74 +26,70 @@ import {
   Add,
   Edit,
   Delete,
+  Warning,
+  Assignment,
+  Business,
 } from '@mui/icons-material';
+import axiosInstance from '../../shared/services/axiosInstance';
 
 const Calendar = () => {
-  const events = [
-    {
-      id: 1,
-      title: 'Réunion équipe projet',
-      date: '2024-01-25',
-      time: '10:00 - 11:00',
-      type: 'meeting',
-      attendees: ['Sarah', 'Mike', 'Emma'],
-      project: 'Site E-commerce',
-      description: 'Réunion hebdomadaire pour faire le point sur l\'avancement du projet.',
-    },
-    {
-      id: 2,
-      title: 'Deadline design final',
-      date: '2024-01-26',
-      time: '17:00',
-      type: 'deadline',
-      attendees: ['Sarah'],
-      project: 'Site E-commerce',
-      description: 'Date limite pour la validation du design final.',
-    },
-    {
-      id: 3,
-      title: 'Présentation client',
-      date: '2024-01-28',
-      time: '14:00 - 15:30',
-      type: 'presentation',
-      attendees: ['Mike', 'Emma', 'David'],
-      project: 'Application Mobile',
-      description: 'Présentation de l\'avancement à notre client principal.',
-    },
-    {
-      id: 4,
-      title: 'Tests d\'intégration',
-      date: '2024-01-29',
-      time: '09:00 - 12:00',
-      type: 'task',
-      attendees: ['John', 'Lisa'],
-      project: 'Application Mobile',
-      description: 'Session de tests d\'intégration pour l\'application mobile.',
-    },
-    {
-      id: 5,
-      title: 'Révision code',
-      date: '2024-01-30',
-      time: '16:00 - 17:00',
-      type: 'review',
-      attendees: ['Alex', 'Maria'],
-      project: 'Refonte UI/UX',
-      description: 'Révision du code pour la refonte de l\'interface.',
-    },
-  ];
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [dateRange, setDateRange] = useState('30'); // days
+  const [eventsByDate, setEventsByDate] = useState({});
+  const [summary, setSummary] = useState({});
+
+  // Fetch calendar data from backend
+  useEffect(() => {
+    fetchCalendarData();
+  }, [dateRange]);
+
+  const fetchCalendarData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const today = new Date();
+      const toDate = new Date();
+      toDate.setDate(today.getDate() + parseInt(dateRange));
+      
+      const response = await axiosInstance.get('/projects/calendar/', {
+        params: {
+          from_date: today.toISOString().split('T')[0],
+          to_date: toDate.toISOString().split('T')[0]
+        }
+      });
+      
+      if (response.data.success) {
+        const { events_by_date, summary: summaryData } = response.data.data;
+        setEventsByDate(events_by_date);
+        setSummary(summaryData);
+        
+        // Flatten events for easier processing
+        const allEvents = Object.values(events_by_date).flat();
+        setEvents(allEvents);
+      } else {
+        setError('Erreur lors du chargement des données du calendrier');
+      }
+    } catch (err) {
+      console.error('Error fetching calendar data:', err);
+      setError('Erreur de connexion au serveur');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getEventTypeColor = (type) => {
     switch (type) {
-      case 'meeting':
+      case 'project_deadline':
         return 'primary';
-      case 'deadline':
-        return 'error';
-      case 'presentation':
-        return 'info';
-      case 'task':
+      case 'task_deadline':
         return 'warning';
-      case 'review':
-        return 'success';
+      case 'overdue_project':
+        return 'error';
+      case 'overdue_task':
+        return 'error';
       default:
         return 'default';
     }
@@ -94,16 +97,14 @@ const Calendar = () => {
 
   const getEventTypeText = (type) => {
     switch (type) {
-      case 'meeting':
-        return 'Réunion';
-      case 'deadline':
-        return 'Échéance';
-      case 'presentation':
-        return 'Présentation';
-      case 'task':
-        return 'Tâche';
-      case 'review':
-        return 'Révision';
+      case 'project_deadline':
+        return 'Échéance Projet';
+      case 'task_deadline':
+        return 'Échéance Tâche';
+      case 'overdue_project':
+        return 'Projet en Retard';
+      case 'overdue_task':
+        return 'Tâche en Retard';
       default:
         return 'Événement';
     }
@@ -111,33 +112,42 @@ const Calendar = () => {
 
   const getEventTypeIcon = (type) => {
     switch (type) {
-      case 'meeting':
-        return <Event />;
-      case 'deadline':
-        return <Schedule />;
-      case 'presentation':
-        return <Person />;
-      case 'task':
-        return <Today />;
-      case 'review':
-        return <Edit />;
+      case 'project_deadline':
+        return <Business />;
+      case 'task_deadline':
+        return <Assignment />;
+      case 'overdue_project':
+        return <Warning />;
+      case 'overdue_task':
+        return <Warning />;
       default:
         return <Event />;
     }
   };
 
-  // Grouper les événements par date
-  const eventsByDate = events.reduce((acc, event) => {
-    const date = event.date;
-    if (!acc[date]) {
-      acc[date] = [];
-    }
-    acc[date].push(event);
-    return acc;
-  }, {});
-
-  // Trier les dates
+  // Get sorted dates from eventsByDate state
   const sortedDates = Object.keys(eventsByDate).sort();
+
+  if (loading) {
+    return (
+      <Box sx={{ p: 3, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+        <Button variant="contained" onClick={fetchCalendarData}>
+          Réessayer
+        </Button>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ p: 3 }}>
@@ -151,23 +161,106 @@ const Calendar = () => {
             Visualisez et gérez tous vos événements et échéances
           </Typography>
         </Box>
-        <IconButton
-          color="primary"
-          sx={{
-            background: 'linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%)',
-            color: 'white',
-            '&:hover': {
-              background: 'linear-gradient(135deg, #2563EB 0%, #7C3AED 100%)',
-            },
-          }}
-        >
-          <Add />
-        </IconButton>
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+          <FormControl size="small" sx={{ minWidth: 120 }}>
+            <InputLabel>Période</InputLabel>
+            <Select
+              value={dateRange}
+              label="Période"
+              onChange={(e) => setDateRange(e.target.value)}
+            >
+              <MenuItem value="7">7 jours</MenuItem>
+              <MenuItem value="30">30 jours</MenuItem>
+              <MenuItem value="60">60 jours</MenuItem>
+              <MenuItem value="90">90 jours</MenuItem>
+            </Select>
+          </FormControl>
+          <Button
+            variant="contained"
+            onClick={fetchCalendarData}
+            startIcon={<Add />}
+            sx={{
+              background: 'linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%)',
+              '&:hover': {
+                background: 'linear-gradient(135deg, #2563EB 0%, #7C3AED 100%)',
+              },
+            }}
+          >
+            Actualiser
+          </Button>
+        </Box>
       </Box>
 
+      {/* Résumé des événements */}
+      {summary && (
+        <Grid container spacing={2} sx={{ mb: 4 }}>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ background: 'linear-gradient(135deg, #3B82F6 0%, #1E40AF 100%)', color: 'white' }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Projets à venir
+                </Typography>
+                <Typography variant="h4" fontWeight={700}>
+                  {summary.upcoming_projects || 0}
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)', color: 'white' }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Tâches à venir
+                </Typography>
+                <Typography variant="h4" fontWeight={700}>
+                  {summary.upcoming_tasks || 0}
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)', color: 'white' }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Projets en retard
+                </Typography>
+                <Typography variant="h4" fontWeight={700}>
+                  {summary.overdue_projects || 0}
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ background: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)', color: 'white' }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Tâches en retard
+                </Typography>
+                <Typography variant="h4" fontWeight={700}>
+                  {summary.overdue_tasks || 0}
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+      )}
+
       {/* Vue calendrier */}
-      <Grid container spacing={3}>
-        {sortedDates.map((date) => (
+      {sortedDates.length === 0 ? (
+        <Card>
+          <CardContent sx={{ textAlign: 'center', py: 4 }}>
+            <Event sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+            <Typography variant="h6" color="text.secondary" gutterBottom>
+              Aucun événement trouvé
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Aucune échéance de projet ou de tâche dans la période sélectionnée.
+            </Typography>
+          </CardContent>
+        </Card>
+      ) : (
+        <Grid container spacing={3}>
+          {sortedDates.map((date) => (
           <Grid item xs={12} md={6} lg={4} key={date}>
             <Card>
               <CardContent>
@@ -230,42 +323,62 @@ const Calendar = () => {
                           color={getEventTypeColor(event.type)}
                           variant="outlined"
                         />
-                        <Chip
-                          label={event.project}
-                          size="small"
-                          color="primary"
-                          variant="outlined"
-                        />
+                        {event.project_name && (
+                          <Chip
+                            label={event.project_name}
+                            size="small"
+                            color="primary"
+                            variant="outlined"
+                          />
+                        )}
+                        {event.priority && (
+                          <Chip
+                            label={`Priorité: ${event.priority}`}
+                            size="small"
+                            color={event.priority === 'high' || event.priority === 'critical' ? 'error' : 'default'}
+                            variant="outlined"
+                          />
+                        )}
                       </Box>
 
-                      {/* Heure */}
+                      {/* Heure et jours restants */}
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                         <Schedule sx={{ fontSize: 16, color: 'text.secondary' }} />
                         <Typography variant="body2" fontWeight={500}>
                           {event.time}
                         </Typography>
+                        {event.days_remaining !== undefined && (
+                          <Chip
+                            label={`${event.days_remaining > 0 ? 'Dans' : 'Depuis'} ${Math.abs(event.days_remaining)} jour(s)`}
+                            size="small"
+                            color={event.days_remaining < 0 ? 'error' : event.days_remaining <= 3 ? 'warning' : 'success'}
+                            variant="filled"
+                          />
+                        )}
                       </Box>
 
-                      {/* Participants */}
-                      <Box>
-                        <Typography variant="body2" color="text.secondary" gutterBottom>
-                          Participants:
-                        </Typography>
-                        <Box sx={{ display: 'flex', gap: 1 }}>
-                          {event.attendees.map((attendee, index) => (
-                            <Avatar
-                              key={index}
-                              sx={{
-                                width: 28,
-                                height: 28,
-                                fontSize: '0.75rem',
-                                backgroundColor: 'primary.main',
-                              }}
-                            >
-                              {attendee.charAt(0)}
-                            </Avatar>
-                          ))}
-                        </Box>
+                      {/* Informations spécifiques */}
+                      <Box sx={{ mb: 2 }}>
+                        {event.manager_name && (
+                          <Typography variant="body2" color="text.secondary" gutterBottom>
+                            <strong>Gestionnaire:</strong> {event.manager_name}
+                          </Typography>
+                        )}
+                        {event.assignee_name && (
+                          <Typography variant="body2" color="text.secondary" gutterBottom>
+                            <strong>Assigné à:</strong> {event.assignee_name}
+                          </Typography>
+                        )}
+                        {event.progress !== undefined && (
+                          <Typography variant="body2" color="text.secondary" gutterBottom>
+                            <strong>Progrès:</strong> {event.progress}%
+                          </Typography>
+                        )}
+                        {event.team_count && (
+                          <Typography variant="body2" color="text.secondary" gutterBottom>
+                            <strong>Équipe:</strong> {event.team_count} membre(s)
+                          </Typography>
+                        )}
                       </Box>
                     </Paper>
                   ))}
@@ -274,7 +387,8 @@ const Calendar = () => {
             </Card>
           </Grid>
         ))}
-      </Grid>
+        </Grid>
+      )}
     </Box>
   );
 };

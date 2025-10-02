@@ -197,58 +197,122 @@ const Projects = () => {
     {
       field: 'name',
       headerName: 'Nom du Projet',
-      width: 200,
+      width: 350,
+      flex: 2,
+      minWidth: 300,
+      resizable: true,
       renderCell: (params) => (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Avatar sx={{ width: 32, height: 32, fontSize: '0.8rem', bgcolor: 'primary.main' }}>
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 1, 
+          width: '100%', 
+          py: 1.5,
+          px: 1,
+          minHeight: 'auto',
+          height: 'auto',
+          whiteSpace: 'normal',
+          wordBreak: 'break-word',
+          overflow: 'visible'
+        }}>
+          <Avatar sx={{ width: 32, height: 32, fontSize: '0.8rem', bgcolor: 'primary.main', flexShrink: 0 }}>
             {params.value?.charAt(0)}
           </Avatar>
-          <Typography variant="body2" sx={{ fontWeight: 600 }}>
-            {params.value}
-          </Typography>
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            minWidth: 0, 
+            flex: 1, 
+            overflow: 'visible',
+            whiteSpace: 'normal',
+            wordBreak: 'break-word',
+            justifyContent: 'center'
+          }}>
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                fontWeight: 600, 
+                wordBreak: 'break-word',
+                whiteSpace: 'normal',
+                lineHeight: 1.3,
+                overflow: 'visible',
+                textOverflow: 'unset',
+                maxWidth: 'none'
+              }}
+            >
+              {params.value}
+            </Typography>
+            {params.row.description && (
+              <Typography 
+                variant="caption" 
+                sx={{ 
+                  color: 'text.secondary', 
+                  wordBreak: 'break-word',
+                  whiteSpace: 'normal',
+                  lineHeight: 1.2,
+                  mt: 0.5,
+                  overflow: 'visible',
+                  textOverflow: 'unset',
+                  maxWidth: 'none'
+                }}
+              >
+                {params.row.description}
+              </Typography>
+            )}
+          </Box>
         </Box>
       ),
     },
     {
       field: 'status',
       headerName: 'Statut',
-      width: 120,
+      width: 100,
+      flex: 0,
+      resizable: true,
       renderCell: (params) => (
-        <Chip
-          label={params.value}
-          size="small"
-          color={
-            params.value === 'Terminé' ? 'success' :
-            params.value === 'En cours' ? 'primary' :
-            params.value === 'En attente' ? 'warning' : 'default'
-          }
-          sx={{ textTransform: 'capitalize' }}
-        />
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 1 }}>
+          <Chip
+            label={params.value}
+            size="small"
+            color={
+              params.value === 'Terminé' ? 'success' :
+              params.value === 'En cours' ? 'primary' :
+              params.value === 'En attente' ? 'warning' : 'default'
+            }
+            sx={{ textTransform: 'capitalize' }}
+          />
+        </Box>
       ),
     },
     {
       field: 'priority',
-      headerName: 'Priorité',
-      width: 100,
+      headerName: 'Prio',
+      width: 80,
+      flex: 0,
+      resizable: true,
       renderCell: (params) => (
-        <Chip
-          label={params.value}
-          size="small"
-          variant="outlined"
-          color={
-            params.value === 'Élevé' ? 'error' :
-            params.value === 'Moyen' ? 'warning' : 'default'
-          }
-          sx={{ textTransform: 'capitalize' }}
-        />
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 1 }}>
+          <Chip
+            label={params.value}
+            size="small"
+            variant="outlined"
+            color={
+              params.value === 'Élevé' ? 'error' :
+              params.value === 'Moyen' ? 'warning' : 'default'
+            }
+            sx={{ textTransform: 'capitalize' }}
+          />
+        </Box>
       ),
     },
     {
       field: 'progress',
-      headerName: 'Progression',
-      width: 150,
+      headerName: 'Progrès',
+      width: 120,
+      flex: 0,
+      resizable: true,
       renderCell: (params) => (
-        <Box sx={{ width: '100%' }}>
+        <Box sx={{ width: '100%', py: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
             <Typography variant="caption">{params.value}%</Typography>
           </Box>
@@ -262,10 +326,12 @@ const Projects = () => {
     },
     {
       field: 'manager_name',
-      headerName: 'Chef de Projet',
-      width: 150,
+      headerName: 'Chef',
+      width: 120,
+      flex: 0,
+      resizable: true,
       renderCell: (params) => (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 1, justifyContent: 'center' }}>
           <Avatar sx={{ width: 24, height: 24, fontSize: '0.7rem', bgcolor: 'primary.main' }}>
             {params.value?.charAt(0)}
           </Avatar>
@@ -276,29 +342,39 @@ const Projects = () => {
     {
       field: 'deadline',
       headerName: 'Échéance',
-      width: 120,
+      width: 100,
+      flex: 0,
+      resizable: true,
       renderCell: (params) => (
-        <Typography variant="body2">
-          {params.value ? new Date(params.value).toLocaleDateString('fr-FR') : 'N/A'}
-        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 1 }}>
+          <Typography variant="body2">
+            {params.value ? new Date(params.value).toLocaleDateString('fr-FR') : 'N/A'}
+          </Typography>
+        </Box>
       ),
     },
     {
       field: 'budget',
       headerName: 'Budget',
-      width: 120,
+      width: 100,
+      flex: 0,
+      resizable: true,
       renderCell: (params) => (
-        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-          {params.value ? `${params.value.toLocaleString('fr-FR')} DZD` : 'N/A'}
-        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 1 }}>
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+            {params.value ? `${params.value.toLocaleString('fr-FR')} DZD` : 'N/A'}
+          </Typography>
+        </Box>
       ),
     },
     {
       field: 'actions',
       headerName: 'Actions',
-      width: 100,
+      width: 80,
+      flex: 0,
       sortable: false,
       filterable: false,
+      resizable: false,
       renderCell: (params) => (
         <ActionMenuCell
           row={params.row}
@@ -730,7 +806,6 @@ const Projects = () => {
     
     if (!kanbanLoading && columnData.hasMore) {
       await loadKanbanColumnProjects(status, columnData.currentPage + 1);
-    } else {
     }
   };
 
@@ -791,7 +866,7 @@ const Projects = () => {
       const reactProjectData = {
         name: newProject.name,
         description: newProject.description,
-        status: 'planning', // Utiliser le statut par défaut Django
+        status: 'En attente', // Utiliser le statut par défaut français
         priority: newProject.priority,
         category: newProject.category || 'Web',
         startDate: newProject.startDate,
@@ -1004,9 +1079,30 @@ const Projects = () => {
       
       if (response.success) {
         // Update the projects state
-        setProjects(prev => prev.map(project => 
-          project.id === editingProject.id ? response.data : project
-        ));
+        setProjects(prev => {
+          if (Array.isArray(prev)) {
+            return prev.map(project => 
+              project.id === editingProject.id ? response.data : project
+            );
+          } else if (prev && prev.projects && Array.isArray(prev.projects)) {
+            return {
+              ...prev,
+              projects: prev.projects.map(project => 
+                project.id === editingProject.id ? response.data : project
+              )
+            };
+          } else {
+            // Handle case where prev.projects might be undefined
+            const currentProjects = prev?.projects || [];
+            return {
+              ...prev,
+              projects: currentProjects.map(project => 
+                project.id === editingProject.id ? response.data : project
+              )
+            };
+          }
+          return prev;
+        });
         
         // Also update kanban column data if needed
         setKanbanColumnData(prev => {
@@ -1062,9 +1158,30 @@ const Projects = () => {
       const originalStatus = currentProject?.status;
       
       // Update local state immediately for better UX
-      setProjects(prev => prev.map(project => 
-        project.id === projectId ? { ...project, status: newStatus } : project
-      ));
+      setProjects(prev => {
+        if (Array.isArray(prev)) {
+          return prev.map(project => 
+            project.id === projectId ? { ...project, status: newStatus } : project
+          );
+        } else if (prev && prev.projects && Array.isArray(prev.projects)) {
+          return {
+            ...prev,
+            projects: prev.projects.map(project => 
+              project.id === projectId ? { ...project, status: newStatus } : project
+            )
+          };
+        } else {
+          // Handle case where prev.projects might be undefined
+          const currentProjects = prev?.projects || [];
+          return {
+            ...prev,
+            projects: currentProjects.map(project => 
+              project.id === projectId ? { ...project, status: newStatus } : project
+            )
+          };
+        }
+        return prev;
+      });
 
       // Call API to update the project
       // Convert status to Django format before sending
@@ -1077,22 +1194,55 @@ const Projects = () => {
           message: `Statut mis à jour avec succès: ${getStatusLabel(newStatus)}`,
           severity: 'success'
         });
+        
+        // Update Kanban columns immediately
+        setKanbanColumnData(prev => {
+          const newData = { ...prev };
+          
+          // Remove project from old status column
+          if (originalStatus && newData[originalStatus]) {
+            newData[originalStatus] = {
+              ...newData[originalStatus],
+              projects: newData[originalStatus].projects.filter(p => p.id !== projectId),
+              totalCount: Math.max(0, newData[originalStatus].totalCount - 1)
+            };
+          }
+          
+          // Add project to new status column
+          if (newData[newStatus]) {
+            const updatedProject = { ...currentProject, status: newStatus };
+            newData[newStatus] = {
+              ...newData[newStatus],
+              projects: [updatedProject, ...newData[newStatus].projects],
+              totalCount: newData[newStatus].totalCount + 1
+            };
+          }
+          
+          return newData;
+        });
+        
         // Refresh current page to ensure data consistency
         setTimeout(() => {
           loadProjectsForPage(paginationModel.page + 1, paginationModel.pageSize);
-          // Also refresh kanban data
-          // Refresh all kanban columns
-        const statuses = ['En attente', 'En cours', 'En retard', 'Terminé'];
-        statuses.forEach(status => {
-          loadKanbanColumnProjects(status, 1);
-        });
-        }, 1000);
+        }, 500);
       } else {
           console.error('❌ API update failed:', result.error);
           // Revert local state if API call failed
-          setProjects(prev => prev.map(project => 
-            project.id === projectId ? { ...project, status: originalStatus } : project
-          ));
+          setProjects(prev => {
+            if (Array.isArray(prev)) {
+              return prev.map(project => 
+                project.id === projectId ? { ...project, status: originalStatus } : project
+              );
+            } else if (prev && prev.projects && Array.isArray(prev.projects)) {
+              return {
+                ...prev,
+                projects: prev.projects.map(project => 
+                  project.id === projectId ? { ...project, status: originalStatus } : project
+                )
+              };
+            }
+            return prev;
+          });
           
           // Extract error message properly
           let errorMessage = 'Erreur inconnue';
@@ -1122,9 +1272,21 @@ const Projects = () => {
       // Revert local state
       const currentProject = projects.find(p => p.id === projectId);
       const originalStatus = currentProject?.status;
-      setProjects(prev => prev.map(project => 
-        project.id === projectId ? { ...project, status: originalStatus } : project
-      ));
+      setProjects(prev => {
+        if (Array.isArray(prev)) {
+          return prev.map(project => 
+            project.id === projectId ? { ...project, status: originalStatus } : project
+          );
+        } else if (prev && prev.projects && Array.isArray(prev.projects)) {
+          return {
+            ...prev,
+            projects: prev.projects.map(project => 
+              project.id === projectId ? { ...project, status: originalStatus } : project
+            )
+          };
+        }
+        return prev;
+      });
       setSnackbar({
         open: true,
         message: `Erreur lors de la mise à jour: ${error.message}`,
@@ -1147,9 +1309,21 @@ const Projects = () => {
       const originalProgress = currentProject?.progress;
       
       // Update local state immediately for better UX
-      setProjects(prev => prev.map(project => 
-        project.id === projectId ? { ...project, progress: newProgress } : project
-      ));
+      setProjects(prev => {
+        if (Array.isArray(prev)) {
+          return prev.map(project => 
+            project.id === projectId ? { ...project, progress: newProgress } : project
+          );
+        } else if (prev && prev.projects && Array.isArray(prev.projects)) {
+          return {
+            ...prev,
+            projects: prev.projects.map(project => 
+              project.id === projectId ? { ...project, progress: newProgress } : project
+            )
+          };
+        }
+        return prev;
+      });
 
       // Call API to update the project progress
       const result = await projectService.updateProjectProgress(projectId, newProgress);
@@ -1161,30 +1335,65 @@ const Projects = () => {
           severity: 'success'
         });
         // Update with the returned data from API
-        setProjects(prev => ({
-          ...prev,
-          projects: prev.projects.map(project => 
-            project.id === projectId ? result.data : project
-          )
-        }));
+        setProjects(prev => {
+          // Handle both array and object structures
+          if (Array.isArray(prev)) {
+            return prev.map(project => 
+              project.id === projectId ? result.data : project
+            );
+          } else if (prev && prev.projects && Array.isArray(prev.projects)) {
+            return {
+              ...prev,
+              projects: prev.projects.map(project => 
+                project.id === projectId ? result.data : project
+              )
+            };
+          } else if (prev && typeof prev === 'object') {
+            // If prev is an object but doesn't have a projects array, return as is
+            return prev;
+          }
+          return prev;
+        });
+        // Update Kanban columns immediately with updated project data
+        setKanbanColumnData(prev => {
+          const newData = { ...prev };
+          const currentStatus = result.data?.status;
+          
+          if (currentStatus && newData[currentStatus]) {
+            // Find and update the project in the appropriate column
+            newData[currentStatus] = {
+              ...newData[currentStatus],
+              projects: newData[currentStatus].projects.map(p => 
+                p.id === projectId ? result.data : p
+              )
+            };
+          }
+          
+          return newData;
+        });
+        
         // Refresh current page to ensure data consistency
         setTimeout(() => {
           loadProjectsForPage(paginationModel.page + 1, paginationModel.pageSize);
-          // Also refresh kanban data
-          const statuses = ['En attente', 'En cours', 'En retard', 'Terminé'];
-          statuses.forEach(status => {
-            loadKanbanColumnProjects(status, 1);
-          });
-        }, 1000);
+        }, 500);
       } else {
         console.error('❌ API progress update failed:', result.error);
         // Revert local state if API call failed
-        setProjects(prev => ({
-          ...prev,
-          projects: prev.projects.map(project => 
-            project.id === projectId ? { ...project, progress: originalProgress } : project
-          )
-        }));
+        setProjects(prev => {
+          if (Array.isArray(prev)) {
+            return prev.map(project => 
+              project.id === projectId ? { ...project, progress: originalProgress } : project
+            );
+          } else if (prev && prev.projects && Array.isArray(prev.projects)) {
+            return {
+              ...prev,
+              projects: prev.projects.map(project => 
+                project.id === projectId ? { ...project, progress: originalProgress } : project
+              )
+            };
+          }
+          return prev;
+        });
         
         setSnackbar({
           open: true,
@@ -1195,12 +1404,21 @@ const Projects = () => {
     } catch (error) {
       console.error('❌ Exception during progress update:', error);
       // Revert local state
-      setProjects(prev => ({
-        ...prev,
-        projects: prev.projects.map(project => 
-          project.id === projectId ? { ...project, progress: projects.find(p => p.id === projectId)?.progress } : project
-        )
-      }));
+      setProjects(prev => {
+        if (Array.isArray(prev)) {
+          return prev.map(project => 
+            project.id === projectId ? { ...project, progress: projects.find(p => p.id === projectId)?.progress } : project
+          );
+        } else if (prev && prev.projects && Array.isArray(prev.projects)) {
+          return {
+            ...prev,
+            projects: prev.projects.map(project => 
+              project.id === projectId ? { ...project, progress: projects.find(p => p.id === projectId)?.progress } : project
+            )
+          };
+        }
+        return prev;
+      });
       setSnackbar({
         open: true,
         message: `Erreur lors de la mise à jour du progrès: ${error.message}`,
@@ -1504,14 +1722,23 @@ const Projects = () => {
   // Fonction pour convertir les statuts (maintenant Django accepte les statuts français)
   const convertStatusToDjango = (status) => {
     // Django accepte maintenant les statuts français directement
-    // On garde juste la conversion pour les anciens statuts
-    const statusMap = {
-      'Planification': 'planning',
-      'paused': 'En attente', // Convertir paused vers En attente
-      'active': 'En cours', // Convertir active vers En cours
-    };
+    // Retourner le statut tel quel (pas de conversion)
+    return status;
+  };
+
+  // Helper function to safely update projects state
+  const updateProjectsState = (prev, updateFn) => {
+    const currentProjects = Array.isArray(prev) ? prev : (prev?.projects || []);
+    const updatedProjects = updateFn(currentProjects);
     
-    return statusMap[status] || status; // Retourner tel quel si déjà en français
+    if (Array.isArray(prev)) {
+      return updatedProjects;
+    } else {
+      return {
+        ...prev,
+        projects: updatedProjects
+      };
+    }
   };
 
   const getStatusIcon = (status) => {
@@ -1659,14 +1886,13 @@ const Projects = () => {
     if (draggedProject && draggedProject.status !== targetStatus) {
       
       // Update local state immediately for better UX
-      setProjects(prev => ({
-        ...prev,
-        projects: prev.projects.map(project => 
+      setProjects(prev => updateProjectsState(prev, projects => 
+        projects.map(project => 
           project.id === draggedProject.id 
             ? { ...project, status: targetStatus }
             : project
         )
-      }));
+      ));
       
       try {
         // Convert status to Django format before sending
@@ -1694,14 +1920,13 @@ const Projects = () => {
         } else {
           console.error('❌ API update failed:', result.error);
           // Revert local state if API call failed
-          setProjects(prev => ({
-            ...prev,
-            projects: prev.projects.map(project => 
+          setProjects(prev => updateProjectsState(prev, projects => 
+            projects.map(project => 
               project.id === draggedProject.id 
                 ? { ...project, status: draggedProject.status }
                 : project
             )
-          }));
+          ));
           
           // Extract error message properly
           let errorMessage = 'Erreur inconnue';
@@ -2118,9 +2343,9 @@ const Projects = () => {
     if (newFiliales.includes('TOUT')) {
       // Si "TOUT" est sélectionné, ne garder que "TOUT"
       newFiliales = ['TOUT'];
-    } else if (newFiliales.length > 1 && newFiliales.includes('TOUT')) {
-      // Si plusieurs options sont sélectionnées et "TOUT" est inclus, retirer "TOUT"
-      newFiliales = newFiliales.filter(filiale => filiale !== 'TOUT');
+    } else if (newFiliales.length > 1) {
+      // Si plusieurs options sont sélectionnées, s'assurer qu'il n'y a pas de doublons
+      newFiliales = [...new Set(newFiliales)];
     }
     
     console.log('🏢 New filiales:', newFiliales);
@@ -2249,9 +2474,9 @@ const Projects = () => {
     if (newFiliales.includes('TOUT')) {
       // Si "TOUT" est sélectionné, ne garder que "TOUT"
       newFiliales = ['TOUT'];
-    } else if (newFiliales.length > 1 && newFiliales.includes('TOUT')) {
-      // Si plusieurs options sont sélectionnées et "TOUT" est inclus, retirer "TOUT"
-      newFiliales = newFiliales.filter(filiale => filiale !== 'TOUT');
+    } else if (newFiliales.length > 1) {
+      // Si plusieurs options sont sélectionnées, s'assurer qu'il n'y a pas de doublons
+      newFiliales = [...new Set(newFiliales)];
     }
     
     setEditProject({ ...editProject, filiales: newFiliales });
@@ -2830,10 +3055,8 @@ const Projects = () => {
                                 <Box sx={{ minWidth: 0, flex: 1 }}>
                                   <Typography variant="subtitle2" fontWeight={700} sx={{ 
                                     fontSize: '0.8rem',
-                                    lineHeight: 1.1,
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    whiteSpace: 'nowrap',
+                                    lineHeight: 1.2,
+                                    wordBreak: 'break-word',
                                     color: theme.palette.text.primary
                               }}>
                                 {project.name}
@@ -2889,11 +3112,7 @@ const Projects = () => {
                               mb: 1, 
                               lineHeight: 1.3,
                               fontSize: '0.7rem',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              display: '-webkit-box',
-                              WebkitLineClamp: 2,
-                              WebkitBoxOrient: 'vertical',
+                              wordBreak: 'break-word'
                             }}>
                               {project.description}
                             </Typography>
@@ -3207,7 +3426,7 @@ const Projects = () => {
               disableColumnReorder
               hideFooterSelectedRowCount
               density="compact"
-              rowHeight={56}
+              getRowHeight={() => 'auto'}
               columnHeaderHeight={44}
               autoHeight={false}
               loading={paginationLoading}
@@ -3235,17 +3454,43 @@ const Projects = () => {
                 },
                 '& .MuiDataGrid-cell': {
                   borderBottom: `1px solid ${theme.palette.divider}`,
-                  padding: '4px 6px',
+                  padding: '12px 8px',
                   display: 'flex',
-                  alignItems: 'center',
-                  minHeight: '32px !important',
+                  alignItems: 'flex-start',
+                  minHeight: 'auto !important',
+                  height: 'auto !important',
+                  whiteSpace: 'normal !important',
+                  wordBreak: 'break-word !important',
+                  overflow: 'visible !important',
                 },
                 '& .MuiDataGrid-row': {
+                  minHeight: 'auto !important',
+                  height: 'auto !important',
                   '&:hover': {
                     backgroundColor: theme.palette.mode === 'dark'
                       ? 'rgba(129, 140, 248, 0.05)'
                       : 'rgba(99, 102, 241, 0.05)',
                   },
+                },
+                '& .MuiDataGrid-cell[data-field="name"]': {
+                  whiteSpace: 'normal !important',
+                  wordBreak: 'break-word !important',
+                  overflow: 'visible !important',
+                  textOverflow: 'unset !important',
+                  maxWidth: 'none !important',
+                },
+                '& .MuiDataGrid-cell[data-field="name"] *': {
+                  whiteSpace: 'normal !important',
+                  wordBreak: 'break-word !important',
+                  overflow: 'visible !important',
+                  textOverflow: 'unset !important',
+                },
+                '& .MuiDataGrid-cell[data-field="name"] .MuiTypography-root': {
+                  whiteSpace: 'normal !important',
+                  wordBreak: 'break-word !important',
+                  overflow: 'visible !important',
+                  textOverflow: 'unset !important',
+                  maxWidth: 'none !important',
                 },
                 '& .MuiDataGrid-virtualScroller': {
                   backgroundColor: 'transparent',

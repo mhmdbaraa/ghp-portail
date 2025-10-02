@@ -76,6 +76,18 @@ const UserList = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, isLoading } = useAuth();
   
+  // Hook pour détecter la taille de l'écran
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 600);
+  
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 600);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  
   // Show loading while checking authentication
   if (isLoading) {
     return (
@@ -617,7 +629,7 @@ const UserList = () => {
           onClose={() => setAddUserModalOpen(false)}
           maxWidth="sm"
           fullWidth
-          fullScreen={{ xs: true, sm: false }}
+          fullScreen={isMobile}
           sx={{
             '& .MuiDialog-paper': {
               margin: { xs: 0, sm: 1.5 },

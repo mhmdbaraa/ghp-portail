@@ -520,26 +520,26 @@ const ProjectDetails = ({ open, onClose, project }) => {
                         <ListItemText
                           primary={
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                              <Typography variant="body1" fontWeight={600}>
+                              <Box component="span" sx={{ fontWeight: 600, fontSize: '1rem' }}>
                                 {task.title}
-                              </Typography>
+                              </Box>
                               <Chip
                                 label={getTaskStatusLabel(task.status)}
                                 size="small"
                                 color={getTaskStatusColor(task.status)}
                               />
                               {task.task_number && (
-                                <Typography variant="caption" color="primary" sx={{ fontFamily: 'monospace', fontWeight: 600 }}>
-                                  {task.task_number}
-                                </Typography>
+                              <Box component="span" sx={{ fontSize: '0.75rem', color: 'primary.main', fontFamily: 'monospace', fontWeight: 600 }}>
+                                {task.task_number}
+                              </Box>
                               )}
                             </Box>
                           }
                           secondary={
                             <>
-                              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                              <Box component="span" sx={{ color: 'text.secondary', display: 'block', mb: 1, fontSize: '0.875rem' }}>
                                 {task.description || 'Aucune description'}
-                              </Typography>
+                              </Box>
                               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                                 {task.assignee_name && (
                                   <Chip

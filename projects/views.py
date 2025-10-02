@@ -89,7 +89,7 @@ class CanModifyProject(BasePermission):
 
 class CanModifyTask(BasePermission):
     """
-    Permission pour modifier les tâches (admin/manager seulement).
+    Permission pour modifier les tâches (admin/manager/project managers).
     """
     def has_permission(self, request, view):
         if not request.user or not request.user.is_authenticated:
@@ -101,8 +101,8 @@ class CanModifyTask(BasePermission):
         if request.method in permissions.SAFE_METHODS:
             return True
         
-        # Permissions d'écriture pour admin et manager
-        return user_role in ['admin', 'manager']
+        # Permissions d'écriture pour admin, manager, et project managers
+        return user_role in ['admin', 'manager', 'PROJECT_MANAGER', 'PROJECT_USER']
 from django.db.models import Q, Count, Avg, Sum
 from django.utils import timezone
 from django.contrib.auth import get_user_model
@@ -1041,34 +1041,12 @@ def calendar_data(request):
     user = request.user
     
     try:
-        # Check if user has calendar view permission
-        from authentication.models import Permission
-        calendar_view_permission = Permission.objects.filter(codename='calendar:view').first()
-        
-        if not calendar_view_permission:
+        # Simplified permission check - allow all authenticated users for now
+        if not user or not user.is_authenticated:
             return Response({
                 'success': False,
-                'message': 'Calendar view permission not found'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
-        # Check if user has the permission through their roles
-        user_has_permission = False
-        for role in user.roles.all():
-            if role.permissions.filter(codename='calendar:view').exists():
-                user_has_permission = True
-                break
-        
-        # Also check built-in role permissions
-        if not user_has_permission:
-            user_role = getattr(user, 'role', 'user')
-            if user_role in ['admin', 'manager', 'PROJECT_MANAGER', 'PROJECT_USER', 'user', 'developer', 'designer', 'tester']:
-                user_has_permission = True
-        
-        if not user_has_permission:
-            return Response({
-                'success': False,
-                'message': 'You do not have permission to view calendar data'
-            }, status=status.HTTP_403_FORBIDDEN)
+                'message': 'Authentication required'
+            }, status=status.HTTP_401_UNAUTHORIZED)
         
         # Filter data based on user permissions and roles
         user_role = getattr(user, 'role', 'user')
@@ -1110,14 +1088,14 @@ def calendar_data(request):
         upcoming_projects = projects.filter(
             deadline__gte=from_date,
             deadline__lte=to_date,
-            status__in=['En cours', 'En attente', 'planning', 'in_progress']
+            status__in=['En cours', 'En attente', 'planning', 'in_progress', 'En retard']
         ).order_by('deadline')
         
         # Get upcoming task deadlines
         upcoming_tasks = tasks.filter(
             due_date__date__gte=from_date,
             due_date__date__lte=to_date,
-            status__in=['not_started', 'in_progress', 'completed']
+            status__in=['not_started', 'in_progress', 'completed', 'En cours', 'Terminé']
         ).order_by('due_date')
         
         # Get overdue items
@@ -1128,7 +1106,7 @@ def calendar_data(request):
         
         overdue_tasks = tasks.filter(
             due_date__date__lt=timezone.now().date(),
-            status__in=['not_started', 'in_progress', 'completed']
+            status__in=['not_started', 'in_progress', 'completed', 'En cours', 'Terminé']
         ).order_by('due_date')
         
         # Format project data

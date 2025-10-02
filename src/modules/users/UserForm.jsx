@@ -51,7 +51,7 @@ const UserForm = ({ onSuccess, onCancel, onShowSuccessMessage, userId }) => {
     email: '',
     first_name: '',
     last_name: '',
-    role: 'user',
+    role: '',
     status: 'active',
     is_staff: false,
     is_active: true,
@@ -87,7 +87,7 @@ const UserForm = ({ onSuccess, onCancel, onShowSuccessMessage, userId }) => {
         email: '',
         first_name: '',
         last_name: '',
-        role: 'user',
+        role: '',
         status: 'active',
         is_staff: false,
         is_active: true,
@@ -110,22 +110,16 @@ const UserForm = ({ onSuccess, onCancel, onShowSuccessMessage, userId }) => {
     }
   }, [id, isEdit, isModal]);
 
-  // Debug effect to log roles changes
-  useEffect(() => {
-    console.log('Roles state updated:', roles);
-  }, [roles]);
 
   const loadRoles = async () => {
     try {
       setLoadingRoles(true);
-      console.log('Loading roles...');
       const response = await roleService.getRoles();
-      console.log('Roles response:', response);
       if (response.success) {
-        console.log('Roles loaded successfully:', response.data);
-        setRoles(response.data || []);
+        // Handle both direct array and paginated response
+        const rolesData = response.data.results || response.data || [];
+        setRoles(rolesData);
       } else {
-        console.log('API failed, using fallback roles');
         // Fallback to hardcoded roles if API fails
         const fallbackRoles = [
           { id: 1, name: 'admin', description: 'Administrator' },
@@ -141,7 +135,6 @@ const UserForm = ({ onSuccess, onCancel, onShowSuccessMessage, userId }) => {
       }
     } catch (error) {
       console.error('Error loading roles:', error);
-      console.log('Using fallback roles due to error');
       // Fallback to hardcoded roles if API fails
       const fallbackRoles = [
         { id: 1, name: 'admin', description: 'Administrator' },
@@ -216,6 +209,10 @@ const UserForm = ({ onSuccess, onCancel, onShowSuccessMessage, userId }) => {
 
     if (!formData.last_name.trim()) {
       newErrors.last_name = 'Le nom est requis';
+    }
+
+    if (!formData.role) {
+      newErrors.role = 'Le rôle est requis';
     }
 
     if (!isEdit && !formData.password) {
@@ -463,10 +460,7 @@ const UserForm = ({ onSuccess, onCancel, onShowSuccessMessage, userId }) => {
                                      autoComplete="new-username"
                                      inputRef={usernameRef}
                                      inputProps={{
-                                       autoComplete: "new-username",
-                                       form: {
-                                         autoComplete: "off"
-                                       }
+                                       autoComplete: "new-username"
                                      }}
                                    />
                                  </Grid>
@@ -484,10 +478,7 @@ const UserForm = ({ onSuccess, onCancel, onShowSuccessMessage, userId }) => {
                                      autoComplete="new-email"
                                      inputRef={emailRef}
                                      inputProps={{
-                                       autoComplete: "new-email",
-                                       form: {
-                                         autoComplete: "off"
-                                       }
+                                       autoComplete: "new-email"
                                      }}
                                      InputProps={{
                                        startAdornment: <Email sx={{ mr: 1, color: 'text.secondary', fontSize: '1rem' }} />,
@@ -507,13 +498,14 @@ const UserForm = ({ onSuccess, onCancel, onShowSuccessMessage, userId }) => {
                     </Typography>
                     <Grid container spacing={{ xs: 1, sm: 1.5 }}>
                       <Grid item xs={12} sm={6}>
-                        <FormControl fullWidth size="small">
+                        <FormControl fullWidth size="small" error={Boolean(errors.role)}>
                           <InputLabel>Rôle</InputLabel>
                           <Select
-                            value={formData.role}
+                            value={formData.role || ''}
                             label="Rôle"
                             onChange={handleChange('role')}
                             disabled={loadingRoles}
+                            required
                           >
                             {loadingRoles ? (
                               <MenuItem disabled>
@@ -524,7 +516,7 @@ const UserForm = ({ onSuccess, onCancel, onShowSuccessMessage, userId }) => {
                               roles.length > 0 ? (
                                 roles.map((role) => (
                                   <MenuItem key={role.id} value={role.name}>
-                                    {getRoleLabel(role.name)}
+                                    {role.display_name || getRoleLabel(role.name)}
                                   </MenuItem>
                                 ))
                               ) : (
@@ -534,6 +526,11 @@ const UserForm = ({ onSuccess, onCancel, onShowSuccessMessage, userId }) => {
                               )
                             )}
                           </Select>
+                          {errors.role && (
+                            <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75 }}>
+                              {errors.role}
+                            </Typography>
+                          )}
                         </FormControl>
                       </Grid>
                       <Grid item xs={12} sm={6}>
@@ -665,10 +662,7 @@ const UserForm = ({ onSuccess, onCancel, onShowSuccessMessage, userId }) => {
                                          autoComplete="new-password"
                                          inputRef={passwordRef}
                                          inputProps={{
-                                           autoComplete: "new-password",
-                                           form: {
-                                             autoComplete: "off"
-                                           }
+                                           autoComplete: "new-password"
                                          }}
                                        />
                                      </Grid>
@@ -686,10 +680,7 @@ const UserForm = ({ onSuccess, onCancel, onShowSuccessMessage, userId }) => {
                                          autoComplete="new-password"
                                          inputRef={confirmPasswordRef}
                                          inputProps={{
-                                           autoComplete: "new-password",
-                                           form: {
-                                             autoComplete: "off"
-                                           }
+                                           autoComplete: "new-password"
                                          }}
                                        />
                                      </Grid>

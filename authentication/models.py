@@ -149,6 +149,7 @@ class Role(models.Model):
     Custom Role model for role-based access control
     """
     name = models.CharField(max_length=100, unique=True)
+    display_name = models.CharField(max_length=255, blank=True, null=True)
     description = models.TextField(blank=True)
     permissions = models.ManyToManyField(Permission, blank=True, related_name='roles')
     is_active = models.BooleanField(default=True)

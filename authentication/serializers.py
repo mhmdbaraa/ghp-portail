@@ -34,7 +34,7 @@ class RoleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Role
         fields = [
-            'id', 'name', 'description', 'permissions', 'permission_ids',
+            'id', 'name', 'display_name', 'description', 'permissions', 'permission_ids',
             'is_active', 'is_system', 'user_count', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'is_system', 'created_at', 'updated_at']

@@ -158,3 +158,13 @@ MIDDLEWARE = [
 
 # WhiteNoise settings
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# Email Configuration
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "172.16.0.25"
+EMAIL_USE_TLS = False
+EMAIL_PORT = 25
+EMAIL_HOST_USER = ''
+EMAIL_HOST_PASSWORD = ''
+DEFAULT_FROM_EMAIL = 'GHPportail@groupehdyrapahrm.com'
+SERVER_EMAIL = 'GHPportail@groupehdyrapahrm.com'

@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     # Local apps
     'authentication',
     'projects',
+    'notifications',
 ]
 
 MIDDLEWARE = [
@@ -243,3 +244,13 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Static files
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+# Email Configuration
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "172.16.0.25"
+EMAIL_USE_TLS = False
+EMAIL_PORT = 25
+EMAIL_HOST_USER = ''
+EMAIL_HOST_PASSWORD = ''
+DEFAULT_FROM_EMAIL = 'GHPportail@groupehdyrapahrm.com'
+SERVER_EMAIL = 'GHPportail@groupehdyrapahrm.com'

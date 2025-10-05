@@ -1,0 +1,36 @@
+{% extends "notifications/emails/base.html" %}
+
+{% block title %}Nouveau projet créé - GHP Portail{% endblock %}
+
+{% block header_title %}Nouveau Projet{% endblock %}
+{% block header_subtitle %}Un nouveau projet a été créé{% endblock %}
+
+{% block content %}
+<div class="highlight priority-medium">
+    <h2>🎉 Nouveau Projet Créé</h2>
+    <p><strong>Nom du projet:</strong> {{ project_name }}</p>
+    {% if project_description %}
+    <p><strong>Description:</strong> {{ project_description }}</p>
+    {% endif %}
+    <p><strong>Créé par:</strong> {{ creator_name }}</p>
+    <p><strong>Date de création:</strong> {{ created_at|date:"d/m/Y à H:i" }}</p>
+</div>
+
+<p>Un nouveau projet a été ajouté au portail GHP. Vous pouvez maintenant y accéder et commencer à collaborer avec votre équipe.</p>
+
+<div style="text-align: center; margin: 30px 0;">
+    <a href="{{ site_url }}/projects/{{ project_id }}" class="button">
+        Voir le Projet
+    </a>
+</div>
+
+<h3>Prochaines Étapes</h3>
+<ul>
+    <li>Consultez les détails du projet</li>
+    <li>Ajoutez des tâches et des jalons</li>
+    <li>Invitez d'autres membres de l'équipe</li>
+    <li>Configurez les notifications du projet</li>
+</ul>
+
+<p>Si vous avez des questions concernant ce projet, n'hésitez pas à contacter l'équipe ou le créateur du projet.</p>
+{% endblock %}

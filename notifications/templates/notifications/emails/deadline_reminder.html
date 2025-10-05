@@ -1,0 +1,46 @@
+{% extends "notifications/emails/base.html" %}
+
+{% block title %}Rappel d'échéance - GHP Portail{% endblock %}
+
+{% block header_title %}⚠️ Rappel d'Échéance{% endblock %}
+{% block header_subtitle %}Attention, une échéance approche{% endblock %}
+
+{% block content %}
+<div class="highlight priority-high">
+    <h2>⏰ Échéance Approchante</h2>
+    <p><strong>Projet:</strong> {{ project_name }}</p>
+    <p><strong>Échéance:</strong> {{ deadline|date:"d/m/Y" }}</p>
+    <p><strong>Jours restants:</strong> {{ days_remaining }} jour{{ days_remaining|pluralize }}</p>
+</div>
+
+{% if days_remaining <= 1 %}
+<div style="background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: 15px; border-radius: 5px; margin: 20px 0;">
+    <strong>🚨 URGENT:</strong> L'échéance est très proche ! Veuillez vérifier immédiatement l'avancement du projet.
+</div>
+{% elif days_remaining <= 3 %}
+<div style="background-color: #fff3cd; border: 1px solid #ffeaa7; color: #856404; padding: 15px; border-radius: 5px; margin: 20px 0;">
+    <strong>⚠️ ATTENTION:</strong> L'échéance approche rapidement. Vérifiez l'avancement du projet.
+</div>
+{% endif %}
+
+<p>Le projet "{{ project_name }}" arrive à échéance dans {{ days_remaining }} jour{{ days_remaining|pluralize }}. Il est important de vérifier l'avancement et de prendre les mesures nécessaires.</p>
+
+<div style="text-align: center; margin: 30px 0;">
+    <a href="{{ site_url }}/projects/{{ project_id }}" class="button">
+        Vérifier le Projet
+    </a>
+</div>
+
+<h3>Actions Recommandées</h3>
+<ul>
+    <li>Vérifiez l'avancement des tâches</li>
+    <li>Identifiez les blocages potentiels</li>
+    <li>Mettez à jour le statut des tâches</li>
+    <li>Communiquez avec l'équipe si nécessaire</li>
+    {% if days_remaining <= 1 %}
+    <li><strong>URGENT:</strong> Contactez immédiatement le responsable du projet</li>
+    {% endif %}
+</ul>
+
+<p>Si vous pensez que l'échéance ne pourra pas être respectée, contactez rapidement le responsable du projet pour discuter des options disponibles.</p>
+{% endblock %}

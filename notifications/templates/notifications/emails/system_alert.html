@@ -1,0 +1,45 @@
+{% extends "notifications/emails/base.html" %}
+
+{% block title %}Alerte Système - GHP Portail{% endblock %}
+
+{% block header_title %}🔔 Alerte Système{% endblock %}
+{% block header_subtitle %}Notification importante du système{% endblock %}
+
+{% block content %}
+<div class="highlight priority-{{ priority }}">
+    <h2>📢 {{ subject }}</h2>
+    <p><strong>Type:</strong> {{ notification_type_display }}</p>
+    <p><strong>Priorité:</strong> {{ priority_display }}</p>
+    <p><strong>Date:</strong> {{ created_at|date:"d/m/Y à H:i" }}</p>
+</div>
+
+<div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
+    {{ message|linebreaks }}
+</div>
+
+{% if action_required %}
+<div style="background-color: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; padding: 15px; border-radius: 5px; margin: 20px 0;">
+    <strong>Action Requise:</strong> {{ action_required }}
+</div>
+{% endif %}
+
+{% if button_url and button_text %}
+<div style="text-align: center; margin: 30px 0;">
+    <a href="{{ button_url }}" class="button">
+        {{ button_text }}
+    </a>
+</div>
+{% endif %}
+
+<h3>Informations Supplémentaires</h3>
+<ul>
+    <li><strong>Système:</strong> GHP Portail</li>
+    <li><strong>Version:</strong> {{ system_version|default:"1.0" }}</li>
+    <li><strong>Environnement:</strong> {{ environment|default:"Production" }}</li>
+    {% if related_object_type %}
+    <li><strong>Objet lié:</strong> {{ related_object_type }} #{{ related_object_id }}</li>
+    {% endif %}
+</ul>
+
+<p>Cette notification a été générée automatiquement par le système. Si vous pensez qu'il s'agit d'une erreur, contactez l'équipe technique.</p>
+{% endblock %}

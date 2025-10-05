@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guide Projets - GHP Portail</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f8f9fa;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 60px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header .subtitle {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .developer-info {
+            margin-top: 20px;
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+
+        .developer-info p {
+            margin: 5px 0;
+        }
+
+        .content {
+            padding: 60px;
+        }
+
+        .section {
+            margin-bottom: 50px;
+        }
+
+        .section h2 {
+            color: #667eea;
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .section h3 {
+            color: #555;
+            font-size: 1.4em;
+            margin: 30px 0 15px 0;
+        }
+
+        .section h4 {
+            color: #666;
+            font-size: 1.2em;
+            margin: 20px 0 10px 0;
+        }
+
+        .highlight-box {
+            background: #f8f9ff;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .warning-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .success-box {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .steps {
+            counter-reset: step-counter;
+        }
+
+        .step {
+            counter-increment: step-counter;
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            position: relative;
+            padding-left: 60px;
+        }
+
+        .step::before {
+            content: counter(step-counter);
+            position: absolute;
+            left: 20px;
+            top: 20px;
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .status-item {
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .status-waiting { background: #fff3cd; color: #856404; }
+        .status-progress { background: #cce5ff; color: #004085; }
+        .status-completed { background: #d4edda; color: #155724; }
+        .status-delayed { background: #f8d7da; color: #721c24; }
+        .status-cancelled { background: #e2e3e5; color: #383d41; }
+        .status-paused { background: #ffeaa7; color: #6c5ce7; }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin: 30px 0;
+        }
+
+        .feature-card {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .feature-card h4 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .code-block {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            margin: 20px 0;
+            overflow-x: auto;
+        }
+
+        .toc {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 30px;
+            margin: 30px 0;
+        }
+
+        .toc h3 {
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .toc ul {
+            list-style: none;
+        }
+
+        .toc li {
+            margin: 10px 0;
+        }
+
+        .toc a {
+            color: #667eea;
+            text-decoration: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            transition: background 0.3s ease;
+        }
+
+        .toc a:hover {
+            background: #e9ecef;
+        }
+
+        .contact-info {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin: 30px 0;
+            text-align: center;
+        }
+
+        .contact-info h3 {
+            margin-bottom: 20px;
+        }
+
+        .contact-item {
+            margin: 10px 0;
+            font-size: 1.1em;
+        }
+
+        .footer {
+            background: #343a40;
+            color: white;
+            padding: 30px;
+            text-align: center;
+            margin-top: 50px;
+        }
+
+        @media print {
+            body { background: white; }
+            .container { box-shadow: none; }
+            .header { background: #667eea !important; }
+            .feature-card:hover { transform: none; }
+        }
+
+        @media (max-width: 768px) {
+            .content { padding: 30px 20px; }
+            .header { padding: 30px 20px; }
+            .feature-grid { grid-template-columns: 1fr; }
+            .status-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Guide Projets</h1>
+            <div class="subtitle">GHP Portail - Gestion des Projets</div>
+        <div class="developer-info">
+            <p><strong>Développeur :</strong> Mohamed Bara</p>
+            <p><strong>Email :</strong> mohamed.bara@groupehydrapharm.com</p>
+            <p><strong>Téléphone :</strong> +213 770 202 333</p>
+            <p><strong>Version :</strong> 2.0.0 - Octobre 2025</p>
+        </div>
+        </div>
+
+        <div class="content">
+            <div class="toc">
+                <h3>📋 Table des Matières</h3>
+                <ul>
+                    <li><a href="#acces">🚀 Accès aux Projets</a></li>
+                    <li><a href="#creer">➕ Créer un Nouveau Projet</a></li>
+                    <li><a href="#statuts">📋 Statuts des Projets</a></li>
+                    <li><a href="#vues">👁️ Vues des Projets</a></li>
+                    <li><a href="#recherche">🔍 Recherche et Filtres</a></li>
+                    <li><a href="#modifier">✏️ Modifier un Projet</a></li>
+                    <li><a href="#suivi">📊 Suivi de Progression</a></li>
+                    <li><a href="#echeances">📅 Gestion des Échéances</a></li>
+                    <li><a href="#collaboration">👥 Collaboration</a></li>
+                    <li><a href="#rapports">📈 Rapports et Analyses</a></li>
+                    <li><a href="#bonnes-pratiques">🎯 Bonnes Pratiques</a></li>
+                    <li><a href="#taches">✅ Gestion des Tâches</a></li>
+                    <li><a href="#depannage">🆘 Dépannage</a></li>
+                    <li><a href="#contact">📞 Contact Support</a></li>
+                    <li><a href="#remerciements">🙏 Remerciements</a></li>
+                </ul>
+            </div>
+
+            <div class="section" id="acces">
+                <h2>🚀 Accès aux Projets</h2>
+                
+                <h3>Comment Accéder</h3>
+                <div class="steps">
+                    <div class="step">
+                        <strong>Connectez-vous</strong> à la plateforme
+                    </div>
+                    <div class="step">
+                        <strong>Cliquez sur "Projets"</strong> dans le menu de gauche
+                    </div>
+                    <div class="step">
+                        Vous accédez à la <strong>vue principale des projets</strong>
+                    </div>
+                </div>
+
+                <h3>Interface des Projets</h3>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h4>📋 Liste des projets</h4>
+                        <p>Vue d'ensemble de tous vos projets avec toutes les informations importantes</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>🔍 Filtres</h4>
+                        <p>Organisez l'affichage selon vos besoins avec des filtres avancés</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>🔎 Recherche</h4>
+                        <p>Trouvez rapidement un projet spécifique avec la recherche instantanée</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>⚡ Actions</h4>
+                        <p>Créer, modifier, supprimer des projets en quelques clics</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section" id="creer">
+                <h2>➕ Créer un Nouveau Projet</h2>
+                
+                <h3>Étapes de Création</h3>
+                <div class="steps">
+                    <div class="step">
+                        <strong>Cliquez sur "+ Nouveau Projet"</strong> (bouton vert)
+                    </div>
+                    <div class="step">
+                        <strong>Remplissez le formulaire</strong> avec les informations suivantes :
+                        <ul style="margin-top: 10px; margin-left: 20px;">
+                            <li><strong>Nom du projet</strong> : Titre clair et descriptif</li>
+                            <li><strong>Description</strong> : Détails du projet (optionnel)</li>
+                            <li><strong>Date de début</strong> : Quand le projet commence</li>
+                            <li><strong>Date de fin prévue</strong> : Échéance du projet</li>
+                            <li><strong>Responsable</strong> : Qui gère le projet</li>
+                            <li><strong>Priorité</strong> : Niveau d'importance</li>
+                        </ul>
+                    </div>
+                    <div class="step">
+                        <strong>Cliquez sur "Créer"</strong> pour finaliser
+                    </div>
+                </div>
+
+                <div class="highlight-box">
+                    <h4>💡 Exemple de Projet</h4>
+                    <div class="code-block">
+<strong>Nom :</strong> "Refonte du site web"<br>
+<strong>Description :</strong> "Modernisation complète de l'interface utilisateur"<br>
+<strong>Date début :</strong> 15/01/2024<br>
+<strong>Date fin :</strong> 15/03/2024<br>
+<strong>Responsable :</strong> Jean Dupont<br>
+<strong>Priorité :</strong> Haute
+                    </div>
+                </div>
+            </div>
+
+            <div class="section" id="statuts">
+                <h2>📋 Statuts des Projets</h2>
+                
+                <h3>Statuts Disponibles (Français)</h3>
+                <div class="status-grid">
+                    <div class="status-item status-waiting">
+                        🟡 En attente<br>
+                        <small>Projet créé, en attente de validation</small>
+                    </div>
+                    <div class="status-item status-progress">
+                        🔵 En cours<br>
+                        <small>Projet actif et en développement</small>
+                    </div>
+                    <div class="status-item status-delayed">
+                        🔴 En retard<br>
+                        <small>Projet avec des retards</small>
+                    </div>
+                    <div class="status-item status-completed">
+                        🟢 Terminé<br>
+                        <small>Projet finalisé avec succès</small>
+                    </div>
+                    <div class="status-item status-cancelled">
+                        ⚫ Annulé<br>
+                        <small>Projet annulé ou abandonné</small>
+                    </div>
+                </div>
+
+                <h4>Gestion Avancée des Statuts</h4>
+                <div class="highlight-box">
+                    <h5>🔄 Transitions de Statuts (Français)</h5>
+                    <ul>
+                        <li><strong>En attente → En cours</strong> : Validation et démarrage du projet</li>
+                        <li><strong>En cours → En retard</strong> : Dépasse l'échéance prévue</li>
+                        <li><strong>En cours → Terminé</strong> : Finalisation réussie du projet</li>
+                        <li><strong>En cours → Annulé</strong> : Abandon du projet</li>
+                        <li><strong>En retard → En cours</strong> : Reprise après rattrapage</li>
+                        <li><strong>En retard → Terminé</strong> : Finalisation malgré le retard</li>
+                        <li><strong>En retard → Annulé</strong> : Abandon après retard</li>
+                    </ul>
+                </div>
+
+                <h4>Catégories de Projets (Français)</h4>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h4>🌐 Développement Web</h4>
+                        <p>Applications et sites web</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>📱 Application Mobile</h4>
+                        <p>Applications pour smartphones</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>💻 Application Bureau</h4>
+                        <p>Logiciels pour ordinateur</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>📊 Analyse de Données</h4>
+                        <p>Projets d'analyse et reporting</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>🔬 Recherche</h4>
+                        <p>Projets de recherche et développement</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>🤖 Intelligence Artificielle</h4>
+                        <p>Projets IA et machine learning</p>
+                    </div>
+                </div>
+
+                <h4>Indicateurs de Performance</h4>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h4>📊 Progression</h4>
+                        <p>Pourcentage d'avancement du projet (0% à 100%)</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>💰 Budget</h4>
+                        <p>Budget alloué et dépensé</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>👥 Équipe</h4>
+                        <p>Nombre de membres dans l'équipe</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>📅 Échéance</h4>
+                        <p>Date limite du projet</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>📋 Tâches</h4>
+                        <p>Nombre total de tâches</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>✅ Tâches Terminées</h4>
+                        <p>Nombre de tâches complétées</p>
+                    </div>
+                </div>
+
+                <h3>Changer le Statut</h3>
+                <div class="steps">
+                    <div class="step">
+                        <strong>Cliquez sur le projet</strong> dans la liste
+                    </div>
+                    <div class="step">
+                        <strong>Cliquez sur le statut actuel</strong>
+                    </div>
+                    <div class="step">
+                        <strong>Sélectionnez le nouveau statut</strong>
+                    </div>
+                    <div class="step">
+                        <strong>Confirmez le changement</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section" id="vues">
+                <h2>👁️ Vues des Projets</h2>
+                
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h4>📋 Vue Liste (Défaut)</h4>
+                        <ul>
+                            <li><strong>Vue tabulaire</strong> avec toutes les informations</li>
+                            <li><strong>Tri</strong> : Cliquez sur les en-têtes de colonnes</li>
+                            <li><strong>Filtres</strong> : Utilisez les filtres en haut</li>
+                            <li><strong>Recherche</strong> : Tapez dans la barre de recherche</li>
+                        </ul>
+                    </div>
+                    <div class="feature-card">
+                        <h4>📊 Vue Kanban</h4>
+                        <ul>
+                            <li><strong>Colonnes par statut</strong> : À faire, En cours, Terminé</li>
+                            <li><strong>Glisser-déposer</strong> : Déplacez les projets entre les colonnes</li>
+                            <li><strong>Vue visuelle</strong> : Organisation claire des projets</li>
+                        </ul>
+                    </div>
+                    <div class="feature-card">
+                        <h4>📅 Vue Calendrier</h4>
+                        <ul>
+                            <li><strong>Planning visuel</strong> des projets</li>
+                            <li><strong>Échéances</strong> : Dates importantes mises en évidence</li>
+                            <li><strong>Vue mensuelle/semaine</strong> : Différentes échelles de temps</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section" id="recherche">
+                <h2>🔍 Recherche et Filtres</h2>
+                
+                <h3>Recherche Rapide</h3>
+                <div class="highlight-box">
+                    <ul>
+                        <li><strong>Barre de recherche</strong> : Tapez le nom du projet</li>
+                        <li><strong>Recherche instantanée</strong> : Résultats en temps réel</li>
+                        <li><strong>Effacer</strong> : Cliquez sur la croix pour effacer</li>
+                    </ul>
+                </div>
+
+                <h3>Filtres Disponibles</h3>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h4>📊 Par statut</h4>
+                        <p>En cours, Terminé, En retard...</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>⚡ Par priorité</h4>
+                        <p>Haute, Normale, Basse</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>👥 Par responsable</h4>
+                        <p>Vos projets, Équipe, Tous</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>📅 Par date</h4>
+                        <p>Cette semaine, Ce mois, Personnalisé</p>
+                    </div>
+                </div>
+
+                <h3>Sauvegarder une Vue</h3>
+                <div class="steps">
+                    <div class="step">
+                        <strong>Appliquez vos filtres</strong> préférés
+                    </div>
+                    <div class="step">
+                        <strong>Cliquez sur "Sauvegarder la vue"</strong>
+                    </div>
+                    <div class="step">
+                        <strong>Donnez un nom</strong> à votre vue
+                    </div>
+                    <div class="step">
+                        <strong>Récupérez-la</strong> depuis le menu déroulant
+                    </div>
+                </div>
+            </div>
+
+            <div class="section" id="modifier">
+                <h2>✏️ Modifier un Projet</h2>
+                
+                <h3>Édition Rapide</h3>
+                <div class="steps">
+                    <div class="step">
+                        <strong>Cliquez sur le projet</strong> dans la liste
+                    </div>
+                    <div class="step">
+                        <strong>Cliquez sur "Modifier"</strong> (icône crayon)
+                    </div>
+                    <div class="step">
+                        <strong>Modifiez les informations</strong> nécessaires
+                    </div>
+                    <div class="step">
+                        <strong>Cliquez sur "Sauvegarder"</strong>
+                    </div>
+                </div>
+
+                <h3>Informations Modifiables</h3>
+                <div class="highlight-box">
+                    <ul>
+                        <li><strong>Nom et description</strong></li>
+                        <li><strong>Dates de début et fin</strong></li>
+                        <li><strong>Responsable du projet</strong></li>
+                        <li><strong>Priorité et statut</strong></li>
+                        <li><strong>Progression</strong> (pourcentage d'avancement)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="section" id="suivi">
+                <h2>📊 Suivi de Progression</h2>
+                
+                <h3>Indicateurs Visuels</h3>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h4>📊 Barre de progression</h4>
+                        <p>Pourcentage d'avancement visible</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>🎨 Couleurs</h4>
+                        <p>Vert (bon), Orange (attention), Rouge (retard)</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>🔖 Icônes</h4>
+                        <p>Statuts visuels clairs</p>
+                    </div>
+                </div>
+
+                <h3>Mise à Jour de la Progression</h3>
+                <div class="steps">
+                    <div class="step">
+                        <strong>Ouvrez le projet</strong>
+                    </div>
+                    <div class="step">
+                        <strong>Cliquez sur "Progression"</strong>
+                    </div>
+                    <div class="step">
+                        <strong>Ajustez le pourcentage</strong> (0% à 100%)
+                    </div>
+                    <div class="step">
+                        <strong>Ajoutez un commentaire</strong> (optionnel)
+                    </div>
+                    <div class="step">
+                        <strong>Sauvegardez</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section" id="echeances">
+                <h2>📅 Gestion des Échéances</h2>
+                
+                <h3>Dates Importantes</h3>
+                <div class="highlight-box">
+                    <ul>
+                        <li><strong>Date de début</strong> : Quand le projet commence</li>
+                        <li><strong>Date de fin prévue</strong> : Échéance planifiée</li>
+                        <li><strong>Date de fin réelle</strong> : Quand le projet s'est terminé</li>
+                        <li><strong>Jalons</strong> : Étapes importantes du projet</li>
+                    </ul>
+                </div>
+
+                <h3>Alertes Automatiques</h3>
+                <div class="warning-box">
+                    <ul>
+                        <li><strong>7 jours avant</strong> : Rappel d'échéance</li>
+                        <li><strong>3 jours avant</strong> : Alerte importante</li>
+                        <li><strong>Échéance dépassée</strong> : Notification de retard</li>
+                    </ul>
+                </div>
+
+                <h3>Gérer les Retards</h3>
+                <div class="steps">
+                    <div class="step">
+                        <strong>Identifiez les projets en retard</strong> (statut rouge)
+                    </div>
+                    <div class="step">
+                        <strong>Analysez les causes</strong> du retard
+                    </div>
+                    <div class="step">
+                        <strong>Ajustez les dates</strong> si nécessaire
+                    </div>
+                    <div class="step">
+                        <strong>Communiquez</strong> avec l'équipe
+                    </div>
+                </div>
+            </div>
+
+            <div class="section" id="collaboration">
+                <h2>👥 Collaboration sur les Projets</h2>
+                
+                <h3>Assignation des Responsables</h3>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h4>👨‍💼 Responsable principal</h4>
+                        <p>Gestionnaire du projet</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>👥 Membres de l'équipe</h4>
+                        <p>Participants au projet</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>📢 Stakeholders</h4>
+                        <p>Parties prenantes informées</p>
+                    </div>
+                </div>
+
+                <h3>Communication</h3>
+                <div class="highlight-box">
+                    <ul>
+                        <li><strong>Commentaires</strong> : Ajoutez des notes sur le projet</li>
+                        <li><strong>Historique</strong> : Suivez les modifications</li>
+                        <li><strong>Notifications</strong> : Alertes automatiques</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="section" id="rapports">
+                <h2>📈 Rapports et Analyses</h2>
+                
+                <h3>Métriques Disponibles</h3>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h4>📊 Nombre de projets</h4>
+                        <p>Par statut</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>⏰ Projets en retard</h4>
+                        <p>vs en avance</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>💼 Charge de travail</h4>
+                        <p>Par responsable</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>📈 Tendances</h4>
+                        <p>Sur la période</p>
+                    </div>
+                </div>
+
+                <h3>Export des Données</h3>
+                <div class="steps">
+                    <div class="step">
+                        <strong>Sélectionnez les projets</strong> à exporter
+                    </div>
+                    <div class="step">
+                        <strong>Cliquez sur "Exporter"</strong>
+                    </div>
+                    <div class="step">
+                        <strong>Choisissez le format</strong> : Excel, PDF, CSV
+                    </div>
+                    <div class="step">
+                        <strong>Téléchargez</strong> le fichier
+                    </div>
+                </div>
+            </div>
+
+            <div class="section" id="bonnes-pratiques">
+                <h2>🎯 Bonnes Pratiques</h2>
+                
+                <h3>Nommage des Projets</h3>
+                <div class="success-box">
+                    <ul>
+                        <li><strong>Soyez descriptif</strong> : "Refonte site web Q1 2024"</li>
+                        <li><strong>Utilisez des codes</strong> : "PROJ-001-Refonte-Site"</li>
+                        <li><strong>Évitez les abréviations</strong> : "Refonte site web" plutôt que "Ref Site"</li>
+                    </ul>
+                </div>
+
+                <h3>Organisation</h3>
+                <div class="highlight-box">
+                    <ul>
+                        <li><strong>Groupez par équipe</strong> : Projets marketing, technique, commercial</li>
+                        <li><strong>Utilisez les priorités</strong> : Haute, Normale, Basse</li>
+                        <li><strong>Planifiez les échéances</strong> : Évitez les chevauchements</li>
+                    </ul>
+                </div>
+
+                <h3>Suivi Régulier</h3>
+                <div class="steps">
+                    <div class="step">
+                        <strong>Mise à jour hebdomadaire</strong> de la progression
+                    </div>
+                    <div class="step">
+                        <strong>Révision des échéances</strong> mensuelle
+                    </div>
+                    <div class="step">
+                        <strong>Communication</strong> avec l'équipe
+                    </div>
+                </div>
+            </div>
+
+            <div class="section" id="taches">
+                <h2>✅ Gestion des Tâches</h2>
+                
+                <h3>Vue d'Ensemble des Tâches</h3>
+                <div class="highlight-box">
+                    <p>Les tâches sont les éléments constitutifs de vos projets. Chaque projet peut contenir plusieurs tâches qui permettent de décomposer le travail en étapes plus petites et gérables.</p>
+                </div>
+
+                <h3>Types de Tâches</h3>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h4>📋 Tâche Simple</h4>
+                        <p>Tâche basique avec titre et description</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>⏰ Tâche avec Échéance</h4>
+                        <p>Tâche avec date limite définie</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>👥 Tâche Assignée</h4>
+                        <p>Tâche assignée à un membre de l'équipe</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>🔗 Tâche Liée</h4>
+                        <p>Tâche dépendante d'autres tâches</p>
+                    </div>
+                </div>
+
+                <h3>Statuts des Tâches (Français)</h3>
+                <div class="status-grid">
+                    <div class="status-item status-waiting">
+                        📝 Non Commencée<br>
+                        <small>Tâche créée, pas encore commencée</small>
+                    </div>
+                    <div class="status-item status-progress">
+                        🔄 En Cours<br>
+                        <small>Tâche en cours de réalisation</small>
+                    </div>
+                    <div class="status-item status-completed">
+                        ✅ Terminée<br>
+                        <small>Tâche finalisée avec succès</small>
+                    </div>
+                    <div class="status-item status-paused">
+                        ⏸️ En Attente<br>
+                        <small>Tâche temporairement suspendue</small>
+                    </div>
+                    <div class="status-item status-cancelled">
+                        ❌ Annulée<br>
+                        <small>Tâche annulée ou abandonnée</small>
+                    </div>
+                </div>
+
+                <h3>Priorités des Tâches (Français)</h3>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h4>🔴 Critique</h4>
+                        <p>Urgent, à traiter immédiatement</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>🟠 Haute</h4>
+                        <p>Important, à traiter rapidement</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>🟡 Normale</h4>
+                        <p>Priorité standard</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>🟢 Basse</h4>
+                        <p>Peut être reportée</p>
+                    </div>
+                </div>
+
+                <h3>Créer une Nouvelle Tâche</h3>
+                <div class="steps">
+                    <div class="step">
+                        <strong>Accédez à la section "Tâches"</strong> dans le menu principal
+                    </div>
+                    <div class="step">
+                        <strong>Cliquez sur "+ Nouvelle Tâche"</strong> (bouton vert)
+                    </div>
+                    <div class="step">
+                        <strong>Remplissez les informations</strong> :
+                        <ul style="margin-top: 10px; margin-left: 20px;">
+                            <li><strong>Titre</strong> : Nom clair de la tâche</li>
+                            <li><strong>Description</strong> : Détails de la tâche</li>
+                            <li><strong>Projet</strong> : Projet associé</li>
+                            <li><strong>Priorité</strong> : Niveau d'importance</li>
+                            <li><strong>Échéance</strong> : Date limite (optionnel)</li>
+                            <li><strong>Assigné à</strong> : Responsable de la tâche</li>
+                        </ul>
+                    </div>
+                    <div class="step">
+                        <strong>Cliquez sur "Créer"</strong> pour finaliser
+                    </div>
+                </div>
+
+                <h3>Gestion Avancée des Tâches</h3>
+                <div class="highlight-box">
+                    <h5>🔄 Workflow des Tâches</h5>
+                    <ol>
+                        <li><strong>Création</strong> : Tâche créée avec statut "À faire"</li>
+                        <li><strong>Assignation</strong> : Attribution à un membre de l'équipe</li>
+                        <li><strong>Démarrage</strong> : Changement de statut vers "En cours"</li>
+                        <li><strong>Suivi</strong> : Mise à jour régulière de la progression</li>
+                        <li><strong>Finalisation</strong> : Changement vers "Terminée"</li>
+                    </ol>
+                </div>
+
+                <h3>Filtres et Recherche</h3>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h4>🔍 Recherche</h4>
+                        <p>Tapez dans la barre de recherche pour trouver une tâche spécifique</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>📊 Filtres</h4>
+                        <p>Filtrez par statut, priorité, assigné, projet</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>📅 Tri</h4>
+                        <p>Triez par date, priorité, statut, assigné</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>💾 Vues Sauvegardées</h4>
+                        <p>Sauvegardez vos filtres préférés</p>
+                    </div>
+                </div>
+
+                <h3>Notifications et Alertes</h3>
+                <div class="warning-box">
+                    <h5>🔔 Alertes Automatiques</h5>
+                    <ul>
+                        <li><strong>Échéance approchant</strong> : 3 jours avant la date limite</li>
+                        <li><strong>Échéance dépassée</strong> : Tâche en retard</li>
+                        <li><strong>Nouvelle assignation</strong> : Tâche assignée à vous</li>
+                        <li><strong>Mise à jour</strong> : Changement de statut</li>
+                    </ul>
+                </div>
+
+                <h3>Types de Tâches (Français)</h3>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h4>🐛 Correction</h4>
+                        <p>Correction d'erreurs et problèmes</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>✨ Fonctionnalité</h4>
+                        <p>Nouvelles fonctionnalités</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>🔧 Amélioration</h4>
+                        <p>Amélioration de fonctionnalités existantes</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>📋 Tâche</h4>
+                        <p>Tâche générale</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>🎯 Épopée</h4>
+                        <p>Grande fonctionnalité complexe</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>📖 Histoire</h4>
+                        <p>Histoire utilisateur</p>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="section" id="depannage">
+                <h2>🆘 Dépannage Projets</h2>
+                
+                <h3>Problèmes Courants</h3>
+                
+                <div class="warning-box">
+                    <h4>❌ Je ne vois pas mes projets</h4>
+                    <ul>
+                        <li><strong>Vérifiez vos permissions</strong> avec votre superviseur</li>
+                        <li><strong>Actualisez la page</strong> (F5)</li>
+                        <li><strong>Vérifiez les filtres</strong> appliqués</li>
+                    </ul>
+                </div>
+
+                <div class="warning-box">
+                    <h4>❌ Impossible de modifier un projet</h4>
+                    <ul>
+                        <li><strong>Vérifiez vos droits</strong> d'édition</li>
+                        <li><strong>Assurez-vous d'être responsable</strong> du projet</li>
+                        <li><strong>Contactez l'administrateur</strong> si nécessaire</li>
+                    </ul>
+                </div>
+
+                <div class="warning-box">
+                    <h4>❌ Les dates ne s'affichent pas correctement</h4>
+                    <ul>
+                        <li><strong>Vérifiez le format</strong> des dates</li>
+                        <li><strong>Actualisez votre navigateur</strong></li>
+                        <li><strong>Videz le cache</strong> du navigateur</li>
+                    </ul>
+                </div>
+
+                <div class="contact-info">
+                    <h3>📞 Contact Support</h3>
+                    <div class="contact-item">
+                        <strong>👨‍💻 Développeur :</strong> Mohamed Bara
+                    </div>
+                    <div class="contact-item">
+                        <strong>📱 Téléphone :</strong> +213 770 202 333
+                    </div>
+                    <div class="contact-item">
+                        <strong>📧 Email :</strong> mohamed.bara@groupehydrapharm.com
+                    </div>
+                    <div class="contact-item">
+                        <strong>🌐 Support :</strong> Disponible 9h-18h (GMT+1)
+                    </div>
+                </div>
+            </div>
+
+            <div class="success-box">
+                <h3>🎉 Félicitations !</h3>
+                <p>Vous maîtrisez maintenant la gestion des projets dans GHP Portail. Cette fonctionnalité vous permettra d'organiser et de suivre efficacement tous vos projets.</p>
+                <p><strong>Conseil :</strong> Commencez par créer quelques projets de test pour vous familiariser avec l'interface.</p>
+            </div>
+        </div>
+
+        <div class="section" id="contact">
+            <h2>📞 Contact Support</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>👨‍💻 Développeur</h4>
+                    <p><strong>Mohamed Bara</strong></p>
+                </div>
+                <div class="feature-card">
+                    <h4>📱 Téléphone</h4>
+                    <p><strong>+213 770 202 333</strong></p>
+                </div>
+                <div class="feature-card">
+                    <h4>📧 Email</h4>
+                    <p><strong>mohamed.bara@groupehydrapharm.com</strong></p>
+                </div>
+                <div class="feature-card">
+                    <h4>🌐 Support</h4>
+                    <p><strong>Disponible 9h-18h (GMT+1)</strong></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section" id="remerciements">
+            <h2>🙏 Remerciements</h2>
+            <div class="highlight-box">
+                <h3>👨‍💼 Manager</h3>
+                <p><strong>Mohamed Abassi</strong></p>
+                <p>Merci pour votre accompagnement, votre support et votre confiance tout au long de la réalisation de ce projet. Votre guidance a été essentielle pour la réussite de cette application.</p>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p><strong>GHP Portail - Guide Projets</strong></p>
+            <p><strong>Développeur :</strong> Mohamed Bara | <strong>Email :</strong> mohamed.bara@groupehydrapharm.com</p>
+            <p><strong>Téléphone :</strong> +213 770 202 333 | Version 2.0.0 - Octobre 2025</p>
+        </div>
+    </div>
+</body>
+</html>

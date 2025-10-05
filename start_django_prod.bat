@@ -1,26 +1,36 @@
 @echo off
-REM Start Django in Production Mode
-REM Django in virtual environment on 0.0.0.0:8000 with production settings
-
-echo Starting Django in Production Mode...
-echo Django API: http://0.0.0.0:8000
-echo Settings: projecttracker.settings_production
+echo ===============================================
+echo Starting Django Production Server
+echo ===============================================
 echo.
 
 REM Check if virtual environment exists
-if not exist "venv\Scripts\activate.bat" (
-    echo Error: Virtual environment not found. Please create it first with: python -m venv venv
+if not exist "project_env\Scripts\python.exe" (
+    echo Error: Virtual environment not found at project_env\
+    echo Please create it first with: python -m virtualenv project_env
     pause
     exit /b 1
 )
 
-REM Start Django in production mode
-echo Starting Django server in production mode...
+echo Virtual environment: project_env\
+echo.
+
+REM Create logs directory
+if not exist "logs" mkdir logs
+
+echo Running Django migrations...
+project_env\Scripts\python.exe manage.py migrate --settings=projecttracker.settings_production
+
 echo Collecting static files...
+project_env\Scripts\python.exe manage.py collectstatic --noinput --settings=projecttracker.settings_production
 
-REM Run Django with production settings
-REM Collect static files first
-.\venv\Scripts\python.exe manage.py collectstatic --noinput --settings=projecttracker.settings_production
+echo.
+echo Django is ready for production!
+echo Server will be available at: http://localhost:8000
+echo.
+echo Press Ctrl+C to stop the server
+echo.
 
-REM Start Django server with production settings
-.\venv\Scripts\python.exe manage.py runserver 0.0.0.0:8000 --settings=projecttracker.settings_production
+REM Start Django with Waitress (keeps terminal open)
+project_env\Scripts\python.exe run_django_server.py
+

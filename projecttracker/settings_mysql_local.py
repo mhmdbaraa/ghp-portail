@@ -1,5 +1,6 @@
 """
-Django settings for projecttracker in production.
+Django settings for projecttracker with local MySQL.
+Compatible with Python 3.8 and works without WhiteNoise.
 """
 
 import os
@@ -13,8 +14,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DEBUG = False
 
 # SECURITY WARNING: keep the secret key used in production secret!
-# In production, this should be set via environment variable
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-production-secret-key-2024-very-long-and-secure-key-with-more-than-50-characters-and-unique-chars-xyz789')
+SECRET_KEY = 'django-production-secret-key-2024-very-long-and-secure-key-with-more-than-50-characters-and-unique-chars-xyz789'
 
 # Production allowed hosts
 ALLOWED_HOSTS = [
@@ -27,15 +27,14 @@ ALLOWED_HOSTS = [
     # 'www.yourdomain.com',
 ]
 
-# Database
-# MySQL configuration for production
+# Database - Local MySQL configuration
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'ghpportail',
-        'USER': 'moh',
-        'PASSWORD': 'm14789630',
-        'HOST': '172.16.0.78',
+        'NAME': 'ghpportail_local',
+        'USER': 'root',
+        'PASSWORD': '',  # Change this to your MySQL root password
+        'HOST': 'localhost',
         'PORT': '3306',
         'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
@@ -44,7 +43,7 @@ DATABASES = {
     }
 }
 
-# Static files (CSS, JavaScript, Images)
+# Static files (CSS, JavaScript, Images) - Simple configuration
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
@@ -66,16 +65,16 @@ SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
 
-# HTTPS Security Settings
-SECURE_SSL_REDIRECT = False  # Set to True if you have SSL certificate
-SECURE_HSTS_SECONDS = 31536000  # 1 year
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-SECURE_HSTS_PRELOAD = True
+# HTTPS Security Settings (disabled for local development)
+SECURE_SSL_REDIRECT = False
+SECURE_HSTS_SECONDS = 0
+SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+SECURE_HSTS_PRELOAD = False
 
-# Cookie Security
-SESSION_COOKIE_SECURE = False  # Set to True if you have SSL certificate
-CSRF_COOKIE_SECURE = False  # Set to True if you have SSL certificate
-SECURE_COOKIES = False  # Set to True if you have SSL certificate
+# Cookie Security (relaxed for local development)
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
+SECURE_COOKIES = False
 
 # CORS settings
 CORS_ALLOWED_ORIGINS = [
@@ -121,7 +120,7 @@ LOGGING = {
         'file': {
             'level': 'INFO',
             'class': 'logging.FileHandler',
-            'filename': os.path.join(BASE_DIR, 'logs', 'django_production.log'),
+            'filename': os.path.join(BASE_DIR, 'logs', 'django_mysql_local.log'),
             'formatter': 'verbose',
         },
         'console': {
@@ -143,11 +142,10 @@ LOGGING = {
     },
 }
 
-# WhiteNoise configuration for static files
+# Middleware without WhiteNoise (MySQL compatible)
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # Add WhiteNoise for static files
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -156,5 +154,29 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-# WhiteNoise settings
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# Static files storage (simple, no compression)
+STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
+
+# Cache configuration (simple memory cache)
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+    }
+}
+
+# Session configuration
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+SESSION_COOKIE_AGE = 1209600  # 2 weeks
+SESSION_SAVE_EVERY_REQUEST = True
+
+# Email configuration (console backend for local development)
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# Additional settings
+USE_TZ = True
+TIME_ZONE = 'UTC'
+
+# Disable problematic features for local MySQL
+DISABLE_WHITENOISE = True
+DISABLE_COMPRESSION = True

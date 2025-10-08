@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}GHP Portail - Notification{% endblock %}</title>
+    <style>
+        /* Reset et base */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f8f9fa;
+        }
+        
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        /* Header */
+        .email-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 40px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .email-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            opacity: 0.3;
+        }
+        
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .logo-icon {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            margin-right: 15px;
+            vertical-align: middle;
+            text-align: center;
+            line-height: 40px;
+            font-size: 20px;
+        }
+        
+        .header-subtitle {
+            font-size: 16px;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* Content */
+        .email-content {
+            padding: 40px;
+        }
+        
+        .greeting {
+            font-size: 18px;
+            color: #2c3e50;
+            margin-bottom: 25px;
+            font-weight: 500;
+        }
+        
+        .notification-card {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 25px;
+            border-radius: 8px;
+            margin: 25px 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        .notification-title {
+            font-size: 20px;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+        
+        .notification-message {
+            color: #555;
+            line-height: 1.7;
+            margin-bottom: 20px;
+        }
+        
+        .project-details {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid #e9ecef;
+        }
+        
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f1f3f4;
+        }
+        
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        
+        .detail-label {
+            font-weight: 600;
+            color: #495057;
+            min-width: 120px;
+        }
+        
+        .detail-value {
+            color: #2c3e50;
+            text-align: right;
+            flex: 1;
+        }
+        
+        .priority-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .priority-high {
+            background: #ff6b6b;
+            color: white;
+        }
+        
+        .priority-medium {
+            background: #ffa726;
+            color: white;
+        }
+        
+        .priority-low {
+            background: #66bb6a;
+            color: white;
+        }
+        
+        .priority-urgent {
+            background: #e53e3e;
+            color: white;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 25px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        
+        .status-en-cours {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        
+        .status-en-attente {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+        
+        .status-termine {
+            background: #e8f5e8;
+            color: #388e3c;
+        }
+        
+        /* Action Buttons */
+        .action-buttons {
+            text-align: center;
+            margin: 30px 0;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 15px 30px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 16px;
+            margin: 0 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        /* Team Section */
+        .team-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .team-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        
+        .team-member {
+            display: flex;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .team-member:last-child {
+            border-bottom: none;
+        }
+        
+        .member-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+        
+        .member-info {
+            flex: 1;
+        }
+        
+        .member-name {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .member-role {
+            font-size: 14px;
+            color: #6c757d;
+        }
+        
+        /* Footer */
+        .email-footer {
+            background: #2c3e50;
+            color: white;
+            padding: 30px 40px;
+            text-align: center;
+        }
+        
+        .footer-links {
+            margin: 20px 0;
+        }
+        
+        .footer-link {
+            color: #bdc3c7;
+            text-decoration: none;
+            margin: 0 15px;
+            font-size: 14px;
+        }
+        
+        .footer-link:hover {
+            color: white;
+        }
+        
+        .footer-text {
+            color: #95a5a6;
+            font-size: 14px;
+            margin-top: 20px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 600px) {
+            .email-container {
+                margin: 0;
+                border-radius: 0;
+            }
+            
+            .email-header, .email-content, .email-footer {
+                padding: 20px;
+            }
+            
+            .detail-row {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .detail-value {
+                text-align: left;
+                margin-top: 5px;
+            }
+            
+            .btn {
+                display: block;
+                margin: 10px 0;
+                text-align: center;
+            }
+        }
+        
+        /* Animation */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .notification-card {
+            animation: fadeIn 0.6s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Header -->
+        <div class="email-header">
+            <div class="logo">
+                <span class="logo-icon">🏢</span>
+                GHP Portail
+            </div>
+            <div class="header-subtitle">Système de Gestion de Projets</div>
+        </div>
+        
+        <!-- Content -->
+        <div class="email-content">
+            <div class="greeting">
+                Bonjour {{ recipient.get_full_name|default:recipient.username }},
+            </div>
+            
+            {% block content %}
+            <!-- Le contenu spécifique sera inséré ici -->
+            {% endblock %}
+        </div>
+        
+        <!-- Footer -->
+        <div class="email-footer">
+            <div class="footer-links">
+                <a href="{{ base_url }}" class="footer-link">Accueil</a>
+                <a href="{{ base_url }}/projects" class="footer-link">Projets</a>
+                <a href="{{ base_url }}/tasks" class="footer-link">Tâches</a>
+                <a href="{{ base_url }}/profile" class="footer-link">Profil</a>
+            </div>
+            <div class="footer-text">
+                © {{ current_year }} Groupe Hydrapharm. Tous droits réservés.<br>
+                Cet email a été envoyé automatiquement par le système GHP Portail.
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+
+
+
+
+
+
+
+

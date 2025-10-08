@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}GHP Portail{% endblock %}</title>
+    <style>
+        /* Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.3;
+            color: #1a1a1a;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-size: 13px;
+            padding: 10px;
+        }
+        
+        .email-container {
+            width: 60%;
+            max-width: 400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+            backdrop-filter: blur(8px);
+        }
+        
+        /* Header ultra compact */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .header-content {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .logo {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        
+        .logo-icon {
+            width: 24px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+        
+        .header-subtitle {
+            font-size: 10px;
+            opacity: 0.9;
+            font-weight: 400;
+        }
+        
+        /* Content ultra compact */
+        .content {
+            padding: 12px;
+        }
+        
+        .greeting {
+            font-size: 14px;
+            color: #1a1a1a;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        /* Notification card ultra compact */
+        .notification-card {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border: none;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 8px 0;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+        
+        .notification-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 2px;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+        
+        .notification-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .notification-message {
+            color: #4a5568;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        
+        /* Project details ultra compact */
+        .project-details {
+            background: white;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 8px 0;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 0;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 12px;
+        }
+        
+        .detail-item:last-child {
+            border-bottom: none;
+        }
+        
+        .detail-label {
+            color: #64748b;
+            font-weight: 500;
+            min-width: 50px;
+            font-size: 11px;
+        }
+        
+        .detail-value {
+            color: #1a1a1a;
+            font-weight: 500;
+            text-align: right;
+            flex: 1;
+            font-size: 12px;
+        }
+        
+        /* Badges ultra compact */
+        .badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-size: 9px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        
+        .badge-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .badge-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .badge-danger {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .badge-info {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        
+        /* Progress bar ultra compact */
+        .progress-container {
+            background: #e2e8f0;
+            border-radius: 3px;
+            height: 4px;
+            overflow: hidden;
+            margin-top: 2px;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+        
+        /* Action buttons ultra compact */
+        .action-buttons {
+            text-align: center;
+            margin: 10px 0;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 16px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 11px;
+            margin: 3px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+        
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        /* Team section ultra compact */
+        .team-section {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border-radius: 8px;
+            padding: 8px;
+            margin: 8px 0;
+        }
+        
+        .team-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 6px;
+        }
+        
+        .team-member {
+            display: flex;
+            align-items: center;
+            padding: 3px 0;
+            font-size: 11px;
+        }
+        
+        .member-avatar {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            font-weight: 600;
+            margin-right: 6px;
+        }
+        
+        .member-name {
+            font-weight: 500;
+            color: #1a1a1a;
+        }
+        
+        .member-role {
+            font-size: 9px;
+            color: #64748b;
+        }
+        
+        /* Footer ultra compact */
+        .footer {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border-top: 1px solid #e2e8f0;
+            padding: 8px 12px;
+            text-align: center;
+        }
+        
+        .footer-links {
+            margin-bottom: 4px;
+        }
+        
+        .footer-link {
+            color: #64748b;
+            text-decoration: none;
+            font-size: 10px;
+            margin: 0 6px;
+            font-weight: 500;
+        }
+        
+        .footer-link:hover {
+            color: #667eea;
+        }
+        
+        .footer-text {
+            color: #9ca3af;
+            font-size: 9px;
+            line-height: 1.3;
+        }
+        
+        /* Alert boxes ultra compact */
+        .alert {
+            border-radius: 6px;
+            padding: 8px;
+            margin: 8px 0;
+            font-size: 11px;
+            border-left: 2px solid;
+        }
+        
+        .alert-success {
+            background: #d1fae5;
+            border-color: #10b981;
+            color: #065f46;
+        }
+        
+        .alert-warning {
+            background: #fef3c7;
+            border-color: #f59e0b;
+            color: #92400e;
+        }
+        
+        .alert-danger {
+            background: #fee2e2;
+            border-color: #ef4444;
+            color: #991b1b;
+        }
+        
+        /* Responsive ultra compact */
+        @media (max-width: 768px) {
+            .email-container {
+                width: 95%;
+                margin: 0 auto;
+            }
+            
+            .content, .header, .footer {
+                padding: 8px;
+            }
+            
+            .detail-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1px;
+            }
+            
+            .detail-value {
+                text-align: left;
+            }
+            
+            .btn {
+                display: block;
+                margin: 4px 0;
+                text-align: center;
+            }
+        }
+        
+        /* Animations ultra compact */
+        .notification-card {
+            animation: slideInUp 0.3s ease-out;
+        }
+        
+        @keyframes slideInUp {
+            from { 
+                opacity: 0; 
+                transform: translateY(8px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon">🏢</div>
+                    GHP Portail
+                </div>
+                <div class="header-subtitle">Système de Gestion</div>
+            </div>
+        </div>
+        
+        <!-- Content -->
+        <div class="content">
+            <div class="greeting">
+                Bonjour {{ recipient.get_full_name|default:recipient.username }},
+            </div>
+            
+            {% block content %}
+            <!-- Le contenu spécifique sera inséré ici -->
+            {% endblock %}
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-links">
+                <a href="{{ base_url }}" class="footer-link">Accueil</a>
+                <a href="{{ base_url }}/projects" class="footer-link">Projets</a>
+                <a href="{{ base_url }}/tasks" class="footer-link">Tâches</a>
+            </div>
+            <div class="footer-text">
+                © {{ current_year }} Groupe Hydrapharm
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+
+
+
+
+
+
+
+

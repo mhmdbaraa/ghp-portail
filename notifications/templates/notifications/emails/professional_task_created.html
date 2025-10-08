@@ -1,0 +1,159 @@
+{% extends "notifications/emails/professional_base.html" %}
+
+{% block title %}Nouvelle Tâche Créée - {{ task.title }}{% endblock %}
+
+{% block content %}
+<div class="notification-card">
+    <div class="notification-title">
+        📋 Nouvelle Tâche Créée
+    </div>
+    <div class="notification-message">
+        Une nouvelle tâche vous a été assignée dans le portail GHP.
+    </div>
+</div>
+
+<!-- Détails de la Tâche -->
+<div class="project-details">
+    <div class="detail-row">
+        <div class="detail-label">📝 Titre</div>
+        <div class="detail-value"><strong>{{ task.title }}</strong></div>
+    </div>
+    
+    <div class="detail-row">
+        <div class="detail-label">📄 Description</div>
+        <div class="detail-value">{{ task.description|default:"Aucune description" }}</div>
+    </div>
+    
+    <div class="detail-row">
+        <div class="detail-label">👤 Assigné à</div>
+        <div class="detail-value">{{ task.assigned_to.get_full_name|default:task.assigned_to.username }}</div>
+    </div>
+    
+    <div class="detail-row">
+        <div class="detail-label">👨‍💼 Créée par</div>
+        <div class="detail-value">{{ creator.get_full_name|default:creator.username }}</div>
+    </div>
+    
+    <div class="detail-row">
+        <div class="detail-label">📅 Date de Création</div>
+        <div class="detail-value">{{ task.created_at|date:"d/m/Y à H:i" }}</div>
+    </div>
+    
+    {% if task.due_date %}
+    <div class="detail-row">
+        <div class="detail-label">⏰ Échéance</div>
+        <div class="detail-value">{{ task.due_date|date:"d/m/Y" }}</div>
+    </div>
+    {% endif %}
+    
+    <div class="detail-row">
+        <div class="detail-label">📊 Statut</div>
+        <div class="detail-value">
+            <span class="status-badge status-{{ task.status|lower|slugify }}">
+                {{ task.status }}
+            </span>
+        </div>
+    </div>
+    
+    <div class="detail-row">
+        <div class="detail-label">🎯 Priorité</div>
+        <div class="detail-value">
+            <span class="priority-badge priority-{{ task.priority|lower }}">
+                {{ task.priority }}
+            </span>
+        </div>
+    </div>
+    
+    {% if task.project %}
+    <div class="detail-row">
+        <div class="detail-label">📁 Projet Associé</div>
+        <div class="detail-value">
+            <a href="{{ base_url }}/projects/{{ task.project.id }}" style="color: #667eea; text-decoration: none;">
+                {{ task.project.name }}
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Actions -->
+<div class="action-buttons">
+    <a href="{{ base_url }}/tasks/{{ task.id }}" class="btn btn-primary">
+        📋 Voir la Tâche
+    </a>
+    <a href="{{ base_url }}/tasks/{{ task.id }}/edit" class="btn btn-secondary">
+        ✏️ Modifier la Tâche
+    </a>
+</div>
+
+<!-- Message d'encouragement -->
+<div style="background: #e3f2fd; border-radius: 8px; padding: 20px; margin: 25px 0; text-align: center;">
+    <div style="font-size: 16px; color: #1976d2; font-weight: 600; margin-bottom: 10px;">
+        🎯 Nouvelle Mission !
+    </div>
+    <div style="color: #1565c0; font-size: 14px;">
+        Vous avez une nouvelle tâche à accomplir. Consultez les détails et commencez 
+        à planifier votre approche pour la mener à bien.
+    </div>
+</div>
+
+<!-- Informations sur le projet parent -->
+{% if task.project %}
+<div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin: 25px 0;">
+    <div style="font-weight: 600; color: #2c3e50; margin-bottom: 15px;">
+        📁 Contexte du Projet
+    </div>
+    <div style="color: #555; line-height: 1.6;">
+        Cette tâche fait partie du projet <strong>"{{ task.project.name }}"</strong>.
+        {% if task.project.deadline %}
+            L'échéance du projet est le <strong>{{ task.project.deadline|date:"d/m/Y" }}</strong>.
+        {% endif %}
+        {% if task.project.progress %}
+            Le projet est actuellement à <strong>{{ task.project.progress }}%</strong> de completion.
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Recommandations -->
+<div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin: 25px 0;">
+    <div style="font-weight: 600; color: #2c3e50; margin-bottom: 15px;">
+        💡 Conseils pour Bien Démarrer
+    </div>
+    <ul style="color: #555; line-height: 1.8; margin: 0; padding-left: 20px;">
+        <li>Lisez attentivement la description de la tâche</li>
+        <li>Identifiez les ressources nécessaires</li>
+        <li>Planifiez votre temps selon l'échéance</li>
+        <li>N'hésitez pas à poser des questions si besoin</li>
+        <li>Mettez à jour le statut régulièrement</li>
+    </ul>
+</div>
+
+<!-- Timeline de la tâche -->
+{% if task.due_date %}
+<div style="background: white; border-radius: 8px; padding: 20px; margin: 25px 0; border: 1px solid #e9ecef;">
+    <div style="font-weight: 600; color: #2c3e50; margin-bottom: 15px;">
+        ⏰ Timeline de la Tâche
+    </div>
+    <div style="display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; border-radius: 8px; padding: 15px;">
+        <div style="text-align: center;">
+            <div style="font-size: 12px; color: #6c757d; margin-bottom: 5px;">DÉBUT</div>
+            <div style="font-weight: 600; color: #2c3e50;">{{ task.created_at|date:"d/m" }}</div>
+        </div>
+        <div style="flex: 1; height: 2px; background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); margin: 0 20px;"></div>
+        <div style="text-align: center;">
+            <div style="font-size: 12px; color: #6c757d; margin-bottom: 5px;">ÉCHÉANCE</div>
+            <div style="font-weight: 600; color: #2c3e50;">{{ task.due_date|date:"d/m" }}</div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+
+
+
+
+
+
+

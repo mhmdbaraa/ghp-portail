@@ -34,9 +34,9 @@ ALLOWED_HOSTS = [
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'ghpportail_offline',
-        'USER': 'ghp_user',
-        'PASSWORD': 'ghp_password_2024',
+        'NAME': '172.16.0.78',
+        'USER': 'moh',
+        'PASSWORD': 'm14789630',
         'HOST': 'localhost',
         'PORT': '3306',
         'OPTIONS': {

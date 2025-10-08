@@ -1,0 +1,136 @@
+{% extends "notifications/emails/modern_compact_base.html" %}
+
+{% block title %}Rappel Échéance - {{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="notification-card" style="border-left: 3px solid {% if days_remaining <= 1 %}#dc2626{% elif days_remaining <= 3 %}#ea580c{% else %}#d97706{% endif %};">
+    <div class="notification-title" style="color: {% if days_remaining <= 1 %}#dc2626{% elif days_remaining <= 3 %}#ea580c{% else %}#d97706{% endif %};">
+        {% if days_remaining <= 1 %}
+            🚨 Échéance Critique
+        {% elif days_remaining <= 3 %}
+            ⚠️ Échéance Proche
+        {% else %}
+            📅 Rappel Échéance
+        {% endif %}
+    </div>
+    <div class="notification-message">
+        {% if days_remaining <= 1 %}
+            <strong>Attention !</strong> L'échéance du projet <strong>"{{ project.name }}"</strong> est <strong>aujourd'hui</strong>.
+        {% elif days_remaining <= 3 %}
+            <strong>Attention !</strong> L'échéance du projet <strong>"{{ project.name }}"</strong> approche dans <strong>{{ days_remaining }} jour{{ days_remaining|pluralize }}</strong>.
+        {% else %}
+            L'échéance du projet <strong>"{{ project.name }}"</strong> approche dans <strong>{{ days_remaining }} jour{{ days_remaining|pluralize }}</strong>.
+        {% endif %}
+    </div>
+</div>
+
+<!-- Détails du projet -->
+<div class="project-details">
+    <div class="detail-item">
+        <div class="detail-label">Projet</div>
+        <div class="detail-value">{{ project.name }}</div>
+    </div>
+    
+    <div class="detail-item">
+        <div class="detail-label">Échéance</div>
+        <div class="detail-value" style="color: {% if days_remaining <= 1 %}#dc2626{% elif days_remaining <= 3 %}#ea580c{% else %}#d97706{% endif %}; font-weight: 600;">
+            {{ project.deadline|date:"d/m/Y" }}
+        </div>
+    </div>
+    
+    <div class="detail-item">
+        <div class="detail-label">Jours Restants</div>
+        <div class="detail-value">
+            <span class="badge badge-{% if days_remaining <= 1 %}danger{% elif days_remaining <= 3 %}warning{% else %}info{% endif %}">
+                {{ days_remaining }} jour{{ days_remaining|pluralize }}
+            </span>
+        </div>
+    </div>
+    
+    <div class="detail-item">
+        <div class="detail-label">Statut</div>
+        <div class="detail-value">
+            <span class="badge badge-info">{{ project.status }}</span>
+        </div>
+    </div>
+    
+    {% if project.progress %}
+    <div class="detail-item">
+        <div class="detail-label">Progrès</div>
+        <div class="detail-value">
+            <div class="progress-container">
+                <div class="progress-bar" style="width: {{ project.progress }}%; background: {% if project.progress >= 80 %}#16a34a{% elif project.progress >= 50 %}#ea580c{% else %}#dc2626{% endif %};"></div>
+            </div>
+            <span style="font-size: 11px; color: #64748b;">{{ project.progress }}%</span>
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="detail-item">
+        <div class="detail-label">Chef</div>
+        <div class="detail-value">{{ project.manager.get_full_name|default:project.manager.username }}</div>
+    </div>
+</div>
+
+<!-- Actions -->
+<div class="action-buttons">
+    <a href="{{ base_url }}/projects/{{ project.id }}" class="btn btn-primary" style="background: {% if days_remaining <= 1 %}#dc2626{% elif days_remaining <= 3 %}#ea580c{% else %}#2563eb{% endif %};">
+        {% if days_remaining <= 1 %}
+            🚨 Vérifier Maintenant
+        {% elif days_remaining <= 3 %}
+            ⚠️ Examiner le Projet
+        {% else %}
+            📋 Voir le Projet
+        {% endif %}
+    </a>
+    <a href="{{ base_url }}/projects/{{ project.id }}/tasks" class="btn btn-secondary">
+        📝 Gérer les Tâches
+    </a>
+</div>
+
+<!-- Alerte selon l'urgence -->
+{% if days_remaining <= 1 %}
+<div class="alert alert-danger">
+    <strong>🚨 ACTION IMMÉDIATE REQUISE</strong><br>
+    L'échéance est <strong>aujourd'hui</strong> ! Vérifiez immédiatement l'état du projet.
+</div>
+{% elif days_remaining <= 3 %}
+<div class="alert alert-warning">
+    <strong>⚠️ ÉCHÉANCE PROCHE</strong><br>
+    L'échéance approche rapidement. Vérifiez l'avancement du projet.
+</div>
+{% else %}
+<div class="alert alert-success">
+    <strong>📅 RAPPEL D'ÉCHÉANCE</strong><br>
+    L'échéance du projet approche. C'est le moment idéal pour faire un point.
+</div>
+{% endif %}
+
+<!-- Actions recommandées -->
+<div style="background: #f8fafc; border-radius: 6px; padding: 12px; margin: 12px 0; font-size: 13px;">
+    <div style="font-weight: 600; color: #1a1a1a; margin-bottom: 8px;">💡 Actions Recommandées</div>
+    <ul style="color: #4a5568; line-height: 1.5; margin: 0; padding-left: 16px;">
+        {% if days_remaining <= 1 %}
+            <li>Vérifier immédiatement toutes les tâches</li>
+            <li>Contacter l'équipe pour un point d'urgence</li>
+            <li>Identifier et résoudre les blocages</li>
+        {% elif days_remaining <= 3 %}
+            <li>Faire un point détaillé sur l'avancement</li>
+            <li>Identifier les tâches critiques restantes</li>
+            <li>Mobiliser l'équipe sur les priorités</li>
+        {% else %}
+            <li>Planifier les prochaines étapes</li>
+            <li>Vérifier les ressources disponibles</li>
+            <li>Anticiper les éventuels retards</li>
+        {% endif %}
+    </ul>
+</div>
+{% endblock %}
+
+
+
+
+
+
+
+

@@ -1,0 +1,120 @@
+{% extends "notifications/emails/modern_compact_base.html" %}
+
+{% block title %}Nouveau Projet - {{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="notification-card">
+    <div class="notification-title">
+        🎉 Nouveau Projet Créé
+    </div>
+    <div class="notification-message">
+        Un nouveau projet a été créé et vous êtes impliqué dans sa gestion.
+    </div>
+</div>
+
+<!-- Détails du projet -->
+<div class="project-details">
+    <div class="detail-item">
+        <div class="detail-label">Projet</div>
+        <div class="detail-value">{{ project.name }}</div>
+    </div>
+    
+    <div class="detail-item">
+        <div class="detail-label">Chef</div>
+        <div class="detail-value">{{ project.manager.get_full_name|default:project.manager.username }}</div>
+    </div>
+    
+    <div class="detail-item">
+        <div class="detail-label">Échéance</div>
+        <div class="detail-value">{{ project.deadline|date:"d/m/Y" }}</div>
+    </div>
+    
+    <div class="detail-item">
+        <div class="detail-label">Statut</div>
+        <div class="detail-value">
+            <span class="badge badge-info">{{ project.status }}</span>
+        </div>
+    </div>
+    
+    <div class="detail-item">
+        <div class="detail-label">Priorité</div>
+        <div class="detail-value">
+            <span class="badge badge-{% if project.priority == 'Haute' %}danger{% elif project.priority == 'Moyenne' %}warning{% else %}success{% endif %}">
+                {{ project.priority }}
+            </span>
+        </div>
+    </div>
+    
+    {% if project.budget %}
+    <div class="detail-item">
+        <div class="detail-label">Budget</div>
+        <div class="detail-value">{{ project.budget|floatformat:0 }} DZD</div>
+    </div>
+    {% endif %}
+    
+    {% if project.progress %}
+    <div class="detail-item">
+        <div class="detail-label">Progrès</div>
+        <div class="detail-value">
+            <div class="progress-container">
+                <div class="progress-bar" style="width: {{ project.progress }}%;"></div>
+            </div>
+            <span style="font-size: 11px; color: #64748b;">{{ project.progress }}%</span>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Équipe -->
+<div class="team-section">
+    <div class="team-title">👥 Équipe</div>
+    {% if project.members.all %}
+        {% for member in project.members.all %}
+        <div class="team-member">
+            <div class="member-avatar">
+                {{ member.first_name.0|default:member.username.0|upper }}{{ member.last_name.0|default:""|upper }}
+            </div>
+            <div>
+                <div class="member-name">{{ member.get_full_name|default:member.username }}</div>
+                <div class="member-role">
+                    {% if member == project.manager %}Chef de Projet{% else %}Membre{% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="team-member">
+            <div class="member-avatar">
+                {{ project.manager.first_name.0|default:project.manager.username.0|upper }}{{ project.manager.last_name.0|default:""|upper }}
+            </div>
+            <div>
+                <div class="member-name">{{ project.manager.get_full_name|default:project.manager.username }}</div>
+                <div class="member-role">Chef de Projet</div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Actions -->
+<div class="action-buttons">
+    <a href="{{ base_url }}/projects/{{ project.id }}" class="btn btn-primary">
+        📋 Voir le Projet
+    </a>
+    <a href="{{ base_url }}/projects/{{ project.id }}/tasks" class="btn btn-secondary">
+        📝 Tâches
+    </a>
+</div>
+
+<!-- Message d'encouragement -->
+<div class="alert alert-success">
+    <strong>🚀 Projet Prêt !</strong> Vous pouvez maintenant commencer à ajouter des tâches et assigner des membres.
+</div>
+{% endblock %}
+
+
+
+
+
+
+
+

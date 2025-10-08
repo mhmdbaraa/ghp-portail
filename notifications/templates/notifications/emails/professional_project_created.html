@@ -1,0 +1,159 @@
+{% extends "notifications/emails/professional_base.html" %}
+
+{% block title %}Nouveau Projet Créé - {{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="notification-card">
+    <div class="notification-title">
+        🎉 Nouveau Projet Créé
+    </div>
+    <div class="notification-message">
+        Un nouveau projet a été créé dans le portail GHP et vous êtes impliqué dans sa gestion.
+    </div>
+</div>
+
+<!-- Détails du Projet -->
+<div class="project-details">
+    <div class="detail-row">
+        <div class="detail-label">📋 Nom du Projet</div>
+        <div class="detail-value"><strong>{{ project.name }}</strong></div>
+    </div>
+    
+    <div class="detail-row">
+        <div class="detail-label">📝 Description</div>
+        <div class="detail-value">{{ project.description|default:"Aucune description" }}</div>
+    </div>
+    
+    <div class="detail-row">
+        <div class="detail-label">👨‍💼 Chef de Projet</div>
+        <div class="detail-value">{{ project.manager.get_full_name|default:project.manager.username }}</div>
+    </div>
+    
+    <div class="detail-row">
+        <div class="detail-label">📅 Date de Création</div>
+        <div class="detail-value">{{ project.created_at|date:"d/m/Y à H:i" }}</div>
+    </div>
+    
+    {% if project.deadline %}
+    <div class="detail-row">
+        <div class="detail-label">⏰ Échéance</div>
+        <div class="detail-value">{{ project.deadline|date:"d/m/Y" }}</div>
+    </div>
+    {% endif %}
+    
+    <div class="detail-row">
+        <div class="detail-label">📊 Statut</div>
+        <div class="detail-value">
+            <span class="status-badge status-{{ project.status|lower|slugify }}">
+                {{ project.status }}
+            </span>
+        </div>
+    </div>
+    
+    <div class="detail-row">
+        <div class="detail-label">🎯 Priorité</div>
+        <div class="detail-value">
+            <span class="priority-badge priority-{{ project.priority|lower }}">
+                {{ project.priority }}
+            </span>
+        </div>
+    </div>
+    
+    {% if project.budget %}
+    <div class="detail-row">
+        <div class="detail-label">💰 Budget</div>
+        <div class="detail-value">{{ project.budget|floatformat:0 }} DZD</div>
+    </div>
+    {% endif %}
+    
+    {% if project.progress %}
+    <div class="detail-row">
+        <div class="detail-label">📈 Progrès</div>
+        <div class="detail-value">
+            <div style="background: #e9ecef; border-radius: 10px; height: 8px; margin-top: 5px;">
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 100%; border-radius: 10px; width: {{ project.progress }}%; transition: width 0.3s ease;"></div>
+            </div>
+            <span style="font-size: 12px; color: #6c757d;">{{ project.progress }}%</span>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Équipe du Projet -->
+{% if project.members.all %}
+<div class="team-section">
+    <div class="team-title">👥 Équipe du Projet</div>
+    {% for member in project.members.all %}
+    <div class="team-member">
+        <div class="member-avatar">
+            {{ member.first_name.0|default:member.username.0|upper }}{{ member.last_name.0|default:""|upper }}
+        </div>
+        <div class="member-info">
+            <div class="member-name">{{ member.get_full_name|default:member.username }}</div>
+            <div class="member-role">
+                {% if member == project.manager %}
+                    Chef de Projet
+                {% else %}
+                    Membre de l'équipe
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+<div class="team-section">
+    <div class="team-title">👥 Chef de Projet</div>
+    <div class="team-member">
+        <div class="member-avatar">
+            {{ project.manager.first_name.0|default:project.manager.username.0|upper }}{{ project.manager.last_name.0|default:""|upper }}
+        </div>
+        <div class="member-info">
+            <div class="member-name">{{ project.manager.get_full_name|default:project.manager.username }}</div>
+            <div class="member-role">Chef de Projet</div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Actions -->
+<div class="action-buttons">
+    <a href="{{ base_url }}/projects/{{ project.id }}" class="btn btn-primary">
+        📋 Voir le Projet
+    </a>
+    <a href="{{ base_url }}/projects/{{ project.id }}/tasks" class="btn btn-secondary">
+        📝 Gérer les Tâches
+    </a>
+</div>
+
+<!-- Message d'encouragement -->
+<div style="background: #e8f5e8; border-radius: 8px; padding: 20px; margin: 25px 0; text-align: center;">
+    <div style="font-size: 16px; color: #2e7d32; font-weight: 600; margin-bottom: 10px;">
+        🚀 Projet Prêt à Démarrer !
+    </div>
+    <div style="color: #388e3c; font-size: 14px;">
+        Votre projet est maintenant actif. Vous pouvez commencer à ajouter des tâches, 
+        assigner des membres et suivre l'avancement en temps réel.
+    </div>
+</div>
+
+<!-- Informations supplémentaires -->
+<div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin: 25px 0;">
+    <div style="font-weight: 600; color: #2c3e50; margin-bottom: 15px;">
+        💡 Prochaines Étapes Recommandées
+    </div>
+    <ul style="color: #555; line-height: 1.8; margin: 0; padding-left: 20px;">
+        <li>Définir les tâches principales du projet</li>
+        <li>Assigner des membres à l'équipe</li>
+        <li>Configurer les jalons et échéances</li>
+        <li>Partager les documents de référence</li>
+    </ul>
+</div>
+{% endblock %}
+
+
+
+
+
+
+
+

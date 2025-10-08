@@ -1,0 +1,422 @@
+{% extends "notifications/emails/base.html" %}
+
+{% block title %}Rappel d'Échéance - GHP Portail{% endblock %}
+
+{% block header_title %}{{ urgency_emoji }} Rappel d'Échéance{% endblock %}
+{% block header_subtitle %}{{ urgency_message }}{% endblock %}
+
+{% block content %}
+<div class="highlight priority-{{ priority|lower }}">
+    <h2>{{ urgency_emoji }} {{ urgency_title }}</h2>
+    <div class="deadline-info">
+        <div class="info-row">
+            <span class="label">📋 {{ object_type|title }}:</span>
+            <span class="value">{{ object_name }}</span>
+        </div>
+        <div class="info-row">
+            <span class="label">📅 Échéance:</span>
+            <span class="value deadline">{{ deadline_date|date:"d/m/Y" }}</span>
+        </div>
+        <div class="info-row">
+            <span class="label">⏰ Jours restants:</span>
+            <span class="value countdown">{{ days_remaining }} jour{{ days_remaining|pluralize }}</span>
+        </div>
+        <div class="info-row">
+            <span class="label">📊 Statut:</span>
+            <span class="value status-{{ status|lower }}">{{ status|default:"En cours" }}</span>
+        </div>
+        {% if assigned_to %}
+        <div class="info-row">
+            <span class="label">👤 Assigné à:</span>
+            <span class="value">{{ assigned_to }}</span>
+        </div>
+        {% endif %}
+        {% if project_manager %}
+        <div class="info-row">
+            <span class="label">👨‍💼 Chef de projet:</span>
+            <span class="value">{{ project_manager }}</span>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="urgency-indicator">
+    <div class="urgency-level level-{{ urgency_level }}">
+        <div class="urgency-icon">{{ urgency_emoji }}</div>
+        <div class="urgency-text">
+            <h3>{{ urgency_title }}</h3>
+            <p>{{ urgency_message }}</p>
+        </div>
+    </div>
+</div>
+
+<div class="action-buttons">
+    <a href="{{ site_url }}/{{ object_type }}s/{{ object_id }}" class="button primary">
+        🔗 Accéder au {{ object_type|title }}
+    </a>
+    {% if object_type == 'project' %}
+    <a href="{{ site_url }}/projects/{{ object_id }}/tasks" class="button secondary">
+        📋 Voir les Tâches
+    </a>
+    <a href="{{ site_url }}/projects/{{ object_id }}/edit" class="button secondary">
+        ✏️ Modifier le Projet
+    </a>
+    {% else %}
+    <a href="{{ site_url }}/tasks/{{ object_id }}/edit" class="button secondary">
+        ✏️ Modifier la Tâche
+    </a>
+    <a href="{{ site_url }}/tasks/{{ object_id }}/complete" class="button secondary">
+        ✅ Marquer comme Terminé
+    </a>
+    {% endif %}
+</div>
+
+<div class="progress-section">
+    <h3>📊 Progression</h3>
+    <div class="progress-info">
+        <div class="progress-bar">
+            <div class="progress-fill" style="width: {{ progress|default:"0" }}%"></div>
+        </div>
+        <div class="progress-text">{{ progress|default:"0" }}% complété</div>
+    </div>
+    {% if remaining_tasks %}
+    <div class="remaining-tasks">
+        <h4>📋 Tâches restantes:</h4>
+        <ul>
+            {% for task in remaining_tasks %}
+            <li>{{ task.title }} ({{ task.due_date|date:"d/m/Y" }})</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+</div>
+
+<div class="recommendations">
+    <h3>💡 Recommandations</h3>
+    <div class="recommendation-list">
+        {% if days_remaining <= 1 %}
+        <div class="recommendation urgent">
+            <span class="icon">🚨</span>
+            <span class="text">Action immédiate requise - Contactez l'équipe maintenant</span>
+        </div>
+        <div class="recommendation urgent">
+            <span class="icon">📞</span>
+            <span class="text">Organisez une réunion d'urgence pour faire le point</span>
+        </div>
+        {% elif days_remaining <= 3 %}
+        <div class="recommendation high">
+            <span class="icon">⚠️</span>
+            <span class="text">Vérifiez l'avancement et identifiez les blocages</span>
+        </div>
+        <div class="recommendation high">
+            <span class="icon">👥</span>
+            <span class="text">Mobilisez des ressources supplémentaires si nécessaire</span>
+        </div>
+        {% else %}
+        <div class="recommendation medium">
+            <span class="icon">📋</span>
+            <span class="text">Planifiez les prochaines étapes</span>
+        </div>
+        <div class="recommendation medium">
+            <span class="icon">📊</span>
+            <span class="text">Vérifiez que tout est sur la bonne voie</span>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="contact-info">
+    <h3>📞 Contacts</h3>
+    <div class="contact-list">
+        {% if project_manager %}
+        <div class="contact-item">
+            <span class="contact-label">👨‍💼 Chef de projet:</span>
+            <span class="contact-value">{{ project_manager }}</span>
+        </div>
+        {% endif %}
+        {% if assigned_to %}
+        <div class="contact-item">
+            <span class="contact-label">👤 Responsable:</span>
+            <span class="contact-value">{{ assigned_to }}</span>
+        </div>
+        {% endif %}
+        <div class="contact-item">
+            <span class="contact-label">📧 Support:</span>
+            <span class="contact-value">support@ghp.com</span>
+        </div>
+    </div>
+</div>
+
+<style>
+.deadline-info {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+}
+
+.info-row {
+    display: flex;
+    margin-bottom: 10px;
+    align-items: flex-start;
+}
+
+.info-row:last-child {
+    margin-bottom: 0;
+}
+
+.label {
+    font-weight: 600;
+    color: #495057;
+    min-width: 140px;
+    margin-right: 10px;
+}
+
+.value {
+    color: #212529;
+    flex: 1;
+}
+
+.value.deadline {
+    color: #dc3545;
+    font-weight: 600;
+}
+
+.value.countdown {
+    color: #dc3545;
+    font-weight: 700;
+    font-size: 18px;
+}
+
+.urgency-indicator {
+    margin: 30px 0;
+}
+
+.urgency-level {
+    display: flex;
+    align-items: center;
+    padding: 20px;
+    border-radius: 8px;
+    border-left: 6px solid;
+}
+
+.urgency-level.level-urgent {
+    background: #f8d7da;
+    border-left-color: #dc3545;
+}
+
+.urgency-level.level-high {
+    background: #fff3cd;
+    border-left-color: #ffc107;
+}
+
+.urgency-level.level-medium {
+    background: #d1ecf1;
+    border-left-color: #17a2b8;
+}
+
+.urgency-icon {
+    font-size: 32px;
+    margin-right: 20px;
+}
+
+.urgency-text h3 {
+    margin: 0 0 5px 0;
+    color: #212529;
+}
+
+.urgency-text p {
+    margin: 0;
+    color: #6c757d;
+}
+
+.action-buttons {
+    text-align: center;
+    margin: 30px 0;
+}
+
+.button {
+    display: inline-block;
+    padding: 12px 24px;
+    margin: 5px 10px;
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.button.primary {
+    background: linear-gradient(135deg, #dc3545, #c82333);
+    color: white;
+}
+
+.button.primary:hover {
+    background: linear-gradient(135deg, #c82333, #bd2130);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+}
+
+.button.secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.button.secondary:hover {
+    background: #545b62;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+}
+
+.progress-section {
+    margin: 30px 0;
+}
+
+.progress-info {
+    margin: 15px 0;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 20px;
+    background: #e9ecef;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #28a745, #20c997);
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    text-align: center;
+    font-weight: 600;
+    color: #495057;
+}
+
+.remaining-tasks {
+    margin-top: 20px;
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 6px;
+}
+
+.remaining-tasks ul {
+    margin: 10px 0 0 0;
+    padding-left: 20px;
+}
+
+.recommendations {
+    margin: 30px 0;
+}
+
+.recommendation-list {
+    margin-top: 15px;
+}
+
+.recommendation {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    margin-bottom: 10px;
+    border-radius: 6px;
+    border-left: 4px solid;
+}
+
+.recommendation.urgent {
+    background: #f8d7da;
+    border-left-color: #dc3545;
+}
+
+.recommendation.high {
+    background: #fff3cd;
+    border-left-color: #ffc107;
+}
+
+.recommendation.medium {
+    background: #d1ecf1;
+    border-left-color: #17a2b8;
+}
+
+.recommendation .icon {
+    font-size: 20px;
+    margin-right: 12px;
+}
+
+.recommendation .text {
+    flex: 1;
+    font-weight: 500;
+}
+
+.contact-info {
+    margin: 30px 0;
+    background: #e8f4fd;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+.contact-list {
+    margin-top: 15px;
+}
+
+.contact-item {
+    display: flex;
+    margin-bottom: 8px;
+}
+
+.contact-label {
+    font-weight: 600;
+    color: #495057;
+    min-width: 120px;
+    margin-right: 10px;
+}
+
+.contact-value {
+    color: #212529;
+}
+
+.status-en-cours {
+    color: #007bff;
+}
+
+.status-terminé {
+    color: #28a745;
+}
+
+.status-en-retard {
+    color: #dc3545;
+}
+
+@media (max-width: 600px) {
+    .action-buttons {
+        text-align: left;
+    }
+    
+    .button {
+        display: block;
+        margin: 10px 0;
+        text-align: center;
+    }
+    
+    .urgency-level {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .urgency-icon {
+        margin-right: 0;
+        margin-bottom: 10px;
+    }
+}
+</style>
+{% endblock %}
+
+
+
+
+
+
+
+

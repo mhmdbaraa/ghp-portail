@@ -1,0 +1,368 @@
+{% extends "notifications/emails/base.html" %}
+
+{% block title %}Nouvelle Tâche Créée - GHP Portail{% endblock %}
+
+{% block header_title %}📋 Nouvelle Tâche{% endblock %}
+{% block header_subtitle %}Une nouvelle tâche vous a été assignée{% endblock %}
+
+{% block content %}
+<div class="highlight priority-{{ task_priority|lower }}">
+    <h2>📋 Nouvelle Tâche Créée</h2>
+    <div class="task-info">
+        <div class="info-row">
+            <span class="label">📝 Titre:</span>
+            <span class="value">{{ task_title }}</span>
+        </div>
+        <div class="info-row">
+            <span class="label">📄 Description:</span>
+            <span class="value">{{ task_description|default:"Aucune description" }}</span>
+        </div>
+        <div class="info-row">
+            <span class="label">👤 Créée par:</span>
+            <span class="value">{{ creator_name }}</span>
+        </div>
+        <div class="info-row">
+            <span class="label">📅 Date de création:</span>
+            <span class="value">{{ created_at|date:"d/m/Y à H:i" }}</span>
+        </div>
+        {% if task_due_date %}
+        <div class="info-row">
+            <span class="label">⏰ Échéance:</span>
+            <span class="value deadline">{{ task_due_date|date:"d/m/Y" }}</span>
+        </div>
+        {% endif %}
+        <div class="info-row">
+            <span class="label">🎯 Priorité:</span>
+            <span class="value priority-{{ task_priority|lower }}">{{ task_priority|default:"Moyenne" }}</span>
+        </div>
+    </div>
+</div>
+
+<div class="assignment-section">
+    <h3>👤 Assignation</h3>
+    <div class="assignment-info">
+        <div class="info-row">
+            <span class="label">👤 Assigné à:</span>
+            <span class="value">{{ assigned_to_name|default:"Non assigné" }}</span>
+        </div>
+        {% if project_name %}
+        <div class="info-row">
+            <span class="label">📁 Projet:</span>
+            <span class="value">{{ project_name }}</span>
+        </div>
+        {% endif %}
+        {% if project_manager %}
+        <div class="info-row">
+            <span class="label">👨‍💼 Chef de projet:</span>
+            <span class="value">{{ project_manager }}</span>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="action-buttons">
+    <a href="{{ site_url }}/tasks/{{ task_id }}" class="button primary">
+        🔗 Accéder à la Tâche
+    </a>
+    {% if project_id %}
+    <a href="{{ site_url }}/projects/{{ project_id }}" class="button secondary">
+        📁 Voir le Projet
+    </a>
+    {% endif %}
+    <a href="{{ site_url }}/tasks/{{ task_id }}/edit" class="button secondary">
+        ✏️ Modifier la Tâche
+    </a>
+</div>
+
+<div class="task-actions">
+    <h3>⚡ Actions Rapides</h3>
+    <div class="quick-actions">
+        <a href="{{ site_url }}/tasks/{{ task_id }}/start" class="quick-button start">
+            ▶️ Démarrer
+        </a>
+        <a href="{{ site_url }}/tasks/{{ task_id }}/complete" class="quick-button complete">
+            ✅ Terminer
+        </a>
+        <a href="{{ site_url }}/tasks/{{ task_id }}/comment" class="quick-button comment">
+            💬 Commenter
+        </a>
+    </div>
+</div>
+
+<div class="task-stats">
+    <h3>📊 Informations de la Tâche</h3>
+    <div class="stats-grid">
+        <div class="stat-item">
+            <span class="stat-label">Statut</span>
+            <span class="stat-value status-{{ task_status|lower }}">{{ task_status|default:"En attente" }}</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Priorité</span>
+            <span class="stat-value priority-{{ task_priority|lower }}">{{ task_priority|default:"Moyenne" }}</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Progression</span>
+            <span class="stat-value">{{ task_progress|default:"0" }}%</span>
+        </div>
+        {% if task_estimated_hours %}
+        <div class="stat-item">
+            <span class="stat-label">Heures estimées</span>
+            <span class="stat-value">{{ task_estimated_hours }}h</span>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="deadline-warning" style="{% if days_remaining <= 3 %}display: block;{% else %}display: none;{% endif %}">
+    <div class="warning-content">
+        <h3>⚠️ Attention à l'Échéance</h3>
+        <p>Cette tâche approche de son échéance. Assurez-vous de la traiter en priorité.</p>
+        <div class="countdown">
+            <span class="days">{{ days_remaining|default:"N/A" }}</span>
+            <span class="label">jour{{ days_remaining|pluralize }} restant{{ days_remaining|pluralize }}</span>
+        </div>
+    </div>
+</div>
+
+<style>
+.task-info {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+}
+
+.info-row {
+    display: flex;
+    margin-bottom: 10px;
+    align-items: flex-start;
+}
+
+.info-row:last-child {
+    margin-bottom: 0;
+}
+
+.label {
+    font-weight: 600;
+    color: #495057;
+    min-width: 140px;
+    margin-right: 10px;
+}
+
+.value {
+    color: #212529;
+    flex: 1;
+}
+
+.value.deadline {
+    color: #dc3545;
+    font-weight: 600;
+}
+
+.assignment-section {
+    margin: 30px 0;
+}
+
+.assignment-info {
+    background: #e8f4fd;
+    border-left: 4px solid #007bff;
+    padding: 15px;
+    border-radius: 4px;
+}
+
+.action-buttons {
+    text-align: center;
+    margin: 30px 0;
+}
+
+.button {
+    display: inline-block;
+    padding: 12px 24px;
+    margin: 5px 10px;
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.button.primary {
+    background: linear-gradient(135deg, #28a745, #1e7e34);
+    color: white;
+}
+
+.button.primary:hover {
+    background: linear-gradient(135deg, #1e7e34, #155724);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+.button.secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.button.secondary:hover {
+    background: #545b62;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+}
+
+.task-actions {
+    margin: 30px 0;
+}
+
+.quick-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.quick-button {
+    display: inline-block;
+    padding: 8px 16px;
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.quick-button.start {
+    background: #17a2b8;
+    color: white;
+}
+
+.quick-button.complete {
+    background: #28a745;
+    color: white;
+}
+
+.quick-button.comment {
+    background: #ffc107;
+    color: #212529;
+}
+
+.quick-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.task-stats {
+    margin: 30px 0;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.stat-item {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 6px;
+    text-align: center;
+    border: 1px solid #dee2e6;
+}
+
+.stat-label {
+    display: block;
+    font-size: 12px;
+    color: #6c757d;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.stat-value {
+    display: block;
+    font-size: 16px;
+    font-weight: 700;
+    color: #212529;
+}
+
+.status-en-attente {
+    color: #6c757d;
+}
+
+.status-en-cours {
+    color: #007bff;
+}
+
+.status-terminée {
+    color: #28a745;
+}
+
+.priority-haute {
+    color: #dc3545;
+}
+
+.priority-moyenne {
+    color: #ffc107;
+}
+
+.priority-basse {
+    color: #28a745;
+}
+
+.deadline-warning {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+}
+
+.warning-content {
+    text-align: center;
+}
+
+.countdown {
+    margin-top: 15px;
+}
+
+.countdown .days {
+    font-size: 24px;
+    font-weight: 700;
+    color: #856404;
+}
+
+.countdown .label {
+    display: block;
+    font-size: 14px;
+    color: #856404;
+    margin-top: 5px;
+}
+
+@media (max-width: 600px) {
+    .action-buttons {
+        text-align: left;
+    }
+    
+    .button {
+        display: block;
+        margin: 10px 0;
+        text-align: center;
+    }
+    
+    .quick-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+</style>
+{% endblock %}
+
+
+
+
+
+
+
+

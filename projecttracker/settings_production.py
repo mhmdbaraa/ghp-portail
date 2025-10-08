@@ -164,7 +164,11 @@ EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "172.16.0.25"
 EMAIL_USE_TLS = False
 EMAIL_PORT = 25
-EMAIL_HOST_USER = ''
-EMAIL_HOST_PASSWORD = ''
+EMAIL_HOST_USER = 'GHPportail@groupehdyrapahrm.com'  # Add authentication
+EMAIL_HOST_PASSWORD = ''  # Add your SMTP password here
 DEFAULT_FROM_EMAIL = 'GHPportail@groupehdyrapahrm.com'
 SERVER_EMAIL = 'GHPportail@groupehdyrapahrm.com'
+
+# Email timeout settings
+EMAIL_TIMEOUT = 30
+EMAIL_USE_SSL = False

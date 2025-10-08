@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}GHP Portail{% endblock %}</title>
+    <style>
+        /* Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.5;
+            color: #1f2937;
+            background-color: #f9fafb;
+            font-size: 15px;
+        }
+        
+        .email-container {
+            width: 60%;
+            max-width: 600px;
+            margin: 20px auto;
+            background: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        
+        /* Header élégant */
+        .header {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            color: white;
+            padding: 24px 32px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="1" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23dots)"/></svg>');
+            opacity: 0.3;
+        }
+        
+        .header-content {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .logo {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+        
+        .header-subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+            font-weight: 400;
+        }
+        
+        /* Content */
+        .content {
+            padding: 32px;
+        }
+        
+        .greeting {
+            font-size: 18px;
+            color: #1f2937;
+            margin-bottom: 24px;
+            font-weight: 500;
+        }
+        
+        /* Notification card élégante */
+        .notification-card {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 24px;
+            margin: 20px 0;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .notification-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(135deg, #3b82f6, #1e40af);
+        }
+        
+        .notification-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .notification-message {
+            color: #4b5563;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+        
+        /* Project details élégantes */
+        .project-details {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 24px;
+            margin: 24px 0;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+        
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f3f4f6;
+            font-size: 15px;
+        }
+        
+        .detail-item:last-child {
+            border-bottom: none;
+        }
+        
+        .detail-label {
+            color: #6b7280;
+            font-weight: 500;
+            min-width: 100px;
+        }
+        
+        .detail-value {
+            color: #1f2937;
+            font-weight: 500;
+            text-align: right;
+            flex: 1;
+        }
+        
+        /* Badges élégants */
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .badge-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .badge-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .badge-danger {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .badge-info {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        
+        /* Progress bar élégante */
+        .progress-container {
+            background: #e5e7eb;
+            border-radius: 6px;
+            height: 8px;
+            overflow: hidden;
+            margin-top: 6px;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #1e40af);
+            border-radius: 6px;
+            transition: width 0.3s ease;
+        }
+        
+        /* Action buttons élégants */
+        .action-buttons {
+            text-align: center;
+            margin: 28px 0;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 15px;
+            margin: 6px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #1e40af);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        /* Team section élégante */
+        .team-section {
+            background: #f8fafc;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .team-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 16px;
+        }
+        
+        .team-member {
+            display: flex;
+            align-items: center;
+            padding: 8px 0;
+            font-size: 14px;
+        }
+        
+        .member-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6, #1e40af);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+            margin-right: 12px;
+        }
+        
+        .member-name {
+            font-weight: 500;
+            color: #1f2937;
+        }
+        
+        .member-role {
+            font-size: 12px;
+            color: #6b7280;
+        }
+        
+        /* Footer élégant */
+        .footer {
+            background: #f8fafc;
+            border-top: 1px solid #e5e7eb;
+            padding: 24px 32px;
+            text-align: center;
+        }
+        
+        .footer-links {
+            margin-bottom: 16px;
+        }
+        
+        .footer-link {
+            color: #6b7280;
+            text-decoration: none;
+            font-size: 13px;
+            margin: 0 12px;
+            font-weight: 500;
+        }
+        
+        .footer-link:hover {
+            color: #3b82f6;
+        }
+        
+        .footer-text {
+            color: #9ca3af;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+        
+        /* Alert boxes élégantes */
+        .alert {
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+            font-size: 14px;
+            border-left: 4px solid;
+        }
+        
+        .alert-success {
+            background: #d1fae5;
+            border-color: #10b981;
+            color: #065f46;
+        }
+        
+        .alert-warning {
+            background: #fef3c7;
+            border-color: #f59e0b;
+            color: #92400e;
+        }
+        
+        .alert-danger {
+            background: #fee2e2;
+            border-color: #ef4444;
+            color: #991b1b;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .email-container {
+                width: 90%;
+                margin: 10px auto;
+            }
+            
+            .content, .header, .footer {
+                padding: 20px;
+            }
+            
+            .detail-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 4px;
+            }
+            
+            .detail-value {
+                text-align: left;
+            }
+            
+            .btn {
+                display: block;
+                margin: 8px 0;
+                text-align: center;
+            }
+        }
+        
+        /* Animations élégantes */
+        .notification-card {
+            animation: fadeInUp 0.4s ease-out;
+        }
+        
+        @keyframes fadeInUp {
+            from { 
+                opacity: 0; 
+                transform: translateY(20px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon">🏢</div>
+                    GHP Portail
+                </div>
+                <div class="header-subtitle">Système de Gestion de Projets</div>
+            </div>
+        </div>
+        
+        <!-- Content -->
+        <div class="content">
+            <div class="greeting">
+                Bonjour {{ recipient.get_full_name|default:recipient.username }},
+            </div>
+            
+            {% block content %}
+            <!-- Le contenu spécifique sera inséré ici -->
+            {% endblock %}
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-links">
+                <a href="{{ base_url }}" class="footer-link">Accueil</a>
+                <a href="{{ base_url }}/projects" class="footer-link">Projets</a>
+                <a href="{{ base_url }}/tasks" class="footer-link">Tâches</a>
+                <a href="{{ base_url }}/profile" class="footer-link">Profil</a>
+            </div>
+            <div class="footer-text">
+                © {{ current_year }} Groupe Hydrapharm<br>
+                Email automatique du système GHP Portail
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+
+
+
+
+
+
+
+

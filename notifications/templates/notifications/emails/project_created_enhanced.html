@@ -1,0 +1,271 @@
+{% extends "notifications/emails/base.html" %}
+
+{% block title %}Nouveau Projet Créé - GHP Portail{% endblock %}
+
+{% block header_title %}🎉 Nouveau Projet{% endblock %}
+{% block header_subtitle %}Un nouveau projet a été créé dans le portail GHP{% endblock %}
+
+{% block content %}
+<div class="highlight priority-medium">
+    <h2>🎉 Nouveau Projet Créé</h2>
+    <div class="project-info">
+        <div class="info-row">
+            <span class="label">📋 Nom du projet:</span>
+            <span class="value">{{ project_name }}</span>
+        </div>
+        <div class="info-row">
+            <span class="label">📝 Description:</span>
+            <span class="value">{{ project_description|default:"Aucune description" }}</span>
+        </div>
+        <div class="info-row">
+            <span class="label">👤 Créé par:</span>
+            <span class="value">{{ creator_name }}</span>
+        </div>
+        <div class="info-row">
+            <span class="label">📅 Date de création:</span>
+            <span class="value">{{ created_at|date:"d/m/Y à H:i" }}</span>
+        </div>
+        {% if project_deadline %}
+        <div class="info-row">
+            <span class="label">⏰ Échéance:</span>
+            <span class="value deadline">{{ project_deadline|date:"d/m/Y" }}</span>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="team-section">
+    <h3>👥 Équipe du Projet</h3>
+    <div class="team-list">
+        {{ team_members|linebreaks }}
+    </div>
+</div>
+
+<div class="action-buttons">
+    <a href="{{ site_url }}/projects/{{ project_id }}" class="button primary">
+        🔗 Accéder au Projet
+    </a>
+    <a href="{{ site_url }}/projects/{{ project_id }}/tasks" class="button secondary">
+        📋 Voir les Tâches
+    </a>
+    <a href="{{ site_url }}/projects/{{ project_id }}/team" class="button secondary">
+        👥 Gérer l'Équipe
+    </a>
+</div>
+
+<div class="next-steps">
+    <h3>🚀 Prochaines Étapes</h3>
+    <ul class="steps-list">
+        <li>📋 Consultez les détails du projet</li>
+        <li>📝 Ajoutez des tâches et des jalons</li>
+        <li>👥 Invitez d'autres membres de l'équipe</li>
+        <li>⚙️ Configurez les notifications du projet</li>
+        <li>📊 Définissez les indicateurs de performance</li>
+    </ul>
+</div>
+
+<div class="project-stats">
+    <h3>📊 Informations du Projet</h3>
+    <div class="stats-grid">
+        <div class="stat-item">
+            <span class="stat-label">Statut</span>
+            <span class="stat-value status-{{ project_status|lower }}">{{ project_status|default:"En cours" }}</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Priorité</span>
+            <span class="stat-value priority-{{ project_priority|lower }}">{{ project_priority|default:"Moyenne" }}</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Membres</span>
+            <span class="stat-value">{{ team_count|default:"0" }}</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Tâches</span>
+            <span class="stat-value">{{ task_count|default:"0" }}</span>
+        </div>
+    </div>
+</div>
+
+<style>
+.project-info {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+}
+
+.info-row {
+    display: flex;
+    margin-bottom: 10px;
+    align-items: flex-start;
+}
+
+.info-row:last-child {
+    margin-bottom: 0;
+}
+
+.label {
+    font-weight: 600;
+    color: #495057;
+    min-width: 140px;
+    margin-right: 10px;
+}
+
+.value {
+    color: #212529;
+    flex: 1;
+}
+
+.value.deadline {
+    color: #dc3545;
+    font-weight: 600;
+}
+
+.team-section {
+    margin: 30px 0;
+}
+
+.team-list {
+    background: #e8f4fd;
+    border-left: 4px solid #007bff;
+    padding: 15px;
+    border-radius: 4px;
+}
+
+.action-buttons {
+    text-align: center;
+    margin: 30px 0;
+}
+
+.button {
+    display: inline-block;
+    padding: 12px 24px;
+    margin: 5px 10px;
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.button.primary {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+}
+
+.button.primary:hover {
+    background: linear-gradient(135deg, #0056b3, #004085);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+}
+
+.button.secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.button.secondary:hover {
+    background: #545b62;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+}
+
+.next-steps {
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+}
+
+.steps-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.steps-list li {
+    padding: 8px 0;
+    border-bottom: 1px solid #c3e6cb;
+}
+
+.steps-list li:last-child {
+    border-bottom: none;
+}
+
+.project-stats {
+    margin: 30px 0;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.stat-item {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 6px;
+    text-align: center;
+    border: 1px solid #dee2e6;
+}
+
+.stat-label {
+    display: block;
+    font-size: 12px;
+    color: #6c757d;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.stat-value {
+    display: block;
+    font-size: 18px;
+    font-weight: 700;
+    color: #212529;
+}
+
+.status-en-cours {
+    color: #007bff;
+}
+
+.status-terminé {
+    color: #28a745;
+}
+
+.status-en-retard {
+    color: #dc3545;
+}
+
+.priority-haute {
+    color: #dc3545;
+}
+
+.priority-moyenne {
+    color: #ffc107;
+}
+
+.priority-basse {
+    color: #28a745;
+}
+
+@media (max-width: 600px) {
+    .action-buttons {
+        text-align: left;
+    }
+    
+    .button {
+        display: block;
+        margin: 10px 0;
+        text-align: center;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+</style>
+{% endblock %}
+

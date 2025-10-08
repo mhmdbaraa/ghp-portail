@@ -281,14 +281,61 @@ class ProjectViewSet(viewsets.ModelViewSet):
             project_id = response.data.get('id') if isinstance(response.data, dict) else None
             if project_id:
                 instance = Project.objects.get(id=project_id)
+                
+                # 🔔 INTÉGRATION DES NOTIFICATIONS
+                try:
+                    from notifications.services import ProjectNotificationService
+                    notification_service = ProjectNotificationService()
+                    
+                    # Notifier la création du projet
+                    notification_service.notify_project_created(instance, request.user)
+                    print(f"✅ Notification de création envoyée pour le projet {instance.name}")
+                    
+                except Exception as e:
+                    print(f"⚠️ Erreur notification création projet: {str(e)}")
+                
                 data = ProjectSerializer(instance).data
                 return Response(data, status=response.status_code)
         return response
 
     def update(self, request, *args, **kwargs):
+        # Récupérer l'instance avant la mise à jour pour détecter les changements
+        instance = self.get_object()
+        old_data = {
+            'name': instance.name,
+            'description': instance.description,
+            'status': instance.status,
+            'deadline': instance.deadline,
+        }
+        
         response = super().update(request, *args, **kwargs)
         if response.status_code in [status.HTTP_200_OK, status.HTTP_201_CREATED]:
             instance = self.get_object()
+            
+            # 🔔 INTÉGRATION DES NOTIFICATIONS - Mise à jour
+            try:
+                from notifications.services import ProjectNotificationService
+                notification_service = ProjectNotificationService()
+                
+                # Détecter les changements
+                changes = {}
+                if old_data['name'] != instance.name:
+                    changes['name'] = (old_data['name'], instance.name)
+                if old_data['description'] != instance.description:
+                    changes['description'] = (old_data['description'], instance.description)
+                if old_data['status'] != instance.status:
+                    changes['status'] = (old_data['status'], instance.status)
+                if old_data['deadline'] != instance.deadline:
+                    changes['deadline'] = (old_data['deadline'].strftime('%d/%m/%Y'), instance.deadline.strftime('%d/%m/%Y'))
+                
+                # Notifier la mise à jour si il y a des changements
+                if changes:
+                    notification_service.notify_project_updated(instance, request.user, changes)
+                    print(f"✅ Notification de mise à jour envoyée pour le projet {instance.name}")
+                
+            except Exception as e:
+                print(f"⚠️ Erreur notification mise à jour projet: {str(e)}")
+            
             data = ProjectSerializer(instance).data
             return Response(data, status=response.status_code)
         return response

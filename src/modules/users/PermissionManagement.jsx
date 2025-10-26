@@ -49,6 +49,19 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useUserNavigation } from './useUserNavigation';
 import permissionService from '../../shared/services/permissionService';
+import departmentPermissionService from '../../shared/services/departmentPermissionService';
+
+// Department choices
+const DEPARTMENT_CHOICES = [
+  { value: 'comptabilite', label: 'Comptabilité' },
+  { value: 'finance', label: 'Finance' },
+  { value: 'service_clients', label: 'Service clients' },
+  { value: 'risque_clients', label: 'Risque clients' },
+  { value: 'service_generaux', label: 'Service généraux' },
+  { value: 'controle_gestion', label: 'Contrôle de gestion' },
+  { value: 'juridique', label: 'Juridique' },
+  { value: 'evenementiel', label: 'Événementiel' },
+];
 
 const PermissionManagement = () => {
   const theme = useTheme();
@@ -75,10 +88,165 @@ const PermissionManagement = () => {
   const [deletingPermission, setDeletingPermission] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('all');
+  
+  // Department permissions state
+  const [users, setUsers] = useState([]);
+  const [departmentPermissions, setDepartmentPermissions] = useState([]);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [userPermissions, setUserPermissions] = useState({});
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [loadingDeptPermissions, setLoadingDeptPermissions] = useState(false);
 
   useEffect(() => {
     loadPermissions();
-  }, []);
+    if (activeTab === 1) {
+      loadUsers();
+    }
+  }, [activeTab]);
+
+  // Load users for department permissions
+  const loadUsers = async () => {
+    try {
+      setLoadingUsers(true);
+      const result = await departmentPermissionService.getUsersWithPermissions();
+      
+      if (result.success) {
+        // L'API Django REST Framework retourne une structure paginée avec 'results'
+        const dataArray = result.data?.results || result.data || [];
+        setUsers(dataArray);
+      } else {
+        // Vérifier si c'est une erreur d'authentification
+        if (result.error && result.error.includes('401')) {
+          setSnackbar({
+            open: true,
+            message: 'Session expirée. Veuillez vous reconnecter.',
+            severity: 'error'
+          });
+          // Optionnel: rediriger vers la page de connexion
+          // navigate('/login');
+        } else {
+          setSnackbar({
+            open: true,
+            message: result.message || 'Erreur lors du chargement des utilisateurs',
+            severity: 'error'
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error loading users:', error);
+      setSnackbar({
+        open: true,
+        message: 'Erreur lors du chargement des utilisateurs',
+        severity: 'error'
+      });
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  // Load department permissions for a user
+  const loadUserDepartmentPermissions = async (userId) => {
+    try {
+      setLoadingDeptPermissions(true);
+      const result = await departmentPermissionService.getUserPermissions(userId);
+      
+      console.log('Department permissions result:', result);
+      
+      if (result.success) {
+        // Transform API response to the format expected by the UI
+        const permissions = {};
+        
+        // L'API Django REST Framework retourne une structure paginée avec 'results'
+        const dataArray = result.data?.results || result.data || [];
+        
+        if (Array.isArray(dataArray)) {
+          dataArray.forEach(perm => {
+            permissions[perm.department] = {
+              can_view: perm.can_view,
+              can_edit: perm.can_edit,
+              can_create: perm.can_create,
+              can_delete: perm.can_delete
+            };
+          });
+        } else {
+          console.warn('No valid data array found in response:', result.data);
+        }
+        
+        setUserPermissions(permissions);
+      } else {
+        // Vérifier si c'est une erreur d'authentification
+        if (result.error && result.error.includes('401')) {
+          setSnackbar({
+            open: true,
+            message: 'Session expirée. Veuillez vous reconnecter.',
+            severity: 'error'
+          });
+        } else {
+          setSnackbar({
+            open: true,
+            message: result.message || 'Erreur lors du chargement des permissions de département',
+            severity: 'error'
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error loading department permissions:', error);
+      setSnackbar({
+        open: true,
+        message: 'Erreur lors du chargement des permissions de département',
+        severity: 'error'
+      });
+    } finally {
+      setLoadingDeptPermissions(false);
+    }
+  };
+
+  // Handle user selection
+  const handleUserSelect = (user) => {
+    setSelectedUser(user);
+    loadUserDepartmentPermissions(user.id);
+  };
+
+  // Handle permission change
+  const handlePermissionChange = (department, permission, value) => {
+    setUserPermissions(prev => ({
+      ...prev,
+      [department]: {
+        ...prev[department],
+        [permission]: value
+      }
+    }));
+  };
+
+  // Save department permissions
+  const saveDepartmentPermissions = async () => {
+    try {
+      const result = await departmentPermissionService.updateUserPermissions(selectedUser.id, userPermissions);
+      
+      if (result.success) {
+        setSnackbar({
+          open: true,
+          message: 'Permissions de département sauvegardées avec succès',
+          severity: 'success'
+        });
+        // Reload permissions to ensure UI is in sync
+        loadUserDepartmentPermissions(selectedUser.id);
+      } else {
+        setSnackbar({
+          open: true,
+          message: result.message || 'Erreur lors de la sauvegarde des permissions',
+          severity: 'error'
+        });
+      }
+    } catch (error) {
+      console.error('Error saving department permissions:', error);
+      setSnackbar({
+        open: true,
+        message: 'Erreur lors de la sauvegarde des permissions',
+        severity: 'error'
+      });
+    }
+  };
 
   const loadPermissions = async () => {
     try {
@@ -282,44 +450,67 @@ const PermissionManagement = () => {
               >
                 Actualiser
               </Button>
-              <Button
-                variant="contained"
-                startIcon={<Add />}
-                onClick={handleCreatePermission}
-                sx={{ borderRadius: 2 }}
-              >
-                Ajouter une permission
-              </Button>
+              {activeTab === 0 && (
+                <Button
+                  variant="contained"
+                  startIcon={<Add />}
+                  onClick={handleCreatePermission}
+                  sx={{ borderRadius: 2 }}
+                >
+                  Ajouter une permission
+                </Button>
+              )}
             </Box>
           </Box>
           <Typography variant="body1" color="text.secondary">
             Gérez les permissions système et contrôlez l'accès aux fonctionnalités
           </Typography>
+          
+          {/* Tabs */}
+          <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 3 }}>
+            <Tabs value={activeTab} onChange={handleTabChange} aria-label="permission tabs">
+              <Tab 
+                label="Permissions Système" 
+                icon={<Security />} 
+                iconPosition="start"
+                sx={{ textTransform: 'none', fontWeight: 600 }}
+              />
+              <Tab 
+                label="Permissions par Département" 
+                icon={<Shield />} 
+                iconPosition="start"
+                sx={{ textTransform: 'none', fontWeight: 600 }}
+              />
+            </Tabs>
+          </Box>
         </Box>
 
-        {/* Category Selector */}
-        <Card sx={{ mb: 3, p: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="h6" fontWeight={600}>
-              Filtrer par catégorie :
-            </Typography>
-            <FormControl sx={{ minWidth: 200 }}>
-              <InputLabel>Catégorie</InputLabel>
-              <Select
-                value={selectedCategory}
-                onChange={handleCategoryChange}
-                label="Catégorie"
-              >
-                <MenuItem value="all">Toutes les catégories</MenuItem>
-                {(categories || []).map((category) => (
-                  <MenuItem key={category.value} value={category.value}>
-                    {category.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Box>
-        </Card>
+        {/* Tab Content */}
+        {activeTab === 0 && (
+          <>
+            {/* Category Selector */}
+            <Card sx={{ mb: 3, p: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Typography variant="h6" fontWeight={600}>
+                  Filtrer par catégorie :
+                </Typography>
+                <FormControl sx={{ minWidth: 200 }}>
+                  <InputLabel>Catégorie</InputLabel>
+                  <Select
+                    value={selectedCategory}
+                    onChange={handleCategoryChange}
+                    label="Catégorie"
+                  >
+                    <MenuItem value="all">Toutes les catégories</MenuItem>
+                    {(categories || []).map((category) => (
+                      <MenuItem key={category.value} value={category.value}>
+                        {category.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
+            </Card>
 
         {/* Permissions Display */}
         <Card
@@ -497,6 +688,152 @@ const PermissionManagement = () => {
             </Button>
           </DialogActions>
         </Dialog>
+
+          </>
+        )}
+
+        {/* Department Permissions Tab */}
+        {activeTab === 1 && (
+          <Box>
+            <Grid container spacing={3}>
+              {/* User Selection */}
+              <Grid item xs={12} md={4}>
+                <Card sx={{ p: 2 }}>
+                  <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>
+                    Sélectionner un utilisateur
+                  </Typography>
+                  {loadingUsers ? (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+                      <CircularProgress />
+                    </Box>
+                  ) : (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      {users.map((user) => (
+                        <Button
+                          key={user.id}
+                          variant={selectedUser?.id === user.id ? 'contained' : 'outlined'}
+                          onClick={() => handleUserSelect(user)}
+                          sx={{ 
+                            justifyContent: 'flex-start',
+                            textAlign: 'left',
+                            p: 2,
+                            borderRadius: 2
+                          }}
+                        >
+                          <Box>
+                            <Typography variant="subtitle2" fontWeight={600}>
+                              {user.full_name}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {user.username} • {user.department}
+                            </Typography>
+                          </Box>
+                        </Button>
+                      ))}
+                    </Box>
+                  )}
+                </Card>
+              </Grid>
+
+              {/* Department Permissions */}
+              <Grid item xs={12} md={8}>
+                <Card sx={{ p: 2 }}>
+                  {selectedUser ? (
+                    <Box>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                        <Typography variant="h6" fontWeight={600}>
+                          Permissions pour {selectedUser.full_name}
+                        </Typography>
+                        <Button
+                          variant="contained"
+                          startIcon={<Save />}
+                          onClick={saveDepartmentPermissions}
+                          sx={{ borderRadius: 2 }}
+                        >
+                          Sauvegarder
+                        </Button>
+                      </Box>
+
+                      {loadingDeptPermissions ? (
+                        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+                          <CircularProgress />
+                        </Box>
+                      ) : (
+                        <Grid container spacing={2}>
+                          {DEPARTMENT_CHOICES.map((dept) => (
+                            <Grid item xs={12} sm={6} md={4} key={dept.value}>
+                              <Card 
+                                variant="outlined" 
+                                sx={{ 
+                                  p: 2,
+                                  border: userPermissions[dept.value] ? '2px solid #10b981' : '1px solid #e5e7eb'
+                                }}
+                              >
+                                <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 2 }}>
+                                  {dept.label}
+                                </Typography>
+                                
+                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                  <FormControlLabel
+                                    control={
+                                      <Switch
+                                        checked={userPermissions[dept.value]?.can_view || false}
+                                        onChange={(e) => handlePermissionChange(dept.value, 'can_view', e.target.checked)}
+                                      />
+                                    }
+                                    label="Voir"
+                                    size="small"
+                                  />
+                                  <FormControlLabel
+                                    control={
+                                      <Switch
+                                        checked={userPermissions[dept.value]?.can_edit || false}
+                                        onChange={(e) => handlePermissionChange(dept.value, 'can_edit', e.target.checked)}
+                                      />
+                                    }
+                                    label="Modifier"
+                                    size="small"
+                                  />
+                                  <FormControlLabel
+                                    control={
+                                      <Switch
+                                        checked={userPermissions[dept.value]?.can_create || false}
+                                        onChange={(e) => handlePermissionChange(dept.value, 'can_create', e.target.checked)}
+                                      />
+                                    }
+                                    label="Créer"
+                                    size="small"
+                                  />
+                                  <FormControlLabel
+                                    control={
+                                      <Switch
+                                        checked={userPermissions[dept.value]?.can_delete || false}
+                                        onChange={(e) => handlePermissionChange(dept.value, 'can_delete', e.target.checked)}
+                                      />
+                                    }
+                                    label="Supprimer"
+                                    size="small"
+                                  />
+                                </Box>
+                              </Card>
+                            </Grid>
+                          ))}
+                        </Grid>
+                      )}
+                    </Box>
+                  ) : (
+                    <Box sx={{ textAlign: 'center', p: 4 }}>
+                      <Shield sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
+                      <Typography variant="h6" color="text.secondary">
+                        Sélectionnez un utilisateur pour gérer ses permissions de département
+                      </Typography>
+                    </Box>
+                  )}
+                </Card>
+              </Grid>
+            </Grid>
+          </Box>
+        )}
 
         {/* Snackbar */}
         <Snackbar

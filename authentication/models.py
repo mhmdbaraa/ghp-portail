@@ -4,6 +4,18 @@ from django.utils import timezone
 from datetime import date
 from .constants import ROLES, PERMISSIONS, ROLE_PERMISSIONS, USER_STATUS_CHOICES, ROLE_CHOICES, has_permission, is_super_user
 
+# Department choices from projects app
+DEPARTMENT_CHOICES = [
+    ('comptabilite', 'Comptabilité'),
+    ('finance', 'Finance'),
+    ('service_clients', 'Service clients'),
+    ('risque_clients', 'Risque clients'),
+    ('service_generaux', 'Service généraux'),
+    ('controle_gestion', 'Contrôle de gestion'),
+    ('juridique', 'Juridique'),
+    ('evenementiel', 'Événementiel'),
+]
+
 
 class User(AbstractUser):
     """
@@ -49,6 +61,67 @@ class User(AbstractUser):
     def has_permission(self, permission):
         """Check if user has a specific permission"""
         return has_permission(self, permission)
+    
+    def can_view_department(self, department):
+        """Check if user can view projects from a specific department"""
+        # Superusers and admins can see all departments
+        if self.is_superuser or self.role == 'admin':
+            return True
+        
+        # Check if user has explicit permission for this department
+        try:
+            perm = self.department_permissions.get(department=department)
+            return perm.can_view
+        except DepartmentPermission.DoesNotExist:
+            # If no explicit permission, check if it's their own department
+            return self.department == department
+    
+    def can_edit_department(self, department):
+        """Check if user can edit projects from a specific department"""
+        # Superusers and admins can edit all departments
+        if self.is_superuser or self.role == 'admin':
+            return True
+        
+        # Check if user has explicit permission for this department
+        try:
+            perm = self.department_permissions.get(department=department)
+            return perm.can_edit
+        except DepartmentPermission.DoesNotExist:
+            # If no explicit permission, check if it's their own department
+            return self.department == department
+    
+    def can_create_department(self, department):
+        """Check if user can create projects for a specific department"""
+        # Superusers and admins can create for all departments
+        if self.is_superuser or self.role == 'admin':
+            return True
+        
+        # Check if user has explicit permission for this department
+        try:
+            perm = self.department_permissions.get(department=department)
+            return perm.can_create
+        except DepartmentPermission.DoesNotExist:
+            # If no explicit permission, check if it's their own department
+            return self.department == department
+    
+    def get_accessible_departments(self):
+        """Get list of departments the user can access"""
+        # Superusers and admins can access all departments
+        if self.is_superuser or self.role == 'admin':
+            return [choice[0] for choice in DEPARTMENT_CHOICES]
+        
+        accessible = []
+        
+        # Add user's own department
+        if self.department:
+            accessible.append(self.department)
+        
+        # Add departments with explicit permissions
+        for perm in self.department_permissions.filter(can_view=True):
+            if perm.department not in accessible:
+                accessible.append(perm.department)
+        
+        return accessible
     
     def save(self, *args, **kwargs):
         """Override save to ensure superuser has admin role"""
@@ -191,3 +264,26 @@ class UserSession(models.Model):
     
     def __str__(self):
         return f"{self.user.username} - {self.ip_address}"
+
+
+class DepartmentPermission(models.Model):
+    """
+    Model to manage user permissions for departments
+    """
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='department_permissions')
+    department = models.CharField(max_length=20, choices=DEPARTMENT_CHOICES)
+    can_view = models.BooleanField(default=True)
+    can_edit = models.BooleanField(default=False)
+    can_create = models.BooleanField(default=False)
+    can_delete = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'department_permissions'
+        unique_together = ['user', 'department']
+        verbose_name = 'Department Permission'
+        verbose_name_plural = 'Department Permissions'
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.get_department_display()}"

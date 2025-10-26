@@ -4,6 +4,8 @@ from rest_framework.response import Response
 from rest_framework.permissions import BasePermission
 from django_filters.rest_framework import DjangoFilterBackend
 
+from .models import Project, ProjectAttachment
+
 # Permissions personnalisées pour le calendrier
 class CanViewCalendar(BasePermission):
     """
@@ -126,6 +128,47 @@ from .filters import ProjectFilter, TaskFilter
 from .permissions import IsProjectManagerOrReadOnly, IsProjectManager, CanViewProject, CanModifyProject
 
 
+def get_user_accessible_projects(user):
+    """
+    Get projects accessible to a user based on department permissions
+    """
+    if not user.is_authenticated:
+        return Project.objects.none()
+    
+    # Superusers and admins can see all projects
+    if user.is_superuser or user.role == 'admin':
+        return Project.objects.all()
+    
+    # Get departments the user can access
+    accessible_departments = user.get_accessible_departments()
+    
+    # If user has no accessible departments, return empty queryset
+    if not accessible_departments:
+        return Project.objects.none()
+    
+    # Filter projects by accessible departments ONLY
+    queryset = Project.objects.filter(department__in=accessible_departments)
+    
+    # Manager can also see projects they manage (regardless of department)
+    if user.role == 'manager':
+        manager_projects = Project.objects.filter(manager=user)
+        queryset = queryset.union(manager_projects)
+    
+    # Users can also see projects they're part of ONLY if they have view permission for that project's department
+    team_projects = Project.objects.filter(team=user)
+    accessible_team_projects = []
+    
+    for project in team_projects:
+        if user.can_view_department(project.department):
+            accessible_team_projects.append(project.id)
+    
+    if accessible_team_projects:
+        team_queryset = Project.objects.filter(id__in=accessible_team_projects)
+        queryset = queryset.union(team_queryset)
+    
+    return queryset.distinct()
+
+
 class ProjectViewSet(viewsets.ModelViewSet):
     """
     ViewSet for managing projects
@@ -151,26 +194,9 @@ class ProjectViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         """
-        Filter projects based on user permissions
+        Filter projects based on user permissions and department access
         """
-        user = self.request.user
-        
-        # For development: allow all authenticated users to see all projects
-        if user.is_authenticated:
-            return Project.objects.all()
-        
-        # Admin can see all projects
-        if user.role == 'admin':
-            return Project.objects.all()
-        
-        # Manager can see projects they manage or are part of
-        if user.role == 'manager':
-            return Project.objects.filter(
-                Q(manager=user) | Q(team=user)
-            ).distinct()
-        
-        # Other users can only see projects they're part of
-        return Project.objects.filter(team=user)
+        return get_user_accessible_projects(self.request.user)
     
     @action(detail=True, methods=['patch'], permission_classes=[permissions.IsAuthenticated])
     def update_progress(self, request, pk=None):
@@ -518,7 +544,73 @@ class ProjectAttachmentListCreateView(viewsets.ModelViewSet):
     
     def perform_create(self, serializer):
         project_id = self.kwargs.get('project_id')
-        serializer.save(project_id=project_id)
+        serializer.save(project_id=project_id, uploaded_by=self.request.user)
+    
+    def create(self, request, *args, **kwargs):
+        """Override create to handle file uploads properly"""
+        try:
+            # Get the project
+            project_id = self.kwargs.get('project_id')
+            try:
+                project = Project.objects.get(id=project_id)
+            except Project.DoesNotExist:
+                return Response(
+                    {'error': 'Project not found'}, 
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            # Handle file upload
+            if 'file' not in request.FILES:
+                return Response(
+                    {'error': 'No file provided'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            file = request.FILES['file']
+            description = request.data.get('description', '')
+            
+            # Create attachment
+            attachment = ProjectAttachment.objects.create(
+                project=project,
+                uploaded_by=request.user,
+                file_name=file.name,
+                file_path=file.name,  # For now, just store the name
+                file_size=file.size,
+                file_type=file.content_type,
+                description=description
+            )
+            
+            # Save the file to media directory
+            import os
+            from django.conf import settings
+            
+            # Create media directory if it doesn't exist
+            media_dir = os.path.join(settings.MEDIA_ROOT, 'attachments', str(project_id))
+            os.makedirs(media_dir, exist_ok=True)
+            
+            # Save file
+            file_path = os.path.join(media_dir, file.name)
+            with open(file_path, 'wb') as destination:
+                for chunk in file.chunks():
+                    destination.write(chunk)
+            
+            # Update attachment with actual file path
+            attachment.file_path = f'attachments/{project_id}/{file.name}'
+            attachment.save()
+            
+            print(f"File saved to: {file_path}")
+            print(f"Attachment file_path: {attachment.file_path}")
+            print(f"File exists: {os.path.exists(file_path)}")
+            
+            serializer = self.get_serializer(attachment)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            return Response(
+                {'error': str(e)}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
 
 
 class ProjectStatisticsView(viewsets.ViewSet):
@@ -529,18 +621,7 @@ class ProjectStatisticsView(viewsets.ViewSet):
     
     def list(self, request):
         """Get overall project statistics"""
-        user = request.user
-        
-        # Filter projects based on user permissions
-        if user.role == 'admin':
-            projects = Project.objects.all()
-        elif user.role == 'manager':
-            projects = Project.objects.filter(
-                Q(manager=user) | Q(team=user)
-            ).distinct()
-        else:
-            # For all other roles, show all projects (read-only access)
-            projects = Project.objects.all()
+        projects = get_user_accessible_projects(request.user)
         
         total_projects = projects.count()
         active_projects = projects.filter(status='in_progress').count()
@@ -833,22 +914,9 @@ def dashboard_data(request):
     user = request.user
     
     try:
-        # Filter data based on user permissions
-        user_role = getattr(user, 'role', 'user')
-        if user_role == 'admin':
-            projects = Project.objects.all()
-            tasks = Task.objects.all()
-        elif user_role == 'manager':
-            projects = Project.objects.filter(
-                Q(manager=user) | Q(team=user)
-            ).distinct()
-            tasks = Task.objects.filter(
-                Q(project__manager=user) | Q(project__team=user)
-            ).distinct()
-        else:
-            # For all other roles, show all data (read-only access)
-            projects = Project.objects.all()
-            tasks = Task.objects.all()
+        # Use the same filtering logic as ProjectViewSet
+        projects = get_user_accessible_projects(user)
+        tasks = Task.objects.filter(project__in=projects)
         
         # Project statistics
         total_projects = projects.count()
@@ -1652,3 +1720,61 @@ def export_projects_excel(request):
             'error': str(e),
             'message': 'Erreur lors de l\'export Excel'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def download_attachment(request, project_id, pk):
+    """Download an attachment file"""
+    try:
+        # Get the attachment
+        try:
+            attachment = ProjectAttachment.objects.get(id=pk, project_id=project_id)
+        except ProjectAttachment.DoesNotExist:
+            return Response(
+                {'error': 'Attachment not found'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Construct file path
+        import os
+        from django.conf import settings
+        from django.http import FileResponse
+        
+        # Try different possible file paths
+        possible_paths = [
+            os.path.join(settings.MEDIA_ROOT, attachment.file_path),
+            os.path.join(settings.MEDIA_ROOT, 'attachments', str(project_id), attachment.file_name),
+            os.path.join(settings.BASE_DIR, 'media', attachment.file_path),
+            os.path.join(settings.BASE_DIR, 'media', 'attachments', str(project_id), attachment.file_name)
+        ]
+        
+        file_path = None
+        for path in possible_paths:
+            if os.path.exists(path):
+                file_path = path
+                break
+        
+        if not file_path:
+            print(f"File not found. Tried paths: {possible_paths}")
+            print(f"Attachment file_path: {attachment.file_path}")
+            print(f"Attachment file_name: {attachment.file_name}")
+            return Response(
+                {'error': f'File not found. Tried: {possible_paths}'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Return file response
+        response = FileResponse(
+            open(file_path, 'rb'),
+            as_attachment=True,
+            filename=attachment.file_name
+        )
+        return response
+        
+    except Exception as e:
+        print(f"Download error: {str(e)}")
+        return Response(
+            {'error': str(e)}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )

@@ -10,8 +10,11 @@ class ProjectService {
     try {
       // Removed console.log to eliminate perceived "reload" feeling
       
+      // Transform filters to backend format
+      const transformedFilters = this.transformFiltersToAPI(filters);
+      
       // Use the existing getProjects method with pagination and filters
-      const response = await djangoApiService.getProjects(filters, page, pageSize);
+      const response = await djangoApiService.getProjects(transformedFilters, page, pageSize);
       
       if (response.success) {
         // Handle paginated response
@@ -178,7 +181,14 @@ class ProjectService {
       
       if (projectData.start_date || Object.keys(projectData).length === 1) {
         // Already in API format or partial update - use PATCH
-        apiData = projectData;
+        // But still transform status/priority if present
+        apiData = { ...projectData };
+        if (apiData.status) {
+          apiData.status = ProjectDataTransformer.transformStatusToAPI(apiData.status);
+        }
+        if (apiData.priority) {
+          apiData.priority = ProjectDataTransformer.transformPriorityToAPI(apiData.priority);
+        }
         console.log('Using PATCH for partial update:', apiData);
         response = await djangoApiService.patchProject(id, apiData);
       } else {
@@ -364,14 +374,30 @@ class ProjectService {
    */
   getAvailableCategories() {
     return [
-      { value: 'Web', label: 'Web' },
-      { value: 'Mobile', label: 'Mobile' },
-      { value: 'Desktop', label: 'Desktop' },
-      { value: 'Data', label: 'Data' },
-      { value: 'AI/ML', label: 'AI/ML' },
-      { value: 'DevOps', label: 'DevOps' },
-      { value: 'Gaming', label: 'Gaming' },
-      { value: 'IoT', label: 'IoT' }
+      { value: 'App Web', label: 'App Web' },
+      { value: 'App Mobile', label: 'App Mobile' },
+      { value: 'Reporting', label: 'Reporting' },
+      { value: 'Digitalisation', label: 'Digitalisation' },
+      { value: 'ERP', label: 'ERP' },
+      { value: 'AI', label: 'AI' },
+      { value: 'Web & Mobile', label: 'Web & Mobile' },
+      { value: 'Autre', label: 'Autre' }
+    ];
+  }
+
+  /**
+   * Get available departments
+   */
+  getAvailableDepartments() {
+    return [
+      { value: 'Comptabilité', label: 'Comptabilité' },
+      { value: 'Finance', label: 'Finance' },
+      { value: 'Service clients', label: 'Service clients' },
+      { value: 'Risque clients', label: 'Risque clients' },
+      { value: 'Service généraux', label: 'Service généraux' },
+      { value: 'Contrôle de gestion', label: 'Contrôle de gestion' },
+      { value: 'Juridique', label: 'Juridique' },
+      { value: 'Événementiel', label: 'Événementiel' }
     ];
   }
 
@@ -382,6 +408,41 @@ class ProjectService {
     return [
       'GHMED', 'DEFMED', 'ABCMED', 'MEDIJK', 'TOUT', 'MEDTECH', 'HEALTHCARE', 'BIOTECH'
     ];
+  }
+
+  /**
+   * Transform frontend filters to backend format
+   */
+  transformFiltersToAPI(filters) {
+    const transformedFilters = { ...filters };
+    
+    // Transform status from French to backend format
+    if (transformedFilters.status) {
+      const statusMap = {
+        'Planification': 'planification',
+        'En cours': 'en_cours',
+        'En attente': 'en_attente',
+        'En retard': 'en_retard',
+        'Terminé': 'termine',
+        'Annulé': 'annule'
+      };
+      
+      transformedFilters.status = statusMap[transformedFilters.status] || transformedFilters.status;
+    }
+    
+    // Transform priority from French to backend format
+    if (transformedFilters.priority) {
+      const priorityMap = {
+        'Faible': 'faible',
+        'Moyen': 'moyen',
+        'Élevé': 'eleve',
+        'Critique': 'critique'
+      };
+      
+      transformedFilters.priority = priorityMap[transformedFilters.priority] || transformedFilters.priority;
+    }
+    
+    return transformedFilters;
   }
 }
 

@@ -10,6 +10,7 @@ class ProjectFilter(django_filters.FilterSet):
     status = django_filters.ChoiceFilter(choices=Project.STATUS_CHOICES)
     priority = django_filters.ChoiceFilter(choices=Project.PRIORITY_CHOICES)
     category = django_filters.ChoiceFilter(choices=Project.CATEGORY_CHOICES)
+    department = django_filters.ChoiceFilter(choices=Project.DEPARTMENT_CHOICES)
     
     # Date filters
     start_date_after = django_filters.DateFilter(field_name='start_date', lookup_expr='gte')
@@ -28,7 +29,7 @@ class ProjectFilter(django_filters.FilterSet):
     
     class Meta:
         model = Project
-        fields = ['status', 'priority', 'category', 'manager', 'team_member', 'is_overdue']
+        fields = ['status', 'priority', 'category', 'department', 'manager', 'team_member', 'is_overdue']
     
     def filter_team_member(self, queryset, name, value):
         """Filter projects by team member"""

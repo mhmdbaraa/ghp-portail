@@ -13,38 +13,41 @@ class Project(models.Model):
     Project model for managing projects
     """
     STATUS_CHOICES = [
-        ('planning', 'Planning'),
-        ('in_progress', 'In Progress'),
-        ('on_hold', 'On Hold'),
-        ('completed', 'Completed'),
-        ('cancelled', 'Cancelled'),
-        # Statuts français
-        ('Annulé', 'Annulé'),
-        ('En attente', 'En attente'),
-        ('En retard', 'En retard'),
-        ('En cours', 'En cours'),
-        ('Terminé', 'Terminé'),
+        ('planification', 'Planification'),
+        ('en_cours', 'En cours'),
+        ('en_attente', 'En attente'),
+        ('en_retard', 'En retard'),
+        ('termine', 'Terminé'),
+        ('annule', 'Annulé'),
     ]
     
     PRIORITY_CHOICES = [
-        ('low', 'Low'),
-        ('medium', 'Medium'),
-        ('high', 'High'),
-        ('critical', 'Critical'),
+        ('faible', 'Faible'),
+        ('moyen', 'Moyen'),
+        ('eleve', 'Élevé'),
+        ('critique', 'Critique'),
     ]
     
     CATEGORY_CHOICES = [
-        ('web_development', 'Web Development'),
-        ('mobile_app', 'Mobile App'),
-        ('desktop_app', 'Desktop App'),
-        ('data_analysis', 'Data Analysis'),
-        ('research', 'Research'),
-        ('marketing', 'Marketing'),
-        ('ai_ml', 'AI/ML'),
-        ('devops', 'DevOps'),
-        ('gaming', 'Gaming'),
-        ('iot', 'IoT'),
-        ('other', 'Other'),
+        ('app_web', 'App Web'),
+        ('app_mobile', 'App Mobile'),
+        ('reporting', 'Reporting'),
+        ('digitalisation', 'Digitalisation'),
+        ('erp', 'ERP'),
+        ('ai', 'AI'),
+        ('web_mobile', 'Web & Mobile'),
+        ('other', 'Autre'),
+    ]
+    
+    DEPARTMENT_CHOICES = [
+        ('comptabilite', 'Comptabilité'),
+        ('finance', 'Finance'),
+        ('service_clients', 'Service clients'),
+        ('risque_clients', 'Risque clients'),
+        ('service_generaux', 'Service généraux'),
+        ('controle_gestion', 'Contrôle de gestion'),
+        ('juridique', 'Juridique'),
+        ('evenementiel', 'Événementiel'),
     ]
     
     # Basic information
@@ -54,6 +57,7 @@ class Project(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='planning')
     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium')
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='other')
+    department = models.CharField(max_length=20, choices=DEPARTMENT_CHOICES, default='comptabilite')
     
     # Project management
     manager = models.ForeignKey(User, on_delete=models.CASCADE, related_name='managed_projects')
@@ -70,6 +74,8 @@ class Project(models.Model):
     
     # Progress tracking
     progress = models.IntegerField(default=0, help_text="Progress percentage (0-100)")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='planification')
+    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='moyen')
     
     # Additional fields
     tags = models.JSONField(default=default_list, blank=True)
@@ -184,6 +190,7 @@ class ProjectAttachment(models.Model):
     file_path = models.CharField(max_length=500)
     file_size = models.BigIntegerField()
     file_type = models.CharField(max_length=100)
+    description = models.TextField(blank=True, null=True, help_text="Description of the attachment")
     uploaded_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
@@ -194,6 +201,16 @@ class ProjectAttachment(models.Model):
     
     def __str__(self):
         return f"{self.file_name} - {self.project.name}"
+    
+    @property
+    def file_size_human(self):
+        """Return human readable file size"""
+        size = self.file_size
+        for unit in ['B', 'KB', 'MB', 'GB']:
+            if size < 1024.0:
+                return f"{size:.1f} {unit}"
+            size /= 1024.0
+        return f"{size:.1f} TB"
 
 
 class Task(models.Model):

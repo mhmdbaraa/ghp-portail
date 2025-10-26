@@ -24,6 +24,7 @@ urlpatterns = [
     path('export/excel/', views.export_projects_excel, name='export_projects_excel'),
     path('<int:project_id>/comments/', views.ProjectCommentListCreateView.as_view({'get': 'list', 'post': 'create'}), name='project_comments'),
     path('<int:project_id>/attachments/', views.ProjectAttachmentListCreateView.as_view({'get': 'list', 'post': 'create'}), name='project_attachments'),
+    path('<int:project_id>/attachments/<int:pk>/download/', views.download_attachment, name='project_attachment_download'),
     path('notes/', views.ProjectNoteViewSet.as_view({'get': 'list', 'post': 'create'}), name='project_notes'),
     path('notes/<int:pk>/', views.ProjectNoteViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}), name='project_note_detail'),
     path('notes/<int:pk>/toggle_like/', views.ProjectNoteViewSet.as_view({'post': 'toggle_like'}), name='project_note_toggle_like'),

@@ -60,6 +60,8 @@ INSTALLED_APPS = [
     'authentication',
     'projects',
     'notifications',
+    'ax_server_models',
+    'administration',
 ]
 
 MIDDLEWARE = [
@@ -99,8 +101,27 @@ WSGI_APPLICATION = 'projecttracker.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'ghpportail',
+        'USER': 'moh',
+        'PASSWORD': 'm14789630',
+        'HOST': '172.16.0.78',
+        'PORT': '3306',
+        'OPTIONS': {
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            'charset': 'utf8mb4',
+        },
+    },
+    'ax_server_db': {
+        'ENGINE': 'sql_server.pyodbc',
+        'NAME': 'DWH_RECLAMATION',
+        'USER': 'dwh_rec',
+        'PASSWORD': 'rec.2022',
+        'HOST': 'stf-REPORT',  # or IP address
+        'PORT': '',  # Leave it empty for the default SQL Server port (1433)
+        'OPTIONS': {
+            'driver': 'ODBC Driver 17 for SQL Server',  # Use the appropriate driver name
+        },
     }
 }
 
@@ -258,3 +279,14 @@ SERVER_EMAIL = 'GHPportail@groupehdyrapahrm.com'
 # Email timeout settings
 EMAIL_TIMEOUT = 30
 EMAIL_USE_SSL = False
+
+# Database routing
+DATABASE_ROUTERS = ['ax_server_models.database_router.AxServerRouter']
+
+# Media files configuration
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Static files configuration
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')

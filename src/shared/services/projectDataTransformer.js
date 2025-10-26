@@ -19,6 +19,7 @@ class ProjectDataTransformer {
       deadline: this.formatDate(apiProject.deadline),
       budget: this.formatBudget(apiProject.budget),
       category: this.transformCategory(apiProject.category),
+      department: this.transformDepartment(apiProject.department),
       startDate: this.formatDate(apiProject.start_date),
       filiales: this.transformFiliales(apiProject.tags),
       projectManager: this.transformManager(apiProject.manager, apiProject),
@@ -35,6 +36,13 @@ class ProjectDataTransformer {
    */
   static transformStatus(djangoStatus) {
     const statusMap = {
+      'planification': 'Planification',
+      'en_cours': 'En cours',
+      'en_attente': 'En attente',
+      'en_retard': 'En retard',
+      'termine': 'Terminé',
+      'annule': 'Annulé',
+      // Legacy mappings for backward compatibility
       'planning': 'Planification',
       'in_progress': 'En cours',
       'completed': 'Terminé',
@@ -62,16 +70,33 @@ class ProjectDataTransformer {
    */
   static transformCategory(djangoCategory) {
     const categoryMap = {
-      'web_development': 'Web',
-      'mobile_app': 'Mobile',
-      'desktop_app': 'Desktop',
-      'data_analysis': 'Data',
-      'ai_ml': 'AI/ML',
-      'devops': 'DevOps',
-      'gaming': 'Gaming',
-      'iot': 'IoT'
+      'app_web': 'App Web',
+      'app_mobile': 'App Mobile',
+      'reporting': 'Reporting',
+      'digitalisation': 'Digitalisation',
+      'erp': 'ERP',
+      'ai': 'AI',
+      'web_mobile': 'Web & Mobile',
+      'other': 'Autre'
     };
     return categoryMap[djangoCategory] || djangoCategory;
+  }
+
+  /**
+   * Transform Django department to React department
+   */
+  static transformDepartment(djangoDepartment) {
+    const departmentMap = {
+      'comptabilite': 'Comptabilité',
+      'finance': 'Finance',
+      'service_clients': 'Service clients',
+      'risque_clients': 'Risque clients',
+      'service_generaux': 'Service généraux',
+      'controle_gestion': 'Contrôle de gestion',
+      'juridique': 'Juridique',
+      'evenementiel': 'Événementiel'
+    };
+    return departmentMap[djangoDepartment] || djangoDepartment;
   }
 
   /**
@@ -205,6 +230,7 @@ class ProjectDataTransformer {
       status: this.transformStatusToAPI(reactProject.status),
       priority: this.transformPriorityToAPI(reactProject.priority),
       category: this.transformCategoryToAPI(reactProject.category),
+      department: this.transformDepartmentToAPI(reactProject.department),
       start_date: this.formatDateForAPI(reactProject.startDate),
       deadline: this.formatDateForAPI(reactProject.deadline),
       budget: this.parseBudget(reactProject.budget),
@@ -219,36 +245,55 @@ class ProjectDataTransformer {
    * Transform React status to Django status
    */
   static transformStatusToAPI(reactStatus) {
-    if (!reactStatus) return 'planning'; // Default status
+    if (!reactStatus) return 'planification'; // Default status
     
     const statusMap = {
-      'Planification': 'planning',
-      'En cours': 'in_progress',
-      'Terminé': 'completed',
-      'En attente': 'on_hold',
-      'En retard': 'overdue',
-      'Annulé': 'cancelled'
+      'Planification': 'planification',
+      'En cours': 'en_cours',
+      'En attente': 'en_attente',
+      'En retard': 'en_retard',
+      'Terminé': 'termine',
+      'Annulé': 'annule'
     };
-    return statusMap[reactStatus] || reactStatus;
+    return statusMap[reactStatus] || reactStatus.toLowerCase().replace(/ /g, '_');
   }
 
   /**
    * Transform React category to Django category
    */
   static transformCategoryToAPI(reactCategory) {
-    if (!reactCategory) return 'web_development'; // Default category
+    if (!reactCategory) return 'app_web'; // Default category
     
     const categoryMap = {
-      'Web': 'web_development',
-      'Mobile': 'mobile_app',
-      'Desktop': 'desktop_app',
-      'Data': 'data_analysis',
-      'AI/ML': 'ai_ml',
-      'DevOps': 'devops',
-      'Gaming': 'gaming',
-      'IoT': 'iot'
+      'App Web': 'app_web',
+      'App Mobile': 'app_mobile',
+      'Reporting': 'reporting',
+      'Digitalisation': 'digitalisation',
+      'ERP': 'erp',
+      'AI': 'ai',
+      'Web & Mobile': 'web_mobile',
+      'Autre': 'other'
     };
     return categoryMap[reactCategory] || reactCategory.toLowerCase();
+  }
+
+  /**
+   * Transform React department to Django department
+   */
+  static transformDepartmentToAPI(reactDepartment) {
+    if (!reactDepartment) return 'comptabilite'; // Default department
+    
+    const departmentMap = {
+      'Comptabilité': 'comptabilite',
+      'Finance': 'finance',
+      'Service clients': 'service_clients',
+      'Risque clients': 'risque_clients',
+      'Service généraux': 'service_generaux',
+      'Contrôle de gestion': 'controle_gestion',
+      'Juridique': 'juridique',
+      'Événementiel': 'evenementiel'
+    };
+    return departmentMap[reactDepartment] || reactDepartment.toLowerCase();
   }
 
   /**
@@ -297,12 +342,13 @@ class ProjectDataTransformer {
    * Transform React priority to Django priority
    */
   static transformPriorityToAPI(reactPriority) {
-    if (!reactPriority) return 'medium'; // Default priority
+    if (!reactPriority) return 'moyen'; // Default priority
     
     const priorityMap = {
-      'Élevé': 'high',
-      'Moyen': 'medium',
-      'Faible': 'low'
+      'Élevé': 'eleve',
+      'Moyen': 'moyen',
+      'Faible': 'faible',
+      'Critique': 'critique'
     };
     return priorityMap[reactPriority] || reactPriority.toLowerCase();
   }

@@ -1,5 +1,5 @@
-from rest_framework import status, generics, permissions, filters
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework import status, generics, permissions, filters, viewsets
+from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
@@ -12,7 +12,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.auth.hashers import make_password
 import logging
 
-from .models import User, UserSession, Permission, Role
+from .models import User, UserSession, Permission, Role, DepartmentPermission
 from .serializers import (
     UserSerializer, 
     UserRegistrationSerializer, 
@@ -20,7 +20,9 @@ from .serializers import (
     UserProfileSerializer,
     PermissionSerializer,
     RoleSerializer,
-    RolePermissionSerializer
+    RolePermissionSerializer,
+    DepartmentPermissionSerializer,
+    UserDepartmentPermissionsSerializer
 )
 
 logger = logging.getLogger(__name__)
@@ -578,96 +580,6 @@ def remove_roles_from_user(request, user_id):
         }, status=status.HTTP_404_NOT_FOUND)
 
 
-# Permission Views
-class PermissionListCreateView(generics.ListCreateAPIView):
-    """
-    List all permissions or create a new permission
-    """
-    queryset = Permission.objects.all()
-    serializer_class = PermissionSerializer
-    permission_classes = [permissions.AllowAny]  # Temporaire pour les tests
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['category', 'is_active']
-    search_fields = ['name', 'codename', 'description']
-    ordering_fields = ['name', 'category', 'created_at']
-    ordering = ['category', 'name']
-
-
-class PermissionDetailView(generics.RetrieveUpdateDestroyAPIView):
-    """
-    Retrieve, update or delete a permission
-    """
-    queryset = Permission.objects.all()
-    serializer_class = PermissionSerializer
-    permission_classes = [permissions.AllowAny]  # Temporaire pour les tests
-
-
-@api_view(['PATCH'])
-@permission_classes([permissions.IsAuthenticated])
-def toggle_permission_status(request, pk):
-    """
-    Toggle permission active status
-    """
-    try:
-        permission = Permission.objects.get(pk=pk)
-        permission.is_active = not permission.is_active
-        permission.save()
-        
-        serializer = PermissionSerializer(permission)
-        return Response({
-            'success': True,
-            'data': serializer.data,
-            'message': f'Permission {"activated" if permission.is_active else "deactivated"} successfully'
-        })
-    except Permission.DoesNotExist:
-        return Response({
-            'success': False,
-            'message': 'Permission not found'
-        }, status=status.HTTP_404_NOT_FOUND)
-
-
-@api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
-def permissions_by_category(request, category):
-    """
-    Get permissions by category
-    """
-    permissions = Permission.objects.filter(category=category, is_active=True)
-    serializer = PermissionSerializer(permissions, many=True)
-    
-    return Response({
-        'success': True,
-        'data': serializer.data
-    })
-
-
-@api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
-def permission_statistics(request):
-    """
-    Get permission statistics
-    """
-    total_permissions = Permission.objects.count()
-    active_permissions = Permission.objects.filter(is_active=True).count()
-    inactive_permissions = total_permissions - active_permissions
-    
-    # Count by category
-    categories = {}
-    for category, _ in Permission.CATEGORY_CHOICES:
-        count = Permission.objects.filter(category=category).count()
-        categories[category] = count
-    
-    return Response({
-        'success': True,
-        'data': {
-            'total': total_permissions,
-            'active': active_permissions,
-            'inactive': inactive_permissions,
-            'by_category': categories
-        }
-    })
-
-
 # Role Views
 class RoleListCreateView(generics.ListCreateAPIView):
     """
@@ -927,3 +839,82 @@ def clone_role(request, pk):
             'success': False,
             'message': 'Role not found'
         }, status=status.HTTP_404_NOT_FOUND)
+
+
+# Department Permission Views
+class DepartmentPermissionViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing department permissions
+    """
+    queryset = DepartmentPermission.objects.all().order_by('user__username', 'department')
+    serializer_class = DepartmentPermissionSerializer
+    permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
+    
+    def get_queryset(self):
+        """
+        Filter permissions based on user
+        """
+        user_id = self.request.query_params.get('user_id')
+        if user_id:
+            return DepartmentPermission.objects.filter(user_id=user_id)
+        return DepartmentPermission.objects.all()
+    
+    @action(detail=False, methods=['get'])
+    def by_user(self, request):
+        """
+        Get all users with their department permissions
+        """
+        users = User.objects.filter(is_superuser=False).order_by('username')
+        serializer = UserDepartmentPermissionsSerializer(users, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['post'])
+    def bulk_update(self, request):
+        """
+        Update multiple department permissions for a user
+        """
+        user_id = request.data.get('user_id')
+        permissions = request.data.get('permissions', {})
+        
+        if not user_id:
+            return Response({'error': 'user_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Update or create permissions for each department
+        for department, perms in permissions.items():
+            permission, created = DepartmentPermission.objects.get_or_create(
+                user=user,
+                department=department,
+                defaults=perms
+            )
+            if not created:
+                for key, value in perms.items():
+                    setattr(permission, key, value)
+                permission.save()
+        
+        # Return updated permissions
+        user_permissions = DepartmentPermission.objects.filter(user=user)
+        serializer = DepartmentPermissionSerializer(user_permissions, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['delete'])
+    def clear_user_permissions(self, request):
+        """
+        Clear all department permissions for a user
+        """
+        user_id = request.data.get('user_id')
+        
+        if not user_id:
+            return Response({'error': 'user_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        DepartmentPermission.objects.filter(user=user).delete()
+        return Response({'message': 'All permissions cleared for user'})

@@ -17,13 +17,26 @@ export const PRIORITY_OPTIONS = [
 
 // Category options
 export const CATEGORY_OPTIONS = [
-  { value: 'Web', label: 'Web' },
-  { value: 'Mobile', label: 'Mobile' },
-  { value: 'Desktop', label: 'Desktop' },
-  { value: 'API', label: 'API' },
-  { value: 'Database', label: 'Database' },
-  { value: 'DevOps', label: 'DevOps' },
-  { value: 'Other', label: 'Other' },
+  { value: 'App Web', label: 'App Web' },
+  { value: 'App Mobile', label: 'App Mobile' },
+  { value: 'Reporting', label: 'Reporting' },
+  { value: 'Digitalisation', label: 'Digitalisation' },
+  { value: 'ERP', label: 'ERP' },
+  { value: 'AI', label: 'AI' },
+  { value: 'Web & Mobile', label: 'Web & Mobile' },
+  { value: 'Autre', label: 'Autre' },
+];
+
+// Department options
+export const DEPARTMENT_OPTIONS = [
+  { value: 'Comptabilité', label: 'Comptabilité' },
+  { value: 'Finance', label: 'Finance' },
+  { value: 'Service clients', label: 'Service clients' },
+  { value: 'Risque clients', label: 'Risque clients' },
+  { value: 'Service généraux', label: 'Service généraux' },
+  { value: 'Contrôle de gestion', label: 'Contrôle de gestion' },
+  { value: 'Juridique', label: 'Juridique' },
+  { value: 'Événementiel', label: 'Événementiel' },
 ];
 
 // Kanban columns
@@ -86,8 +99,8 @@ export const PRIORITY_MAPPING = {
 
 // Category mapping for data transformation
 export const CATEGORY_MAPPING = {
-  'développement': 'Web',
-  'Développement': 'Web',
+  'développement': 'App Web',
+  'Développement': 'App Web',
 };
 
 // Default form values
@@ -97,7 +110,8 @@ export const DEFAULT_PROJECT_FORM = {
   startDate: '',
   deadline: '',
   priority: 'Moyen',
-  category: 'Web',
+  category: 'App Web',
+  department: 'Comptabilité',
   budget: '',
   projectManager: '',
   projectManagerFunction: '',
@@ -113,6 +127,7 @@ export const DEFAULT_FIELD_ERRORS = {
   projectManager: false,
   priority: false,
   category: false,
+  department: false,
   budget: false,
   filiales: false
 };
@@ -127,6 +142,7 @@ export const DEFAULT_EDIT_FIELD_ERRORS = {
   status: false,
   priority: false,
   category: false,
+  department: false,
   budget: false,
   filiales: false
 };

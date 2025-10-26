@@ -49,7 +49,13 @@ import {
   Send,
   FavoriteBorder,
   Favorite,
+  AttachFile,
 } from '@mui/icons-material';
+
+// Import attachment components
+import FileUpload from '../../shared/components/ui/FileUpload';
+import AttachmentList from '../../shared/components/ui/AttachmentList';
+import attachmentService from '../../shared/services/attachmentService';
 
 // Services and contexts
 import djangoApiService from '../../shared/services/djangoApiService';
@@ -66,12 +72,17 @@ const ProjectDetails = ({ open, onClose, project }) => {
   const [newNote, setNewNote] = useState('');
   const [postingNote, setPostingNote] = useState(false);
   const notesEndRef = useRef(null);
+  
+  // Attachments state
+  const [attachments, setAttachments] = useState([]);
+  const [loadingAttachments, setLoadingAttachments] = useState(false);
 
   useEffect(() => {
     if (open && project) {
       setActiveTab(0); // Reset to first tab when opening
       loadProjectTasks();
       loadProjectNotes();
+      loadProjectAttachments();
     }
   }, [open, project]);
 
@@ -117,6 +128,22 @@ const ProjectDetails = ({ open, onClose, project }) => {
       console.error('Error loading notes:', error);
     } finally {
       setLoadingNotes(false);
+    }
+  };
+
+  const loadProjectAttachments = async () => {
+    if (!project?.id) return;
+    
+    setLoadingAttachments(true);
+    try {
+      const result = await attachmentService.getProjectAttachments(project.id);
+      if (result.success) {
+        setAttachments(result.data || []);
+      }
+    } catch (error) {
+      console.error('Error loading attachments:', error);
+    } finally {
+      setLoadingAttachments(false);
     }
   };
 
@@ -344,6 +371,7 @@ const ProjectDetails = ({ open, onClose, project }) => {
             <Tab label={`Tâches (${tasks.length})`} icon={<Assignment />} iconPosition="start" />
             <Tab label="Équipe" icon={<Group />} iconPosition="start" />
             <Tab label={`Notes (${notes.length})`} icon={<ChatBubbleOutline />} iconPosition="start" />
+            <Tab label={`Pièces jointes (${attachments.length})`} icon={<AttachFile />} iconPosition="start" />
           </Tabs>
         </Box>
 
@@ -733,6 +761,71 @@ const ProjectDetails = ({ open, onClose, project }) => {
                   </List>
                 )}
               </Box>
+            </Box>
+          )}
+
+          {/* Attachments Tab */}
+          {activeTab === 4 && (
+            <Box>
+              <Typography variant="h5" fontWeight={700} gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <AttachFile color="primary" />
+                Pièces jointes du projet
+              </Typography>
+              <Divider sx={{ mb: 3 }} />
+
+              {loadingAttachments ? (
+                <Box sx={{ textAlign: 'center', py: 4 }}>
+                  <CircularProgress />
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                    Chargement des pièces jointes...
+                  </Typography>
+                </Box>
+              ) : (
+                <Grid container spacing={3}>
+                  {/* Upload Section */}
+                  <Grid item xs={12}>
+                    <Card sx={{ bgcolor: alpha(theme.palette.primary.main, 0.05) }}>
+                      <CardContent>
+                        <Typography variant="h6" fontWeight={600} gutterBottom>
+                          📤 Ajouter des fichiers
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                          Vous pouvez ajouter plusieurs fichiers à la fois. Chaque fichier peut avoir une description.
+                        </Typography>
+                        <FileUpload
+                          projectId={project.id}
+                          onUploadSuccess={() => loadProjectAttachments()}
+                          onUploadError={(error) => console.error('Upload error:', error)}
+                          maxFiles={10}
+                          maxFileSize={10 * 1024 * 1024}
+                        />
+                      </CardContent>
+                    </Card>
+                  </Grid>
+
+                  {/* Attachments List */}
+                  <Grid item xs={12}>
+                    <Card>
+                      <CardContent>
+                        <Typography variant="h6" fontWeight={600} gutterBottom>
+                          📋 Fichiers existants ({attachments.length})
+                        </Typography>
+                        <Divider sx={{ mb: 2 }} />
+                        <AttachmentList
+                          projectId={project.id}
+                          attachments={attachments}
+                          onDelete={(id) => {
+                            setAttachments(prev => prev.filter(att => att.id !== id));
+                          }}
+                          onRefresh={loadProjectAttachments}
+                          canUpload={true}
+                          canDelete={true}
+                        />
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                </Grid>
+              )}
             </Box>
           )}
         </Box>

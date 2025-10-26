@@ -20,7 +20,7 @@ class ProjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = Project
         fields = [
-            'id', 'name', 'project_number', 'description', 'status', 'priority', 'category',
+            'id', 'name', 'project_number', 'description', 'status', 'priority', 'category', 'department',
             'manager', 'manager_name', 'team', 'team_members', 'team_count',
             'start_date', 'deadline', 'completed_date', 'budget', 'spent',
             'progress', 'tags', 'attachments', 'notes', 'is_overdue',
@@ -61,7 +61,7 @@ class ProjectListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Project
         fields = [
-            'id', 'name', 'project_number', 'description', 'status', 'priority', 'category',
+            'id', 'name', 'project_number', 'description', 'status', 'priority', 'category', 'department',
             'manager', 'manager_name', 'manager_details', 'team_count', 'start_date', 'deadline',
             'budget', 'spent', 'tags', 'notes',
             'progress', 'is_overdue', 'created_at'
@@ -86,7 +86,7 @@ class ProjectCreateUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Project
         fields = [
-            'id', 'name', 'description', 'status', 'priority', 'category',
+            'id', 'name', 'description', 'status', 'priority', 'category', 'department',
             'manager', 'team', 'start_date', 'deadline', 'budget',
             'tags', 'notes'
         ]
@@ -210,12 +210,14 @@ class ProjectAttachmentSerializer(serializers.ModelSerializer):
     Serializer for project attachments
     """
     uploaded_by_name = serializers.CharField(source='uploaded_by.full_name', read_only=True)
+    file_size_human = serializers.ReadOnlyField()
     
     class Meta:
         model = ProjectAttachment
         fields = [
             'id', 'project', 'uploaded_by', 'uploaded_by_name',
-            'file_name', 'file_path', 'file_size', 'file_type', 'uploaded_at'
+            'file_name', 'file_path', 'file_size', 'file_size_human', 'file_type', 
+            'description', 'uploaded_at'
         ]
         read_only_fields = ['id', 'uploaded_by', 'uploaded_at']
     

@@ -2,6 +2,19 @@
 import React, { useState, useEffect, useMemo, useCallback, useTransition, useDeferredValue, memo } from 'react';
 import { Navigate } from 'react-router-dom';
 
+// Helper function to convert French status to Django format
+const convertStatusToDjango = (frenchStatus) => {
+  const statusMap = {
+    'Planification': 'planification',
+    'En cours': 'en_cours',
+    'En attente': 'en_attente',
+    'En retard': 'en_retard',
+    'Terminé': 'termine',
+    'Annulé': 'annule'
+  };
+  return statusMap[frenchStatus] || frenchStatus.toLowerCase().replace(/ /g, '_');
+};
+
 // Material-UI core components
 import {
   Box,
@@ -70,18 +83,23 @@ import ProjectDataTransformer from '../../shared/services/projectDataTransformer
 
 // Contexts and hooks
 import { useAuth } from '../../shared/contexts/AuthContext';
+import { useProjectNavigation } from './useProjectNavigation';
 
 // Components
 import EditableProgressBar from '../../shared/components/ui/EditableProgressBar';
 import ProjectPermissionGuard, { useProjectPermissions } from '../../shared/components/ui/ProjectPermissionGuard';
 import NoProjectAccess from '../../shared/components/ui/NoProjectAccess';
 import ProjectDetails from './ProjectDetails';
+import FileUpload from '../../shared/components/ui/FileUpload';
+import AttachmentList from '../../shared/components/ui/AttachmentList';
+import attachmentService from '../../shared/services/attachmentService';
 
 // Constants
 import {
   PROJECT_STATUS_OPTIONS,
   PRIORITY_OPTIONS,
   CATEGORY_OPTIONS,
+  DEPARTMENT_OPTIONS,
   KANBAN_COLUMNS,
   PAGINATION_CONFIG,
   TASK_STATUS_MAPPING,
@@ -117,6 +135,9 @@ const Projects = () => {
   const { user, isAuthenticated, isLoading } = useAuth();
   const { canEdit, canCreate, canDelete, isProjectManager, isProjectUser, canView, userRole } = useProjectPermissions();
   
+  // Utiliser le hook de navigation pour définir le menu du module
+  useProjectNavigation();
+  
   // Show loading while checking authentication
   if (isLoading) {
     return (
@@ -146,6 +167,12 @@ const Projects = () => {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Attachments state
+  const [projectAttachments, setProjectAttachments] = useState([]);
+  const [attachmentsLoading, setAttachmentsLoading] = useState(false);
+  const [showAttachments, setShowAttachments] = useState(false);
+  const [selectedProjectForAttachments, setSelectedProjectForAttachments] = useState(null);
   
   // Pagination state
   const [paginationModel, setPaginationModel] = useState({
@@ -391,7 +418,8 @@ const Projects = () => {
               deadline: project.deadline || '',
               status: project.status || 'Planification',
               priority: PRIORITY_MAPPING[project.priority] || project.priority || 'Moyen',
-              category: CATEGORY_MAPPING[project.category] || project.category || 'Web',
+              category: CATEGORY_MAPPING[project.category] || project.category || 'App Web',
+              department: project.department || 'Comptabilité',
               budget: project.budget ? project.budget.replace(/[DZD,\s]/g, '') : '',
               projectManager: project.manager || '',
               filiales: project.filiales || []
@@ -509,7 +537,8 @@ const Projects = () => {
         deadline: row.deadline || '',
         status: row.status || 'Planification',
         priority: row.priority === 'haute' || row.priority === 'Haute' ? 'Élevé' : row.priority === 'moyenne' || row.priority === 'Moyenne' ? 'Moyen' : row.priority === 'faible' || row.priority === 'Faible' ? 'Faible' : 'Moyen',
-        category: row.category === 'développement' || row.category === 'Développement' ? 'Web' : row.category || 'Web',
+        category: row.category === 'développement' || row.category === 'Développement' ? 'App Web' : row.category || 'App Web',
+        department: row.department || 'Comptabilité',
         budget: row.budget ? row.budget.replace(/[DZD,\s]/g, '') : '',
         projectManager: row.manager || '',
         filiales: row.filiales || []
@@ -606,7 +635,8 @@ const Projects = () => {
         deadline: project.deadline || project.end_date || '',
         status: project.status || 'Planification',
         priority: project.priority === 'haute' || project.priority === 'Haute' ? 'Élevé' : project.priority === 'moyenne' || project.priority === 'Moyenne' ? 'Moyen' : project.priority === 'faible' || project.priority === 'Faible' ? 'Faible' : 'Moyen',
-        category: project.category === 'développement' || project.category === 'Développement' ? 'Web' : project.category || 'Web',
+        category: project.category === 'développement' || project.category === 'Développement' ? 'App Web' : project.category || 'App Web',
+        department: project.department || 'Comptabilité',
         budget: project.budget ? project.budget.replace(/[DZD,\s]/g, '') : '',
         projectManager: project.manager || project.manager_id || '',
         filiales: project.filiales || project.tags || []
@@ -832,6 +862,7 @@ const Projects = () => {
       if (!newProject.deadline) { newErrors.deadline = true; hasErrors = true; }
       if (!newProject.priority) { newErrors.priority = true; hasErrors = true; }
       if (!newProject.category) { newErrors.category = true; hasErrors = true; }
+      if (!newProject.department) { newErrors.department = true; hasErrors = true; }
       if (!selectedEmployee?.id) { newErrors.projectManager = true; hasErrors = true; }
 
       if (newProject.startDate && newProject.deadline) {
@@ -868,7 +899,8 @@ const Projects = () => {
         description: newProject.description,
         status: 'En attente', // Utiliser le statut par défaut français
         priority: newProject.priority,
-        category: newProject.category || 'Web',
+        category: newProject.category || 'App Web',
+        department: newProject.department || 'Comptabilité',
         startDate: newProject.startDate,
         deadline: newProject.deadline,
         budget: newProject.budget || 0,
@@ -926,7 +958,8 @@ const Projects = () => {
           startDate: '',
           deadline: '',
           priority: 'Moyen',
-          category: 'Web',
+          category: 'App Web',
+          department: 'Comptabilité',
           budget: '',
           filiales: [],
           projectManager: '',
@@ -1005,6 +1038,11 @@ const Projects = () => {
         hasErrors = true;
       }
       
+      if (!editProject.department) {
+        newFieldErrors.department = true;
+        hasErrors = true;
+      }
+      
       if (!editProject.budget || editProject.budget === '') {
         newFieldErrors.budget = true;
         hasErrors = true;
@@ -1048,6 +1086,7 @@ const Projects = () => {
         status: editProject.status || 'Planification',
         priority: editProject.priority, // Keep French values (Élevé, Moyen, Faible)
         category: editProject.category, // Keep French values (Web, Mobile, etc.)
+        department: editProject.department || 'Comptabilité',
         startDate: editProject.startDate,
         deadline: editProject.deadline,
         budget: editProject.budget || 0,
@@ -2042,7 +2081,8 @@ const Projects = () => {
       startDate: '',
       deadline: '', 
       priority: 'Moyen',
-      category: 'Web',
+      category: 'App Web',
+      department: 'Comptabilité',
       budget: '',
       projectManager: '',
       projectManagerFunction: '',
@@ -2127,6 +2167,11 @@ const Projects = () => {
     
     if (!newProject.category) {
       newFieldErrors.category = true;
+      hasErrors = true;
+    }
+    
+    if (!newProject.department) {
+      newFieldErrors.department = true;
       hasErrors = true;
     }
     
@@ -2269,6 +2314,13 @@ const Projects = () => {
     setNewProject({ ...newProject, category: e.target.value });
     if (fieldErrors.category) {
       setFieldErrors({ ...fieldErrors, category: false });
+    }
+  };
+
+  const handleDepartmentChange = (e) => {
+    setNewProject({ ...newProject, department: e.target.value });
+    if (fieldErrors.department) {
+      setFieldErrors({ ...fieldErrors, department: false });
     }
   };
 
@@ -2451,6 +2503,13 @@ const Projects = () => {
     setEditProject({ ...editProject, category: e.target.value });
     if (editFieldErrors.category) {
       setEditFieldErrors({ ...editFieldErrors, category: false });
+    }
+  };
+
+  const handleEditDepartmentChange = (e) => {
+    setEditProject({ ...editProject, department: e.target.value });
+    if (editFieldErrors.department) {
+      setEditFieldErrors({ ...editFieldErrors, department: false });
     }
   };
 
@@ -3838,16 +3897,45 @@ const Projects = () => {
               error={fieldErrors.category}
               onChange={handleCategoryChange}
             >
-              <MenuItem value="Web">Web</MenuItem>
-              <MenuItem value="Mobile">Mobile</MenuItem>
-              <MenuItem value="Desktop">Desktop</MenuItem>
-              <MenuItem value="Data">Data</MenuItem>
-              <MenuItem value="AI/ML">AI/ML</MenuItem>
-              <MenuItem value="DevOps">DevOps</MenuItem>
-              <MenuItem value="Gaming">Gaming</MenuItem>
-              <MenuItem value="IoT">IoT</MenuItem>
+              <MenuItem value="App Web">App Web</MenuItem>
+              <MenuItem value="App Mobile">App Mobile</MenuItem>
+              <MenuItem value="Reporting">Reporting</MenuItem>
+              <MenuItem value="Digitalisation">Digitalisation</MenuItem>
+              <MenuItem value="ERP">ERP</MenuItem>
+              <MenuItem value="AI">AI</MenuItem>
+              <MenuItem value="Web & Mobile">Web & Mobile</MenuItem>
+              <MenuItem value="Autre">Autre</MenuItem>
             </Select>
             {fieldErrors.category && (
+              <FormHelperText error>
+                Ce champ est obligatoire
+              </FormHelperText>
+            )}
+          </FormControl>
+          
+          {/* Champ Département */}
+          <FormControl fullWidth margin="dense" required error={fieldErrors.department}>
+            <InputLabel sx={{
+              color: fieldErrors.department ? theme.palette.error.main : theme.palette.text.secondary,
+              '&.Mui-focused': {
+                color: fieldErrors.department ? theme.palette.error.main : theme.palette.primary.main,
+              },
+            }}>
+              Département
+            </InputLabel>
+            <Select
+              value={newProject.department}
+              label="Département"
+              error={fieldErrors.department}
+              onChange={handleDepartmentChange}
+            >
+              {DEPARTMENT_OPTIONS.map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </Select>
+            {fieldErrors.department && (
               <FormHelperText error>
                 Ce champ est obligatoire
               </FormHelperText>
@@ -4508,7 +4596,7 @@ const Projects = () => {
             >
               <InputLabel>Catégorie</InputLabel>
               <Select
-                value={editProject.category || 'Web'}
+                value={editProject.category || 'App Web'}
                 label="Catégorie"
                 error={editFieldErrors.category}
                 onChange={handleEditCategoryChange}
@@ -4518,16 +4606,58 @@ const Projects = () => {
                   },
                 }}
               >
-                <MenuItem value="Web">Web</MenuItem>
-                <MenuItem value="Mobile">Mobile</MenuItem>
-                <MenuItem value="Desktop">Desktop</MenuItem>
-                <MenuItem value="Data">Data</MenuItem>
-                <MenuItem value="AI/ML">AI/ML</MenuItem>
-                <MenuItem value="DevOps">DevOps</MenuItem>
-                <MenuItem value="Gaming">Gaming</MenuItem>
-                <MenuItem value="IoT">IoT</MenuItem>
+                <MenuItem value="App Web">App Web</MenuItem>
+                <MenuItem value="App Mobile">App Mobile</MenuItem>
+                <MenuItem value="Reporting">Reporting</MenuItem>
+                <MenuItem value="Digitalisation">Digitalisation</MenuItem>
+                <MenuItem value="ERP">ERP</MenuItem>
+                <MenuItem value="AI">AI</MenuItem>
+                <MenuItem value="Web & Mobile">Web & Mobile</MenuItem>
+                <MenuItem value="Autre">Autre</MenuItem>
               </Select>
               {editFieldErrors.category && (
+                <FormHelperText error>
+                  Ce champ est obligatoire
+                </FormHelperText>
+              )}
+            </FormControl>
+
+            <FormControl 
+              margin="dense" 
+              fullWidth 
+              variant="outlined" 
+              required
+              error={editFieldErrors.department}
+              sx={{
+                '& .MuiInputLabel-root': {
+                  color: editFieldErrors.department ? theme.palette.error.main : theme.palette.text.secondary,
+                },
+                '& .MuiOutlinedInput-root': {
+                  '& fieldset': {
+                    borderColor: editFieldErrors.department ? theme.palette.error.main : theme.palette.divider,
+                  },
+                },
+              }}
+            >
+              <InputLabel>Département</InputLabel>
+              <Select
+                value={editProject.department || 'Comptabilité'}
+                label="Département"
+                error={editFieldErrors.department}
+                onChange={handleEditDepartmentChange}
+                sx={{
+                  '& .MuiSelect-select': {
+                    color: theme.palette.text.primary,
+                  },
+                }}
+              >
+                {DEPARTMENT_OPTIONS.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </Select>
+              {editFieldErrors.department && (
                 <FormHelperText error>
                   Ce champ est obligatoire
                 </FormHelperText>

@@ -26,6 +26,8 @@ urlpatterns = [
     path('api/authentication/', include('authentication.urls')),
     path('api/projects/', include('projects.urls')),
     path('api/notifications/', include('notifications.urls')),
+    path('ax-server/', include('ax_server_models.urls')),
+    path('api/administration/', include('administration.urls')),
 ]
 
 # Serve media files in development

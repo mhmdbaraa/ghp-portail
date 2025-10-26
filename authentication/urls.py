@@ -47,5 +47,12 @@ urlpatterns = [
     path('roles/<int:pk>/remove/', views.remove_role_from_user, name='remove_role_from_user'),
     path('roles/statistics/', views.role_statistics, name='role_statistics'),
     path('roles/<int:pk>/clone/', views.clone_role, name='clone_role'),
+    
+    # Department Permission endpoints
+    path('department-permissions/', views.DepartmentPermissionViewSet.as_view({'get': 'list', 'post': 'create'}), name='department_permission_list'),
+    path('department-permissions/<int:pk>/', views.DepartmentPermissionViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}), name='department_permission_detail'),
+    path('department-permissions/by-user/', views.DepartmentPermissionViewSet.as_view({'get': 'by_user'}), name='department_permissions_by_user'),
+    path('department-permissions/bulk-update/', views.DepartmentPermissionViewSet.as_view({'post': 'bulk_update'}), name='department_permissions_bulk_update'),
+    path('department-permissions/clear-user/', views.DepartmentPermissionViewSet.as_view({'delete': 'clear_user_permissions'}), name='department_permissions_clear_user'),
 ]
 

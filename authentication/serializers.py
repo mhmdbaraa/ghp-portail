@@ -3,7 +3,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
-from .models import User, Permission, Role
+from .models import User, Permission, Role, DepartmentPermission
 
 
 class PermissionSerializer(serializers.ModelSerializer):
@@ -313,3 +313,30 @@ class RolePermissionSerializer(serializers.Serializer):
         if not Permission.objects.filter(id__in=value).exists():
             raise serializers.ValidationError("Some permissions do not exist")
         return value
+
+
+# Department Permission Serializers
+class DepartmentPermissionSerializer(serializers.ModelSerializer):
+    """
+    Serializer for DepartmentPermission model
+    """
+    department_display = serializers.CharField(source='get_department_display', read_only=True)
+    user_username = serializers.CharField(source='user.username', read_only=True)
+    
+    class Meta:
+        model = DepartmentPermission
+        fields = ['id', 'user', 'user_username', 'department', 'department_display', 
+                  'can_view', 'can_edit', 'can_create', 'can_delete', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class UserDepartmentPermissionsSerializer(serializers.ModelSerializer):
+    """
+    Serializer for user with their department permissions
+    """
+    department_permissions = DepartmentPermissionSerializer(many=True, read_only=True)
+    full_name = serializers.CharField(source='get_full_name', read_only=True)
+    
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'full_name', 'department', 'role', 'department_permissions']
